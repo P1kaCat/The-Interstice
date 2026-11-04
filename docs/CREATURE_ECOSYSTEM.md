@@ -96,6 +96,22 @@ Known problems, not yet fixed:
   body pass. LOD0 is 7400–10000 vertices per species; real creatures switch to LOD1 beyond 20 blocks.
 - No before/after comparison sheet has been assembled yet (the "before" captures exist locally only).
 
+To resume (in order):
+1. Regenerate with the source fixes (eyes in open sockets, draped moss, ragged clumps), about 6 min:
+   `python -I tools/creature/species_generator.py all`
+2. Export and redraw the UV templates: `python -I tools/creature/export_adherent.py all`, then
+   `python -I tools/creature/uv_template.py all`
+3. Horde eye pass: in `HordeRenderer`, cache the eye vertices during the body pass instead of re-skinning
+   each instance in `AdherentMeshModel.renderHordeEyes`.
+4. Build and test: `./gradlew build`, then `./gradlew runGametest`
+5. Capture in game (PowerShell, the path has spaces): write `model` to `run/interstice_autotest.flag`, then
+   `./gradlew runClient --args="--username Explorer --quickPlaySingleplayer autotest"` and
+   `python -I tools/creature/make_gifs.py`. Check `dark_<species>` (eyes visible and red), the side views
+   (moss on the flanks), `<species>_rear.gif` and the `BENCH` lines in the log.
+6. "Before" set for the comparisons: put the assets from commit 6d21ed4 or 44ce58e back into
+   `src/client/resources` (the json and png of the 8 species), capture with the flag `model extra`, then
+   restore the current assets.
+
 ## Wall locomotion (server)
 
 Constrained wall movement as before (2D (y, z) plane, X re-solved against the real blocks each tick,
