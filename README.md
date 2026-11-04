@@ -59,7 +59,8 @@ All commands need permission level 2 (operator, or cheats enabled in singleplaye
 | `/interstice stampede stop` | Abort the Stampede |
 | `/interstice stampede phase <phase>` | Jump to a phase (`premonition` … `recovery`, tab-completed) |
 | `/interstice quake [intensity]` | Earthquake without a Stampede |
-| `/interstice spawn wall` / `spawn ground` / `spawn faller` | Wall creature on the nearest wall / ground searcher in front of you / a creature that falls next to you |
+| `/interstice spawn wall [species]` / `spawn ground [species]` / `spawn faller [species]` | Wall creature on the nearest wall / ground searcher in front of you / a creature that falls next to you. Species: adherent (default), crawler, strider, burden, clinger, hollow, watcher, fractured |
+| `/interstice species` | The current Stampede's species composition |
 | `/interstice whisper [line]` | Play a voice line to yourself (`hide`, `dont_move`, `not_yet`, `go`, `they_hear`, `look_up`, `closer`, `stay`) |
 | `/interstice state` | Print event, director and population state |
 | `/interstice debug` | Toggle the diagnostics overlay with live server state for you |
@@ -141,12 +142,18 @@ Key design points:
 
 See the delivery report in the session for the full matrix. Summary:
 
-**Implemented and runtime-tested (headless GameTests, `./gradlew runGametest`, 10/10 passing):**
+**Implemented and runtime-tested (headless GameTests, `./gradlew runGametest`, 20/20 passing):**
 custom dimension loading in a server, wall mass / void beyond / floor / bedrock generation at several distances,
 safe arrival spot, bridge continuity across 5 chunk borders, wall creature clinging to the real wall surface,
 fall → survive → RECOVER, ground searcher detecting a lit visible player (→ HUNT), hidden crouched player behind
 cover in the dark staying undetected, Stampede PREMONITION → STRUCTURAL_DISTURBANCE transition, real runners
-spawning during HORDE_PASSAGE with at least one real fall, every horror-director action executing.
+spawning during HORDE_PASSAGE with at least one real fall, every horror-director action executing; creature
+family: all 8 species registered with their hitboxes, health and spawn eggs; every species attaches to and
+stays on the real wall; species distribution follows the configured weights (and per-event variation /
+surges); the Stampede sync carries the composition and client/server species picks agree; Stampede runners
+of several species; ground dispositions follow species weights; a fleer (Hollow) runs from a visible player
+without hunting; an investigator (Watcher) watches without hunting; Clingers hold on while Hollows flee;
+a moving Burden makes the structure vibrate (noise event).
 
 **Client, verified in a scripted dev-client run (`dev/AutoTest`, screenshots, logs: no errors):** the dimension
 loads into an existing world; all Veil shaders compile; the `interstice:atmosphere` post pipeline runs (fog,
@@ -160,6 +167,12 @@ on HIGH in a small dev window on the development machine. That is one observatio
 still views and in motion (walk, run, rear, fall/recover, wall climb). Proofs, measurements and remaining
 defects: [docs/CREATURE.md](docs/CREATURE.md), captures in `docs/creature/`.
 
+**Creature family (8 species: Adherent, Crawler, Strider, Burden, Clinger, Hollow, Watcher, Fractured):**
+models, animations, wall locomotion styles, interactions, ground dispositions, multispecies Stampede and
+horde. Captured in game for every species (front, profile, three-quarter, rear, wall; walk, run,
+fall/recovery and climb GIFs) in `docs/creature/family/`; measured in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+Details and limits: [docs/CREATURE_ECOSYSTEM.md](docs/CREATURE_ECOSYSTEM.md), [docs/STAMPEDE.md](docs/STAMPEDE.md).
+
 **Not verified:** the settings screen interaction (it is code-complete), audio as actually heard, multiplayer
 with more than one real client, dedicated server with real clients, Sodium/Iris compatibility (untested;
 Veil logs that Iris is absent).
@@ -167,8 +180,9 @@ Veil logs that Iris is absent).
 ## 7. Assets
 
 - Textures: [docs/PIXELLAB_ASSETS.md](docs/PIXELLAB_ASSETS.md) lists every required PixelLab image with
-  prompt, size, projection, transparency, tiling, filename and destination. Creature UV layout reference:
-  `docs/uv/adherent_uv_template_512.png`.
+  prompt, size, projection, transparency, tiling, filename and destination. Creature UV layout references:
+  `docs/uv/<species>_uv_template_512.png` (one per species; the species textures are generated development
+  textures until replaced).
 - Audio: 53 original placeholder sounds synthesised by `tools/gen_audio.py`. Voice lines are LPC-whispered
   renders of local Windows TTS and should be replaced with a real whispered recording (mono Ogg Vorbis,
   same filenames under `assets/interstice/sounds/voice/`).
@@ -180,6 +194,8 @@ Veil logs that Iris is absent).
 - Chains: one procedural mesh per LOD reused for every link, per-link Veil sphere frustum culling, distance
   LOD, preset draw distance. Vertices are transformed on the CPU (no instancing yet).
 - Horde: closed-form positions, early rejection by Z distance, frustum culling; no per-tick simulation.
+- Creatures: CPU skinning (~6–7 ns per vertex), LOD1 beyond 26 blocks, one batch per species texture.
+  Measurements: [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 - Lights: chunk palette pre-check (`maybeHas`) before scanning sections; nearest-N selection per frame.
 - Server: population uses bounded per-player box queries every 40 ticks; perception is staggered every 4
   ticks per creature; the director evaluates once per second.

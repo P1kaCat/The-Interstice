@@ -1,5 +1,9 @@
 # The Adherent: model, animation and rendering pipeline (v4)
 
+The Adherent is now the dominant species of a family of eight; the other seven are derived from this model
+(see [CREATURE_ECOSYSTEM.md](CREATURE_ECOSYSTEM.md)). This document covers the Adherent and the shared
+pipeline (exporter, runtime skinning, animator), which every species uses.
+
 The v4 creature replaces the cube-built v3 (archived as git tag `adherent-v3-cubes` and
 `models/archive/adherent_v3_cubes.bbmodel`). Design brief: `docs/MONSTER_REDESIGN_PROMPT_FR.md`;
 references: `docs/monster-references/`.

@@ -2,7 +2,10 @@ package com.interstice.event.stampede;
 
 import com.interstice.config.ServerConfig;
 import com.interstice.core.IntersticeServer;
+import com.interstice.Interstice;
 import com.interstice.entity.AdherentEntity;
+import com.interstice.entity.species.Species;
+import com.interstice.entity.species.SpeciesMix;
 import com.interstice.event.VoiceEvents;
 import com.interstice.network.ModNetwork;
 import com.interstice.world.IntersticeLayout;
@@ -28,6 +31,11 @@ import java.util.UUID;
  *       {@link AdherentEntity} runners on the walls, some of which really fall
  *       and become ground searchers.</li>
  * </ul>
+ * The horde is multispecies: each event draws a composition ({@link SpeciesMix}) from the configured
+ * weights with random variation and occasional "surges" of one species; real runners are picked from it
+ * and clients colour their visual horde with the same weights. Species differ in speed, fall chance and
+ * survival; watchers notice the premonition first, clingers mostly hold on and react late.
+ * <p>
  * The corridor is effectively infinite along Z, so each player experiences the
  * horde passing them locally while the phase timeline is shared by everyone.
  */
@@ -39,6 +47,7 @@ public final class StampedeController {
     private long seed;
     private int direction = 1;
     private float intensity = 1f;
+    private SpeciesMix mix = SpeciesMix.fromConfig(null, true);
     private long lastStampedeEnd = -1_000_000;
     private boolean whisperSent;
     private final Map<UUID, PlayerState> players = new HashMap<>();
@@ -85,12 +94,32 @@ public final class StampedeController {
         this.direction = r.nextBoolean() ? 1 : -1;
         this.intensity = intensity;
         this.players.clear();
+        rollMix(r);
         enter(level, StampedePhase.PREMONITION);
     }
 
     public void stop(ServerLevel level) {
         enter(level, StampedePhase.IDLE);
-        for (AdherentEntity e : level.getEntities(com.interstice.registry.ModEntities.ADHERENT, e -> e.role == AdherentEntity.Role.RUNNER)) e.discard();
+        for (AdherentEntity e : level.getEntities(ALL, e -> e.role == AdherentEntity.Role.RUNNER)) e.discard();
+    }
+
+    private static final net.minecraft.world.level.entity.EntityTypeTest<net.minecraft.world.entity.Entity, AdherentEntity> ALL =
+            net.minecraft.world.level.entity.EntityTypeTest.forClass(AdherentEntity.class);
+
+    private void rollMix(RandomSource r) {
+        ServerConfig c = ServerConfig.INSTANCE;
+        mix = SpeciesMix.fromConfig(c.stampedeSpeciesWeights, true).vary(r, c.stampedeCompositionVariation, c.stampedeSurgeChance, c.stampedeSurgeFactor);
+        Interstice.LOG.info("Stampede composition: {}", mix);
+    }
+
+    public SpeciesMix mix() {
+        return mix;
+    }
+
+    /** Replaces this event's composition (commands, tests). */
+    public void setMix(ServerLevel level, SpeciesMix m) {
+        mix = m;
+        ModNetwork.sendToLevel(level, sync());
     }
 
     public void forcePhase(ServerLevel level, StampedePhase p) {
@@ -98,6 +127,7 @@ public final class StampedeController {
             seed = level.random.nextLong();
             direction = level.random.nextBoolean() ? 1 : -1;
             players.clear();
+            rollMix(level.random);
         }
         enter(level, p);
     }
@@ -112,7 +142,7 @@ public final class StampedeController {
     }
 
     private ModNetwork.StampedeSync sync() {
-        return new ModNetwork.StampedeSync(phase.ordinal(), phaseStart, phaseDuration, seed, direction, intensity);
+        return new ModNetwork.StampedeSync(phase.ordinal(), phaseStart, phaseDuration, seed, direction, intensity, mix.weights());
     }
 
     public void syncTo(ServerPlayer p) {
@@ -126,10 +156,10 @@ public final class StampedeController {
     private void onEnter(ServerLevel level, StampedePhase p, StampedePhase previous) {
         switch (p) {
             case PREMONITION -> {
-                // the walls go quiet; the inhabitants stop and look down the corridor
+                // watchers notice first: they stop and look down the corridor; the others follow later
                 for (ServerPlayer pl : level.players()) {
                     Vec3 far = pl.position().add(0, 30, -direction * 200);
-                    s.population.react(level, pl.position(), 80, false, far);
+                    s.population.react(level, pl.position(), 80, false, far, sp -> sp == Species.WATCHER);
                 }
             }
             case EARTHQUAKE -> {
@@ -146,8 +176,15 @@ public final class StampedeController {
                 }
             }
             case AFTERMATH -> {
-                for (AdherentEntity e : level.getEntities(com.interstice.registry.ModEntities.ADHERENT, e -> e.role == AdherentEntity.Role.RUNNER)) {
+                for (AdherentEntity e : level.getEntities(ALL, e -> e.role == AdherentEntity.Role.RUNNER)) {
                     if (e.mode() == AdherentEntity.Mode.WALL) e.beginClimbAway();
+                }
+                // the clingers that held on through the horde react only now that it has passed
+                for (ServerPlayer pl : level.players()) {
+                    for (AdherentEntity e : level.getEntitiesOfClass(AdherentEntity.class, pl.getBoundingBox().inflate(90, 250, 90),
+                            e -> e.species() == Species.CLINGER && e.mode() == AdherentEntity.Mode.WALL && e.role == AdherentEntity.Role.AMBIENT)) {
+                        if (level.random.nextFloat() < 0.6f) e.beginFlee(40 + level.random.nextInt(60));
+                    }
                 }
             }
             case IDLE -> {
@@ -167,6 +204,14 @@ public final class StampedeController {
         long t = now - phaseStart;
 
         switch (phase) {
+            case PREMONITION -> {
+                if (t == 80) {   // the rest of the walls goes still, after the watchers
+                    for (ServerPlayer pl : level.players()) {
+                        Vec3 far = pl.position().add(0, 30, -direction * 200);
+                        s.population.react(level, pl.position(), 80, false, far, sp -> sp != Species.WATCHER);
+                    }
+                }
+            }
             case EARTHQUAKE -> {
                 if (!whisperSent && t >= 50) {
                     whisperSent = true;
@@ -204,8 +249,9 @@ public final class StampedeController {
                 int side = level.random.nextBoolean() ? -1 : 1;
                 double z = p.getZ() - direction * (52 + level.random.nextDouble() * 12);
                 double y = Math.max(IntersticeLayout.FLOOR_Y + 10, p.getY() + 10 + level.random.nextDouble() * 50);
-                AdherentEntity e = s.population.create(level, side, y, z);
-                if (e != null) e.beginRun(direction, 0.7 + level.random.nextDouble() * 0.35);
+                Species sp = mix.pick(level.random);
+                AdherentEntity e = s.population.create(level, sp, side, y, z);
+                if (e != null) e.beginRun(direction, (0.7 + level.random.nextDouble() * 0.35) * sp.t.runSpeedMul);
             }
 
             for (AdherentEntity e : runners) {
@@ -215,7 +261,7 @@ public final class StampedeController {
                     continue;
                 }
                 if (st.fallsRemaining > 0 && Math.abs(rel) < 16) {
-                    float chance = tail ? 0.08f : 0.035f;
+                    float chance = (tail ? 0.08f : 0.035f) * e.species().t.fallMul * c.fallMultiplier(e.species());
                     if (level.random.nextFloat() < chance) {
                         st.fallsRemaining--;
                         st.fallsDone++;
@@ -225,7 +271,12 @@ public final class StampedeController {
             }
             // force any remaining falls before the tail ends
             if (tail && phaseDuration - t < 60 && st.fallsRemaining > 0 && !runners.isEmpty()) {
+                // the most fall-prone of a few random runners lets go
                 AdherentEntity e = runners.get(level.random.nextInt(runners.size()));
+                for (int k = 0; k < 3; k++) {
+                    AdherentEntity o = runners.get(level.random.nextInt(runners.size()));
+                    if (o.species().t.fallMul > e.species().t.fallMul) e = o;
+                }
                 e.forceSurvive = true;
                 e.startFalling();
                 st.fallsRemaining--;

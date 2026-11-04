@@ -68,7 +68,9 @@ public class IntersticeClient implements ClientModInitializer {
                         com.interstice.client.render.creatures.mesh.SkinnedMeshAsset.invalidate();
                     }
                 });
-        EntityRendererRegistry.register(ModEntities.ADHERENT, AdherentRenderer::new);
+        for (com.interstice.entity.species.Species sp : com.interstice.entity.species.Species.values()) {
+            EntityRendererRegistry.register(ModEntities.type(sp), ctx -> new AdherentRenderer(ctx, sp));
+        }
         ParticleFactoryRegistry.getInstance().register(ModEntities.FALLING_DUST, DustParticle.DustProvider::new);
         ParticleFactoryRegistry.getInstance().register(ModEntities.MOTE, DustParticle.MoteProvider::new);
         BlockRenderLayerMap.INSTANCE.putBlocks(RenderType.cutout(), ModBlocks.METAL_GRATE, ModBlocks.INDUSTRIAL_LAMP, ModBlocks.SODIUM_LAMP, ModBlocks.EMERGENCY_LAMP);

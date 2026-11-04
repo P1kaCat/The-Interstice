@@ -30,8 +30,8 @@ public final class AdherentAnimator {
 
     public enum Layer {
         IDLE("idle", true), WALK("walk", true), RUN("run", true), CLING("cling", true), CLIMB("climb", true),
-        REAR("rear", true), FALL("fall", true), RECOVER("recover", true),
-        OBSERVE("observe", false), THREAT("threat", false);
+        REAR("rear", true), FALL("fall", true), RECOVER("recover", true), STUNNED("recover", true),
+        OBSERVE("observe", false), THREAT("threat", false), SEARCH("search", false);
 
         public final String clip;
         final boolean base;
@@ -99,6 +99,7 @@ public final class AdherentAnimator {
             switch (b) {
                 case STARE, INVESTIGATE -> s.started[Layer.OBSERVE.ordinal()] = s.time;
                 case RECOVER -> s.started[Layer.RECOVER.ordinal()] = s.time;
+                case SEARCH -> s.started[Layer.SEARCH.ordinal()] = s.time;
                 case HUNT -> {
                     s.huntStart = s.time;
                     s.started[Layer.REAR.ordinal()] = s.time;
@@ -147,6 +148,13 @@ public final class AdherentAnimator {
             case RUN, FLEE -> t[Layer.RUN.ordinal()] = 1f;
             case FALL -> t[Layer.FALL.ordinal()] = 1f;
             case RECOVER -> t[Layer.RECOVER.ordinal()] = 1f;
+            case STUNNED -> t[Layer.STUNNED.ordinal()] = 1f;          // lying where it landed
+            case HIDE -> t[Layer.CLING.ordinal()] = 1f;               // pressed low and flat, still
+            case SEARCH -> {
+                t[Layer.WALK.ordinal()] = moving;
+                t[Layer.IDLE.ordinal()] = 1f - moving;
+                t[Layer.SEARCH.ordinal()] = 1f - 0.5f * moving;       // head low, sweeping
+            }
             case STARE -> {
                 t[Layer.IDLE.ordinal()] = 1f;
                 t[Layer.OBSERVE.ordinal()] = 1f;
@@ -170,7 +178,8 @@ public final class AdherentAnimator {
             if (clip == null) continue;
             float seconds;
             if (clip.cycleBlocks > 0) seconds = (float) (s.stride / clip.cycleBlocks * clip.length);
-            else if (l == Layer.IDLE || l == Layer.CLING || l == Layer.FALL) seconds = (float) (s.time / 20.0);
+            else if (l == Layer.STUNNED) seconds = 0.45f + 0.05f * (float) Math.sin(s.time * 0.05);   // prone, faint twitch
+            else if (l == Layer.IDLE || l == Layer.CLING || l == Layer.FALL || l == Layer.SEARCH) seconds = (float) (s.time / 20.0);
             else seconds = (float) ((s.time - s.started[l.ordinal()]) / 20.0);
             pose.add(clip, seconds, w);
         }

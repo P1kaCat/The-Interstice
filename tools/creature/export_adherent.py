@@ -14,7 +14,9 @@ What the exporter adds on top of the Blockbench file:
 - Animation channels (rotation degrees / position pixels) with Catmull-Rom interpolation, as authored.
 
 Works on any edited version of the .bbmodel, as long as bone names stay stable.
-Usage: python -I tools/creature/export_adherent.py
+Usage: python -I tools/creature/export_adherent.py [species ...|all]   (default: adherent)
+Every species of the family uses the same 24-bone skeleton: models/<species>.bbmodel ->
+models/entity/<species>.json + textures/entity/<species>.png.
 """
 import base64
 import json
@@ -25,13 +27,22 @@ import sys
 import numpy as np
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-SRC = os.path.join(ROOT, "models", "adherent.bbmodel")
 ASSET_DIR = os.path.join(ROOT, "src", "client", "resources", "assets", "interstice")
-OUT_JSON = os.path.join(ASSET_DIR, "models", "entity", "adherent.json")
-OUT_PNG = os.path.join(ASSET_DIR, "textures", "entity", "adherent.png")
+FAMILY = ["adherent", "crawler", "strider", "burden", "clinger", "hollow", "watcher", "fractured"]
+NAME = "adherent"
+SRC = OUT_JSON = OUT_PNG = None
+
+
+def select(name):
+    global NAME, SRC, OUT_JSON, OUT_PNG
+    NAME = name
+    SRC = os.path.join(ROOT, "models", f"{name}.bbmodel")
+    OUT_JSON = os.path.join(ASSET_DIR, "models", "entity", f"{name}.json")
+    OUT_PNG = os.path.join(ASSET_DIR, "textures", "entity", f"{name}.png")
+
 
 JOINT_RADIUS = 3.0     # px over which a joint blends between neighbouring bones
-LOD1_CELL = 1.7        # px grid for the horde LOD
+LOD1_CELL = 1.7        # px grid for the horde LOD (scaled by body length relative to the Adherent's 52 px)
 REQUIRED = ["hips", "spine", "chest", "neck", "head", "jaw"] + [f"{b}_{s}" for s in "lr" for b in
             ("shoulder", "arm", "fore", "hand", "fingers", "thigh", "shin", "foot", "toes")]
 # cycle length in blocks of travel for distance-driven locomotion (stride / stance / 16), used if the
@@ -120,7 +131,8 @@ def main():
     positions, normals, uvs = np.array(positions), np.array(normals), np.array(uvs)
     joints, weights, indices = np.array(joints), np.array(weights), np.array(indices)
     lod0 = pack_lod(positions, normals, uvs, joints, weights, indices)
-    lod1 = pack_lod(*cluster(positions, normals, uvs, joints, weights, indices))
+    cell = LOD1_CELL if NAME == "adherent" else LOD1_CELL * max(0.5, float(np.ptp(positions[:, 2])) / 52.0)
+    lod1 = pack_lod(*cluster(positions, normals, uvs, joints, weights, indices, cell))
 
     anims = {}
     for a in model.get("animations", []):
@@ -144,7 +156,7 @@ def main():
                             "cycleBlocks": round(float(meta.get("cycle_blocks", CYCLE_FALLBACK.get(a["name"], 0))), 4),
                             "channels": chans}
 
-    asset = {"format": 1, "source": "models/adherent.bbmodel", "texture": "interstice:textures/entity/adherent.png",
+    asset = {"format": 1, "source": f"models/{NAME}.bbmodel", "texture": f"interstice:textures/entity/{NAME}.png",
              "bones": [{"name": n, "parent": -1 if p is None else p, "pivot": [round(c, 4) for c in pv]}
                        for n, p, pv in zip(bones, parents, pivots)],
              "lods": [lod0, lod1], "animations": anims}
@@ -188,12 +200,12 @@ def skin_weights(p, b, parents, children, P):
     return js[:3], ws[:3]
 
 
-def cluster(pos, nor, uv, jo, we, ind):
+def cluster(pos, nor, uv, jo, we, ind, cell=LOD1_CELL):
     """Vertex clustering decimation per dominant bone."""
     key_to_new, groups = {}, []
     remap = np.zeros(len(pos), int)
     for i, p in enumerate(pos):
-        k = (int(jo[i][int(np.argmax(we[i]))]),) + tuple(np.floor(p / LOD1_CELL).astype(int))
+        k = (int(jo[i][int(np.argmax(we[i]))]),) + tuple(np.floor(p / cell).astype(int))
         if k not in key_to_new:
             key_to_new[k] = len(groups)
             groups.append([])
@@ -220,4 +232,9 @@ def pack_lod(pos, nor, uv, jo, we, ind):
 
 
 if __name__ == "__main__":
-    main()
+    args = sys.argv[1:] or ["adherent"]
+    if args == ["all"]:
+        args = [n for n in FAMILY if os.path.exists(os.path.join(ROOT, "models", f"{n}.bbmodel"))]
+    for n in args:
+        select(n)
+        main()

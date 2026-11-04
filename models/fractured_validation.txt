@@ -1,0 +1,12 @@
+fractured.bbmodel (Fractured): 24 bones, 49 meshes, 1474 vertices, 1422 faces, texture 512x512, 4.8 texels/px
+rest pose size (blocks): width 1.73, height 2.05 (shoulder top 1.89), length 3.89
+reared height (blocks): 3.04
+rest contact heights before IK (px): arm_l -1.54, arm_r 0.12, leg_l 0.12, leg_r -1.54
+walk     contact height error <= 0.853 px, slip per 1/240 s <= 0.0129 px (interpolated, sampled at 240 Hz) [arm_l 0.11 leg_l 0.05 leg_r 0.10 arm_r 0.85]
+run      contact height error <= 0.742 px, slip per 1/240 s <= 0.0483 px (interpolated, sampled at 240 Hz) [leg_l 0.03 leg_r 0.14 arm_r 0.74 arm_l 0.15]
+climb    contact height error <= 0.261 px, slip per 1/240 s <= 0.0115 px (interpolated, sampled at 240 Hz) [arm_r 0.20 leg_l 0.08 leg_r 0.26 arm_l 0.15]
+cling    contact height error <= 0.173 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.06 arm_r 0.13 leg_l 0.01 leg_r 0.17]
+idle     contact height error <= 0.067 px, slip per 1/240 s <= 0.0002 px (interpolated, sampled at 240 Hz) [arm_l 0.05 arm_r 0.03 leg_l 0.00 leg_r 0.07]
+observe  contact height error <= 0.067 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.04 arm_r 0.00 leg_l 0.00 leg_r 0.07]
+search   contact height error <= 0.067 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.05 arm_r 0.06 leg_l 0.00 leg_r 0.07]
+rear     contact height error <= 0.090 px, slip per 1/240 s <= 0.0007 px (interpolated, sampled at 240 Hz) [leg_l 0.09 leg_r 0.08]

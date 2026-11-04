@@ -112,9 +112,25 @@ this environment); contacts are not validated across crossfades, turns or slopes
 base colour map (no normal/roughness); limbs are leaner and less muscled than the reference images; worlds
 that contain the dimension trigger vanilla's "experimental settings" warning on load.
 
+## The creature family (2026-11-04)
+
+Eight species share the Adherent's skeleton: Adherent, Crawler, Strider, Burden, Clinger, Hollow, Watcher,
+Fractured. `docs/CREATURE_ECOSYSTEM.md` (species, models, behaviour), `docs/STAMPEDE.md` (composition,
+LOD), `docs/PERFORMANCE.md` (measurements). Key points for future work:
+- `entity/species/Species.java` holds every species parameter; `SpeciesMix` the weighted distributions;
+  one entity type per species, all `AdherentEntity`.
+- Models: `tools/creature/species_generator.py` (morph of the Adherent template; edit the `SPECIES` table),
+  then `python -I tools/creature/export_adherent.py <species>`; `preview_lineup.py` renders a quick offline
+  line-up. The Adherent itself still comes from the frozen `design_adherent.py`.
+- Captures: `echo model > run/interstice_autotest.flag` (full: ~850 screenshots, ~4 min), or `model bench`
+  (benchmarks only, uncapped FPS); then `python -I tools/creature/make_gifs.py`.
+- Watch out: a bash heredoc containing apostrophes breaks in this environment; write scripts to files.
+
 ## Verification status
 
-- `./gradlew runGametest`: 10/10 passing (last run 2026-11-04, after the v4 creature, hitbox 1.4x1.8) (world gen at several distances, bridge continuity across chunk
+- `./gradlew runGametest`: 20/20 passing on 4 consecutive runs (2026-11-04, after the creature family:
+  10 original tests + 10 family tests; the three perception tests now allow 1400 ticks because detection by a
+  wandering searcher was observed to take up to ~550 ticks) (world gen at several distances, bridge continuity across chunk
   borders, safe spawn, wall clinging, fall → survive → recover, searcher hunts a lit visible player, hidden
   crouched player behind cover stays undetected, Stampede phase transition, real runners + falls, all
   director actions). Test-only mixin creates the dimension in the GameTest server (it ignores datapack dims).

@@ -3,6 +3,7 @@ package com.interstice.command;
 import com.interstice.config.ServerConfig;
 import com.interstice.core.IntersticeServer;
 import com.interstice.entity.AdherentEntity;
+import com.interstice.entity.species.Species;
 import com.interstice.event.VoiceEvents;
 import com.interstice.event.director.HorrorDirector;
 import com.interstice.event.stampede.StampedePhase;
@@ -72,9 +73,16 @@ public final class IntersticeCommands {
                         .then(Commands.argument("intensity", FloatArgumentType.floatArg(0.05f, 1.5f))
                                 .executes(c -> quake(c, FloatArgumentType.getFloat(c, "intensity")))))
                 .then(Commands.literal("spawn")
-                        .then(Commands.literal("wall").executes(c -> spawnWall(c)))
-                        .then(Commands.literal("ground").executes(c -> spawnGround(c)))
-                        .then(Commands.literal("faller").executes(c -> spawnFaller(c))))
+                        .then(Commands.literal("wall").executes(c -> spawnWall(c, Species.ADHERENT))
+                                .then(speciesArg().executes(c -> spawnWall(c, species(c)))))
+                        .then(Commands.literal("ground").executes(c -> spawnGround(c, Species.ADHERENT))
+                                .then(speciesArg().executes(c -> spawnGround(c, species(c)))))
+                        .then(Commands.literal("faller").executes(c -> spawnFaller(c, Species.ADHERENT))
+                                .then(speciesArg().executes(c -> spawnFaller(c, species(c))))))
+                .then(Commands.literal("species").executes(c -> {
+                    IntersticeServer s = server(c);
+                    return ok(c, "Stampede composition: " + s.stampede.mix());
+                }))
                 .then(Commands.literal("whisper")
                         .executes(c -> whisper(c, "hide"))
                         .then(Commands.argument("line", StringArgumentType.word())
@@ -144,28 +152,42 @@ public final class IntersticeCommands {
         return ok(c, "Earthquake " + intensity);
     }
 
-    private static int spawnWall(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+    private static com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, String> speciesArg() {
+        return Commands.argument("species", StringArgumentType.word())
+                .suggests((c, b) -> SharedSuggestionProvider.suggest(Arrays.stream(Species.values()).map(sp -> sp.id), b));
+    }
+
+    private static Species species(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+        Species sp = Species.byId(StringArgumentType.getString(c, "species"));
+        if (sp == null) throw UNKNOWN_SPECIES.create();
+        return sp;
+    }
+
+    private static final com.mojang.brigadier.exceptions.SimpleCommandExceptionType UNKNOWN_SPECIES =
+            new com.mojang.brigadier.exceptions.SimpleCommandExceptionType(net.minecraft.network.chat.Component.literal("Unknown species."));
+
+    private static int spawnWall(CommandContext<CommandSourceStack> c, Species sp) throws CommandSyntaxException {
         ServerPlayer p = playerInDimension(c);
         IntersticeServer s = server(c);
         IntersticeLayout L = s.layout();
         int side = L.sideOf(p.getX(), p.getZ());
-        AdherentEntity e = s.population.create(s.level(), side, p.getY() + 6, p.getZ() + 4);
-        return e != null ? ok(c, "Spawned a wall creature on the " + (side < 0 ? "west" : "east") + " wall.") : fail(c, "No wall surface found.");
+        AdherentEntity e = s.population.create(s.level(), sp, side, p.getY() + 6, p.getZ() + 4);
+        return e != null ? ok(c, "Spawned a " + sp.id + " on the " + (side < 0 ? "west" : "east") + " wall.") : fail(c, "No wall surface found.");
     }
 
-    private static int spawnGround(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+    private static int spawnGround(CommandContext<CommandSourceStack> c, Species sp) throws CommandSyntaxException {
         ServerPlayer p = playerInDimension(c);
         IntersticeServer s = server(c);
         Vec3 pos = p.position().add(p.getLookAngle().multiply(8, 0, 8));
-        AdherentEntity e = s.population.createGround(s.level(), new Vec3(pos.x, p.getY(), pos.z));
-        return e != null ? ok(c, "Spawned a ground searcher.") : fail(c, "Spawn failed.");
+        AdherentEntity e = s.population.createGround(s.level(), sp, new Vec3(pos.x, p.getY(), pos.z));
+        return e != null ? ok(c, "Spawned a ground " + sp.id + ".") : fail(c, "Spawn failed.");
     }
 
-    private static int spawnFaller(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+    private static int spawnFaller(CommandContext<CommandSourceStack> c, Species sp) throws CommandSyntaxException {
         ServerPlayer p = playerInDimension(c);
         IntersticeServer s = server(c);
         int side = s.layout().sideOf(p.getX(), p.getZ());
-        AdherentEntity e = s.population.create(s.level(), side, p.getY() + 28, p.getZ() + 6);
+        AdherentEntity e = s.population.create(s.level(), sp, side, p.getY() + 28, p.getZ() + 6);
         if (e == null) return fail(c, "No wall surface found.");
         e.forceSurvive = true;
         e.startFalling();

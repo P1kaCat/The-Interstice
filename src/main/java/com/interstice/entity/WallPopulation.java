@@ -2,6 +2,8 @@ package com.interstice.entity;
 
 import com.interstice.config.ServerConfig;
 import com.interstice.core.IntersticeServer;
+import com.interstice.entity.species.Species;
+import com.interstice.entity.species.SpeciesMix;
 import com.interstice.registry.ModEntities;
 import com.interstice.world.IntersticeLayout;
 import net.minecraft.core.BlockPos;
@@ -12,6 +14,7 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Keeps a small, budgeted population of real wall creatures around each player.
@@ -60,16 +63,24 @@ public final class WallPopulation {
             // prefer spawning behind the player's gaze
             if (Math.signum(dz) == Math.signum(look.z) && Math.abs(look.z) > 0.5 && attempt < 4) continue;
             int side = r.nextBoolean() ? -1 : 1;
-            double y = Math.max(IntersticeLayout.FLOOR_Y + 8, p.getY() + 4 + r.nextDouble() * 70);
-            AdherentEntity e = create(level, side, y, z);
+            Species sp = SpeciesMix.fromConfig(ServerConfig.INSTANCE.ambientSpeciesWeights, false).pick(r);
+            // clingers settle low, where people pass underneath; heavy species stay higher
+            double span = sp == Species.CLINGER ? 18 : sp == Species.BURDEN ? 90 : 70;
+            double lift = sp == Species.CLINGER ? 3 : sp == Species.BURDEN ? 20 : 4;
+            double y = Math.max(IntersticeLayout.FLOOR_Y + 8, p.getY() + lift + r.nextDouble() * span);
+            AdherentEntity e = create(level, sp, side, y, z);
             if (e != null) return e;
         }
         return null;
     }
 
     public AdherentEntity create(ServerLevel level, int side, double y, double z) {
+        return create(level, Species.ADHERENT, side, y, z);
+    }
+
+    public AdherentEntity create(ServerLevel level, Species species, int side, double y, double z) {
         if (!level.isLoaded(BlockPos.containing(s.layout().faceX(side, z), y, z))) return null;
-        AdherentEntity e = ModEntities.ADHERENT.create(level);
+        AdherentEntity e = ModEntities.type(species).create(level);
         if (e == null) return null;
         if (!e.attachToWall(side, y, z)) {
             e.discard();
@@ -82,7 +93,11 @@ public final class WallPopulation {
     }
 
     public AdherentEntity createGround(ServerLevel level, Vec3 pos) {
-        AdherentEntity e = ModEntities.ADHERENT.create(level);
+        return createGround(level, Species.ADHERENT, pos);
+    }
+
+    public AdherentEntity createGround(ServerLevel level, Species species, Vec3 pos) {
+        AdherentEntity e = ModEntities.type(species).create(level);
         if (e == null) return null;
         e.setPos(pos);
         e.setMode(AdherentEntity.Mode.GROUND);
@@ -94,15 +109,23 @@ public final class WallPopulation {
     }
 
     public int countAll(ServerLevel level) {
-        return level.getEntities(ModEntities.ADHERENT, e -> true).size();
+        return level.getEntities(net.minecraft.world.level.entity.EntityTypeTest.forClass(AdherentEntity.class), e -> true).size();
     }
 
     /** Make every wall creature near a point react to a vibration or event. */
     public void react(ServerLevel level, Vec3 center, double radius, boolean flee, Vec3 stareAt) {
+        react(level, center, radius, flee, stareAt, sp -> true);
+    }
+
+    /**
+     * Species-aware reaction: on a flee, species that hold on (clingers) mostly stay and stare instead;
+     * {@code who} restricts the reaction (e.g. watchers first, the others later).
+     */
+    public void react(ServerLevel level, Vec3 center, double radius, boolean flee, Vec3 stareAt, Predicate<Species> who) {
         for (AdherentEntity e : level.getEntitiesOfClass(AdherentEntity.class, new net.minecraft.world.phys.AABB(center, center).inflate(radius, 250, radius))) {
-            if (e.mode() != AdherentEntity.Mode.WALL || e.role != AdherentEntity.Role.AMBIENT) continue;
-            if (flee) e.beginFlee(60 + level.random.nextInt(80));
-            else e.beginStare(stareAt, 80 + level.random.nextInt(160));
+            if (e.mode() != AdherentEntity.Mode.WALL || e.role != AdherentEntity.Role.AMBIENT || !who.test(e.species())) continue;
+            if (flee && level.random.nextFloat() >= e.species().t.holdOnChance) e.beginFlee(60 + level.random.nextInt(80));
+            else e.beginStare(stareAt != null ? stareAt : center.add(0, 20, 0), 80 + level.random.nextInt(160));
         }
     }
 }

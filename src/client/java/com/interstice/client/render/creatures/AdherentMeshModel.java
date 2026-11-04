@@ -15,21 +15,25 @@ import net.minecraft.client.renderer.RenderType;
  */
 public class AdherentMeshModel extends EntityModel<AdherentEntity> {
     private SkinnedMeshPose current;
-    private SkinnedMeshPose hordePose;
 
     public AdherentMeshModel() {
         super(RenderType::entityCutoutNoCull);
     }
 
+    /** Real entities farther than this (blocks) are skinned on the reduced LOD. */
+    public static final double LOD1_DISTANCE = 26.0;
+
     @Override
     public void setupAnim(AdherentEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
-        SkinnedMeshAsset asset = SkinnedMeshAsset.adherent();
+        SkinnedMeshAsset asset = SkinnedMeshAsset.of(entity.species());
         current = null;
         if (asset == null) return;
         AdherentAnimator.State s = AdherentAnimator.state(entity);
         if (s.pose == null || s.pose.asset() != asset) s.pose = new SkinnedMeshPose(asset);
         AdherentAnimator.apply(s, s.pose);
-        s.pose.skin(0);
+        net.minecraft.world.phys.Vec3 cam = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        boolean far = entity.distanceToSqr(cam) > LOD1_DISTANCE * LOD1_DISTANCE;
+        s.pose.skin(far ? 1 : 0);
         current = s.pose;
     }
 
@@ -42,10 +46,25 @@ public class AdherentMeshModel extends EntityModel<AdherentEntity> {
      * Horde mid-distance instances: the run clip at an explicit time, on the reduced LOD.
      * The caller has already set up the pose stack (orientation, 180 degree flip, ground offset).
      */
+    private final SkinnedMeshPose[] hordePoses = new SkinnedMeshPose[com.interstice.entity.species.Species.values().length];
+
     public boolean renderHorde(PoseStack poseStack, VertexConsumer consumer, int light, int overlay, float seconds) {
-        SkinnedMeshAsset asset = SkinnedMeshAsset.adherent();
+        return renderHorde(com.interstice.entity.species.Species.ADHERENT, poseStack, consumer, light, overlay, seconds);
+    }
+
+    /** Horde instance posed {@code cycles} climb cycles into its loop (each species has its own clip length). */
+    public boolean renderHordeCycle(com.interstice.entity.species.Species sp, PoseStack poseStack, VertexConsumer consumer, int light, int overlay, float cycles) {
+        SkinnedMeshAsset asset = SkinnedMeshAsset.of(sp);
         if (asset == null) return false;
-        if (hordePose == null || hordePose.asset() != asset) hordePose = new SkinnedMeshPose(asset);
+        SkinnedMeshAsset.Clip c = asset.clip("climb");
+        return renderHorde(sp, poseStack, consumer, light, overlay, cycles * (c != null ? c.length : 2.6f));
+    }
+
+    public boolean renderHorde(com.interstice.entity.species.Species sp, PoseStack poseStack, VertexConsumer consumer, int light, int overlay, float seconds) {
+        SkinnedMeshAsset asset = SkinnedMeshAsset.of(sp);
+        if (asset == null) return false;
+        SkinnedMeshPose hordePose = hordePoses[sp.ordinal()];
+        if (hordePose == null || hordePose.asset() != asset) hordePoses[sp.ordinal()] = hordePose = new SkinnedMeshPose(asset);
         hordePose.reset();
         hordePose.add(asset.clip("climb"), seconds, 1f);
         hordePose.skin(1);

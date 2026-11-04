@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.interstice.Interstice;
+import com.interstice.entity.species.Species;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -120,31 +121,38 @@ public final class SkinnedMeshAsset {
 
     // ------------------------------------------------------------------ loading / cache
 
-    private static final ResourceLocation ADHERENT = Interstice.id("models/entity/adherent.json");
-    private static SkinnedMeshAsset adherent;
-    private static boolean failed;
+    private static final SkinnedMeshAsset[] CACHE = new SkinnedMeshAsset[Species.values().length];
+    private static final boolean[] FAILED = new boolean[Species.values().length];
 
     /** Cleared on resource reload. */
     public static void invalidate() {
-        adherent = null;
-        failed = false;
+        java.util.Arrays.fill(CACHE, null);
+        java.util.Arrays.fill(FAILED, false);
     }
 
     public static SkinnedMeshAsset adherent() {
-        if (adherent == null && !failed) {
+        return of(Species.ADHERENT);
+    }
+
+    /** The species' mesh (models/entity/&lt;species&gt;.json); falls back to the Adherent's if it is missing. */
+    public static SkinnedMeshAsset of(Species sp) {
+        int i = sp.ordinal();
+        if (CACHE[i] == null && !FAILED[i]) {
+            ResourceLocation id = Interstice.id("models/entity/" + sp.id + ".json");
             try {
-                Optional<Resource> res = Minecraft.getInstance().getResourceManager().getResource(ADHERENT);
-                if (res.isEmpty()) throw new IllegalStateException("missing " + ADHERENT);
+                Optional<Resource> res = Minecraft.getInstance().getResourceManager().getResource(id);
+                if (res.isEmpty()) throw new IllegalStateException("missing " + id);
                 try (Reader r = res.get().openAsReader()) {
-                    adherent = new SkinnedMeshAsset(JsonParser.parseReader(r).getAsJsonObject());
+                    CACHE[i] = new SkinnedMeshAsset(JsonParser.parseReader(r).getAsJsonObject());
                 }
-                Interstice.LOG.info("Loaded Adherent mesh: {} bones, {} vertices, {} animations",
-                        adherent.boneCount(), adherent.lods[0].vertexCount, adherent.clips.size());
+                Interstice.LOG.info("Loaded {} mesh: {} bones, {} vertices (LOD1 {}), {} animations", sp.id,
+                        CACHE[i].boneCount(), CACHE[i].lods[0].vertexCount, CACHE[i].lods[CACHE[i].lods.length - 1].vertexCount, CACHE[i].clips.size());
             } catch (Exception e) {
-                failed = true;
-                Interstice.LOG.error("Could not load the Adherent mesh asset", e);
+                FAILED[i] = true;
+                Interstice.LOG.error("Could not load the {} mesh asset", sp.id, e);
             }
         }
-        return adherent;
+        if (CACHE[i] == null && sp != Species.ADHERENT) return of(Species.ADHERENT);
+        return CACHE[i];
     }
 }

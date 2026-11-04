@@ -31,6 +31,8 @@ public final class ClientState {
     public static long stampedeSeed;
     public static int stampedeDirection = 1;
     public static float stampedeIntensity = 1f;
+    /** Species composition of the current Stampede (visual horde instances pick from it by hash). */
+    public static com.interstice.entity.species.SpeciesMix stampedeMix = com.interstice.entity.species.SpeciesMix.of(new float[]{1f});
     /** Game time at which the current horde run began (start of HORDE_APPROACH). */
     public static long hordeStart = Long.MIN_VALUE;
 
@@ -69,6 +71,7 @@ public final class ClientState {
         stampedeSeed = p.seed();
         stampedeDirection = p.direction();
         stampedeIntensity = p.intensity();
+        stampedeMix = com.interstice.entity.species.SpeciesMix.of(p.species());
     }
 
     public static void onEnvEvent(ModNetwork.EnvEvent e) {

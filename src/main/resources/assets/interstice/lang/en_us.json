@@ -42,5 +42,19 @@
   "subtitles.interstice.voice.they_hear": "they can hear you.",
   "subtitles.interstice.voice.look_up": "look up.",
   "subtitles.interstice.voice.closer": "closer.",
-  "subtitles.interstice.voice.stay": "stay where you are."
+  "subtitles.interstice.voice.stay": "stay where you are.",
+  "entity.interstice.crawler": "Crawler",
+  "item.interstice.crawler_spawn_egg": "Crawler Spawn Egg",
+  "entity.interstice.strider": "Strider",
+  "item.interstice.strider_spawn_egg": "Strider Spawn Egg",
+  "entity.interstice.burden": "Burden",
+  "item.interstice.burden_spawn_egg": "Burden Spawn Egg",
+  "entity.interstice.clinger": "Clinger",
+  "item.interstice.clinger_spawn_egg": "Clinger Spawn Egg",
+  "entity.interstice.hollow": "Hollow",
+  "item.interstice.hollow_spawn_egg": "Hollow Spawn Egg",
+  "entity.interstice.watcher": "Watcher",
+  "item.interstice.watcher_spawn_egg": "Watcher Spawn Egg",
+  "entity.interstice.fractured": "Fractured",
+  "item.interstice.fractured_spawn_egg": "Fractured Spawn Egg"
 }

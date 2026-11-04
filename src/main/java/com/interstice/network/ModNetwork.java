@@ -47,8 +47,12 @@ public final class ModNetwork {
         public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 
-    /** Full Stampede state. Sent on every phase change and to late joiners. */
-    public record StampedeSync(int phase, long phaseStart, int phaseDuration, long seed, int direction, float intensity) implements CustomPacketPayload {
+    /**
+     * Full Stampede state. Sent on every phase change and to late joiners. {@code species} is the event's
+     * species composition (one weight per Species ordinal): clients assign species to visual horde
+     * instances from it, the server picks real runners from the same weights.
+     */
+    public record StampedeSync(int phase, long phaseStart, int phaseDuration, long seed, int direction, float intensity, float[] species) implements CustomPacketPayload {
         public static final Type<StampedeSync> TYPE = new Type<>(Interstice.id("stampede_sync"));
         public static final StreamCodec<FriendlyByteBuf, StampedeSync> CODEC = CustomPacketPayload.codec((p, b) -> {
             b.writeVarInt(p.phase);
@@ -57,7 +61,20 @@ public final class ModNetwork {
             b.writeLong(p.seed);
             b.writeByte(p.direction);
             b.writeFloat(p.intensity);
-        }, b -> new StampedeSync(b.readVarInt(), b.readLong(), b.readVarInt(), b.readLong(), b.readByte(), b.readFloat()));
+            b.writeVarInt(p.species.length);
+            for (float f : p.species) b.writeFloat(f);
+        }, b -> {
+            int phase = b.readVarInt();
+            long start = b.readLong();
+            int dur = b.readVarInt();
+            long seed = b.readLong();
+            int dir = b.readByte();
+            float intensity = b.readFloat();
+            int n = Math.min(64, b.readVarInt());
+            float[] sp = new float[n];
+            for (int i = 0; i < n; i++) sp[i] = b.readFloat();
+            return new StampedeSync(phase, start, dur, seed, dir, intensity, sp);
+        });
 
         @Override
         public Type<? extends CustomPacketPayload> type() { return TYPE; }

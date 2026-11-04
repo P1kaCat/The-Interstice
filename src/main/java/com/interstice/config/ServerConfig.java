@@ -34,6 +34,31 @@ public final class ServerConfig {
     public float creatureAttackDamage = 7f;
     public boolean voiceEnabled = true;
 
+    // ---- creature family (species ids: adherent, crawler, strider, burden, clinger, hollow, watcher, fractured)
+    /** Stampede composition before per-event variation (relative weights). */
+    public java.util.Map<String, Float> stampedeSpeciesWeights = weights(65, 12, 8, 5, 3, 3, 2, 2);
+    /** Ambient wall population outside the Stampede (relative weights). */
+    public java.util.Map<String, Float> ambientSpeciesWeights = weights(50, 12, 7, 4, 12, 6, 6, 3);
+    /** Multiplier on each species' chance to lose its grip during the Stampede (1 = species default). */
+    public java.util.Map<String, Float> speciesFallChanceMultiplier = weights(1, 1, 1, 1, 1, 1, 1, 1);
+    /** Spread of the per-event random variation of the composition (log-normal sigma; 0 = none). */
+    public float stampedeCompositionVariation = 0.35f;
+    /** Chance that a Stampede is dominated by an unusual species ("surge"), and how strongly. */
+    public float stampedeSurgeChance = 0.12f;
+    public float stampedeSurgeFactor = 5f;
+
+    private static java.util.Map<String, Float> weights(float... v) {
+        java.util.Map<String, Float> m = new java.util.LinkedHashMap<>();
+        com.interstice.entity.species.Species[] sp = com.interstice.entity.species.Species.values();
+        for (int i = 0; i < sp.length && i < v.length; i++) m.put(sp[i].id, v[i]);
+        return m;
+    }
+
+    public float fallMultiplier(com.interstice.entity.species.Species s) {
+        Float v = speciesFallChanceMultiplier == null ? null : speciesFallChanceMultiplier.get(s.id);
+        return v == null ? 1f : Math.max(0f, v);
+    }
+
     public static void load() {
         try {
             if (Files.exists(PATH)) {

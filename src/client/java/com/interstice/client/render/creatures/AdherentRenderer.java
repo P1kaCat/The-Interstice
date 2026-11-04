@@ -2,6 +2,7 @@ package com.interstice.client.render.creatures;
 
 import com.interstice.Interstice;
 import com.interstice.entity.AdherentEntity;
+import com.interstice.entity.species.Species;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -22,20 +23,36 @@ import org.joml.Vector3f;
  */
 public class AdherentRenderer extends MobRenderer<AdherentEntity, AdherentMeshModel> {
     public static final ResourceLocation TEXTURE = Interstice.id("textures/entity/adherent.png");
+    private static final ResourceLocation[] TEXTURES = new ResourceLocation[Species.values().length];
+
+    static {
+        for (Species sp : Species.values()) TEXTURES[sp.ordinal()] = Interstice.id("textures/entity/" + sp.id + ".png");
+    }
+
+    public static ResourceLocation texture(Species sp) {
+        return TEXTURES[sp.ordinal()];
+    }
+
+    private final float groundShadow;
 
     public AdherentRenderer(EntityRendererProvider.Context ctx) {
-        super(ctx, new AdherentMeshModel(), 1.3f);
+        this(ctx, Species.ADHERENT);
+    }
+
+    public AdherentRenderer(EntityRendererProvider.Context ctx, Species species) {
+        super(ctx, new AdherentMeshModel(), 0.93f * species.t.width);
+        this.groundShadow = 0.93f * species.t.width;
     }
 
     @Override
     public ResourceLocation getTextureLocation(AdherentEntity entity) {
-        return TEXTURE;
+        return TEXTURES[entity.species().ordinal()];
     }
 
     @Override
     public void render(AdherentEntity entity, float yaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
         AdherentAnimator.update(entity, partialTick);
-        this.shadowRadius = entity.mode() == AdherentEntity.Mode.WALL ? 0f : 1.3f;
+        this.shadowRadius = entity.mode() == AdherentEntity.Mode.WALL ? 0f : groundShadow;
         super.render(entity, yaw, partialTick, pose, buffers, light);
     }
 

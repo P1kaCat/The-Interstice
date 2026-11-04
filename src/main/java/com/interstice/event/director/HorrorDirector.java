@@ -28,7 +28,7 @@ import java.util.UUID;
  * never punished back-to-back.
  */
 public final class HorrorDirector {
-    public enum Action { NOTHING, DISTANT_IMPACT, CHAIN_SHUDDER, LIGHT_FAILURE, SILENCE, STARE, FLEE, MINOR_QUAKE, VOICE, STAMPEDE }
+    public enum Action { NOTHING, DISTANT_IMPACT, CHAIN_SHUDDER, LIGHT_FAILURE, SILENCE, STARE, FLEE, MINOR_QUAKE, VOICE, STAMPEDE, BURDEN_MOVES }
 
     private final IntersticeServer s;
     private boolean paused;
@@ -105,6 +105,7 @@ public final class HorrorDirector {
         boolean stampedeReady = c.stampedeEnabled && tension > 0.62f && ft.ticksInDimension > 3600
                 && now - s.stampede.lastStampedeEnd() > (long) (c.minMinutesBetweenStampedes * 1200 / freq);
         w[Action.STAMPEDE.ordinal()] = stampedeReady ? 2.5 * tension : 0;
+        w[Action.BURDEN_MOVES.ordinal()] = 0.35 + 0.4 * tension;
 
         Action a = pick(w, r);
         perform(level, focus, a, r);
@@ -159,6 +160,20 @@ public final class HorrorDirector {
                 else if (enclosure >= 3) line = r.nextBoolean() ? "stay" : "not_yet";
                 else line = r.nextFloat() < 0.5f ? "look_up" : "closer"; // not every word can be trusted
                 VoiceEvents.say(p, line, 0.9f);
+            }
+            case BURDEN_MOVES -> {
+                // somewhere out of sight, something heavy starts to move: heard and felt before it is seen
+                if (L == null) return;
+                java.util.List<AdherentEntity> heavy = level.getEntitiesOfClass(AdherentEntity.class, p.getBoundingBox().inflate(90, 250, 90),
+                        e -> e.species() == com.interstice.entity.species.Species.BURDEN && e.mode() == AdherentEntity.Mode.WALL);
+                AdherentEntity b = heavy.isEmpty() ? null : heavy.get(0);
+                if (b == null) {
+                    double z = p.getZ() + (r.nextBoolean() ? 1 : -1) * (45 + r.nextDouble() * 30);
+                    b = s.population.create(level, com.interstice.entity.species.Species.BURDEN, r.nextBoolean() ? -1 : 1,
+                            Math.max(IntersticeLayout.FLOOR_Y + 20, p.getY() + 25 + r.nextDouble() * 40), z);
+                }
+                if (b != null) b.beginCrawl(b.getY() + r.nextGaussian() * 6, b.getZ() + (r.nextBoolean() ? 1 : -1) * (8 + r.nextDouble() * 8), 0.045);
+                t.tension += 0.04f;
             }
             case STAMPEDE -> {
                 s.stampede.start(level, 0.8f + r.nextFloat() * 0.2f);

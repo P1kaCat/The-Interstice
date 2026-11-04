@@ -4,6 +4,7 @@ import com.interstice.core.IntersticeServer;
 import com.interstice.entity.AdherentEntity;
 import com.interstice.entity.AdherentEntity.Behavior;
 import com.interstice.entity.AdherentEntity.Mode;
+import com.interstice.entity.species.Species.GroundDisposition;
 import com.interstice.registry.ModSounds;
 import com.interstice.world.IntersticeLayout;
 import net.minecraft.server.level.ServerLevel;
@@ -18,6 +19,11 @@ import java.util.EnumSet;
  * Ground "brain" of a fallen Adherent. States:
  * RECOVER &rarr; SEARCH &harr; INVESTIGATE &rarr; HUNT, plus RETREAT (walk to the
  * nearest wall and climb back into the dark).
+ * <p>
+ * What it does with what it perceives depends on its {@link GroundDisposition} (rolled per individual
+ * from its species): a HUNTER can hunt; an INVESTIGATOR searches and then watches from a distance; a
+ * FLEER runs from people; a HIDER goes to the foot of a wall and stays still; a STUNNED creature lies on
+ * the ground for a long time first. No fallen creature can be assumed to behave like the previous one.
  * <p>
  * The creature only ever acts on what it perceives: sight
  * ({@link Perception#visibility}), hearing ({@link NoiseMap}) and its own
@@ -39,6 +45,9 @@ public class AdherentGroundGoal extends Goal {
     private long lastStimulus;
     private boolean retreating;
     private boolean alerted;
+    private boolean fleeing, hiding;
+    private int modeTimer;
+    private Vec3 fleeFrom;
 
     public AdherentGroundGoal(AdherentEntity mob) {
         this.mob = mob;
@@ -73,12 +82,28 @@ public class AdherentGroundGoal extends Goal {
         if (s == null || !(mob.level() instanceof ServerLevel level)) return;
         long now = level.getGameTime();
 
+        if (mob.behavior() == Behavior.STUNNED) {
+            mob.getNavigation().stop();
+            if (mob.decrementBehaviorTimer() <= 0) {
+                // it comes to, slowly; it will not be a hunter
+                mob.disposition = mob.getRandom().nextBoolean() ? GroundDisposition.INVESTIGATOR : GroundDisposition.FLEER;
+                mob.setBehavior(Behavior.RECOVER);
+                mob.setBehaviorTimer((int) (90 * mob.species().t.recoverMul));
+            }
+            return;
+        }
+
         if (mob.behavior() == Behavior.RECOVER) {
             mob.getNavigation().stop();
             if (mob.decrementBehaviorTimer() <= 0) {
                 mob.setBehavior(Behavior.SEARCH);
                 searchCenter = mob.position();
-                mob.playSound(ModSounds.CREATURE_SNIFF, 1.2f, 0.8f);
+                mob.playSound(ModSounds.CREATURE_SNIFF, 1.2f, 0.8f * mob.species().t.pitch);
+                if (mob.disposition == GroundDisposition.FLEER) startFlee(null);
+                else if (mob.disposition == GroundDisposition.HIDER) {
+                    hiding = true;
+                    modeTimer = 600 + mob.getRandom().nextInt(900);
+                }
             }
             return;
         }
@@ -90,6 +115,15 @@ public class AdherentGroundGoal extends Goal {
 
         if ((now + mob.getId()) % 4 == 0) perceive(s, level, now);
 
+        if (fleeing) {
+            fleeTick();
+            return;
+        }
+        if (hiding) {
+            hideTick(s);
+            return;
+        }
+
         if (s.stampede.searchersShouldRetreat() || now - lastStimulus > 2400) {
             if (awareness < 0.6f) {
                 retreating = true;
@@ -99,7 +133,13 @@ public class AdherentGroundGoal extends Goal {
         }
 
         boolean seenRecently = target != null && now - lastSeen < 10;
-        if (awareness >= 1.0f && seenRecently) {
+        if (mob.disposition == GroundDisposition.FLEER && awareness > 0.3f && target != null) {
+            startFlee(target.position());
+            return;
+        }
+        if (mob.disposition == GroundDisposition.INVESTIGATOR && awareness >= 1.0f && seenRecently) {
+            if (mob.behavior() != Behavior.STARE) mob.setBehavior(Behavior.STARE);   // watches, keeps its distance
+        } else if (mob.disposition == GroundDisposition.HUNTER && awareness >= 1.0f && seenRecently) {
             if (mob.behavior() != Behavior.HUNT) {
                 mob.setBehavior(Behavior.HUNT);
                 if (!alerted) {
@@ -111,6 +151,7 @@ public class AdherentGroundGoal extends Goal {
 
         switch (mob.behavior()) {
             case HUNT -> huntTick(now);
+            case STARE -> watchTick(now);
             case INVESTIGATE -> investigateTick();
             default -> searchTick();
         }
@@ -154,7 +195,8 @@ public class AdherentGroundGoal extends Goal {
         lastNoiseCheck = now;
         awareness = Mth.clamp(awareness, 0f, 1.25f);
 
-        if (mob.behavior() != Behavior.HUNT && awareness > 0.3f && (poi != null || lastKnown != null)) {
+        if (mob.behavior() != Behavior.HUNT && mob.behavior() != Behavior.STARE && !fleeing && !hiding
+                && awareness > 0.3f && (poi != null || lastKnown != null)) {
             if (lastKnown != null && now - lastSeen < 40) poi = lastKnown;
             if (mob.behavior() != Behavior.INVESTIGATE) {
                 mob.setBehavior(Behavior.INVESTIGATE);
@@ -185,6 +227,80 @@ public class AdherentGroundGoal extends Goal {
             mob.getNavigation().moveTo(lastKnown.x, lastKnown.y, lastKnown.z, 1.15);
         }
         mob.tryAttack(target);
+    }
+
+    /** Investigator: stands at a distance and watches; backs away when approached; never attacks. */
+    private void watchTick(long now) {
+        if (target == null || !target.isAlive() || now - lastSeen > 200) {
+            target = null;
+            mob.setBehavior(Behavior.SEARCH);
+            return;
+        }
+        mob.getLookControl().setLookAt(target, 10f, 10f);   // slow head
+        double d = mob.distanceTo(target);
+        if (d < 6.5) {
+            Vec3 away = mob.position().subtract(target.position()).multiply(1, 0, 1).normalize();
+            Vec3 to = mob.position().add(away.scale(6));
+            if (mob.getNavigation().isDone() || mob.tickCount % 15 == 0) mob.getNavigation().moveTo(to.x, to.y, to.z, 0.7);
+        } else {
+            mob.getNavigation().stop();
+        }
+    }
+
+    private void startFlee(Vec3 from) {
+        fleeing = true;
+        hiding = false;
+        fleeFrom = from;
+        modeTimer = 100 + mob.getRandom().nextInt(80);
+        mob.setBehavior(Behavior.FLEE);
+        if (from != null) mob.playSound(ModSounds.CREATURE_ALERT, 1.2f, 1.25f * mob.species().t.pitch);
+    }
+
+    /** Fleer: runs away from the threat (or just away), then goes back up a wall. */
+    private void fleeTick() {
+        if (fleeFrom == null) {
+            ServerPlayer p = (ServerPlayer) mob.level().getNearestPlayer(mob, 32);
+            fleeFrom = p != null ? p.position() : mob.position().add(mob.getRandom().nextGaussian(), 0, mob.getRandom().nextGaussian());
+        }
+        if (mob.getNavigation().isDone() || mob.tickCount % 20 == 0) {
+            Vec3 away = mob.position().subtract(fleeFrom).multiply(1, 0, 1);
+            away = away.lengthSqr() < 1e-4 ? new Vec3(0, 0, 1) : away.normalize();
+            Vec3 to = mob.position().add(away.scale(14));
+            mob.getNavigation().moveTo(to.x, to.y, to.z, 1.3);
+        }
+        if (--modeTimer <= 0) {
+            fleeing = false;
+            retreating = true;
+            mob.setBehavior(Behavior.CLIMB);
+        }
+    }
+
+    /** Hider: goes to the foot of the nearest wall, stays pressed and still, flees if found. */
+    private void hideTick(IntersticeServer s) {
+        IntersticeLayout L = s.layout();
+        if (L == null) return;
+        if (target != null && awareness > 0.5f && mob.distanceTo(target) < 5) {
+            startFlee(target.position());
+            return;
+        }
+        if (mob.behavior() != Behavior.HIDE) {
+            int side = L.sideOf(mob.getX(), mob.getZ());
+            double depth = L.wallDepth(mob.getX(), mob.getZ());
+            if (depth > -4 || mob.horizontalCollision) {
+                mob.getNavigation().stop();
+                mob.setBehavior(Behavior.HIDE);
+            } else if (mob.getNavigation().isDone() || mob.tickCount % 30 == 0) {
+                double x = L.faceX(side, mob.getZ()) - side * 2.5;
+                mob.getNavigation().moveTo(x, mob.getY(), mob.getZ(), 0.75);
+            }
+            return;
+        }
+        mob.getNavigation().stop();
+        if (--modeTimer <= 0) {
+            hiding = false;
+            retreating = true;
+            mob.setBehavior(Behavior.CLIMB);
+        }
     }
 
     private void investigateTick() {
