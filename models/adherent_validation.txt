@@ -1,0 +1,9 @@
+adherent.bbmodel: 24 bones, 49 meshes, 1474 vertices, 1422 faces, texture 512x512, 5.0 texels/px
+rest pose size (blocks): width 1.47, height 1.74 (shoulder top 1.73), length 3.27
+reared height (blocks): 3.27
+walk     contact height error <= 0.241 px, slip per 1/240 s <= 0.0114 px (interpolated, sampled at 240 Hz)
+run      contact height error <= 0.627 px, slip per 1/240 s <= 0.0780 px (interpolated, sampled at 240 Hz)
+climb    contact height error <= 0.188 px, slip per 1/240 s <= 0.0124 px (interpolated, sampled at 240 Hz)
+cling    contact height error <= 0.114 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz)
+idle     contact height error <= 0.034 px, slip per 1/240 s <= 0.0002 px (interpolated, sampled at 240 Hz)
+rear     contact height error <= 0.138 px, slip per 1/240 s <= 0.0005 px (interpolated, sampled at 240 Hz)

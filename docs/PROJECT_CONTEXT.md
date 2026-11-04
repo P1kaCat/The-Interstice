@@ -77,43 +77,44 @@ loads into it, which also proved the dimension appears in pre-existing worlds.
   sync), `EfxProcessor` (OpenAL EFX reverb + occlusion low-pass, via mixin on `Channel.play`; disables
   itself if unsupported), `VoicePlayer` (listener-relative whisper + optional subtitle).
 
-## The creature (current state — in progress)
+## The creature (v4, organic skinned mesh)
 
-Pipeline: **`models/adherent.bbmodel` is the source of truth**.
+Full description, files and regeneration commands: `docs/CREATURE.md`. Brief: `docs/MONSTER_REDESIGN_PROMPT_FR.md`,
+references `docs/monster-references/`. The cube-built v3 is archived (git tag `adherent-v3-cubes`,
+`models/archive/adherent_v3_cubes.bbmodel`, `tools/archive/bbmodel_cubes/`, `docs/archive_BLOCKBENCH_cubes.md`).
 
 ```
-tools/bbmodel/design_adherent.py  -> models/adherent.bbmodel (+ textures/entity/adherent*.png)
-tools/bbmodel/bbmodel_to_java.py  -> AdherentGeometry.java + AdherentAnimations.java (generated)
+tools/creature/design_adherent.py  -> models/adherent.bbmodel (editable source, Blockbench Generic format)
+                                      + models/adherent_validation.txt
+tools/creature/export_adherent.py  -> assets/interstice/models/entity/adherent.json + textures/entity/adherent.png
+tools/creature/make_gifs.py        -> docs/creature/*.gif, v*.png (from the dev autotest captures)
 ```
 
-- Blockbench's own Java export targets Yarn names; the converter emits Mojang-mapped code. Coordinate
-  mapping Blockbench → MC model space: x mirrored, y = 24 − y, rotations (−x, −y, +z), animation
-  positions (−x, −y, z).
-- v3 design (from scratch): starved human figure on all fours, arms with an extra elbow splayed like a
-  spider/mantis, grasshopper legs, narrow eyeless lipless skull, jaw split down the middle opening
-  sideways. 21 bones, ~155 cubes, 128×128 skin. Render scale 1.6 (`AdherentAnimator.SCALE`), hitbox 1.3×2.4.
-- 9 keyframed animations (idle, walk, run, rear, screech, jaws, listen, fall, recover), played with the
-  vanilla `KeyframeAnimations` system; `AdherentAnimator` crossfades base layers by behaviour and adds
-  overlays; walk/run time is driven by distance travelled.
-- The generator plants the rest pose automatically (lowers the body until claws touch y=24, bisects shin
-  angles for the soles).
+- 24 bones (hips, spine, chest, neck, head, jaw, shoulder/arm/fore/hand/fingers x2, thigh/shin/foot/toes x2),
+  49 lofted meshes, 1474 vertices; LOD0 2296 triangles, LOD1 (vertex clustering, horde mid-distance) 1216.
+  512x512 painted skin. Sizes (blocks): length 3.27, shoulder 1.73, width 1.47, reared 3.27. Hitbox 1.4x1.8.
+- Rendering: CPU linear blend skinning (`SkinnedMeshPose`, up to 3 bones per vertex, joint weights computed
+  by the exporter) into the vanilla entity vertex consumer (`AdherentMeshModel` inside the vanilla
+  `MobRenderer`). No GeckoLib, no glTF loader; Veil is not involved in the creature mesh.
+- 10 clips: idle, observe, walk, run, climb, cling, rear, threat, fall, recover. Contacts are IK-solved in
+  the generator and validated between keys at 240 Hz with the runtime interpolation (walk 0.24 px, run
+  0.63 px, climb 0.19 px worst height error). Walk/run/climb play by distance travelled (`cycleBlocks`).
+- Generator convention: looping clips are written over a 0..1 phase, one-shot clips (observe, rear,
+  threat, recover) in seconds. (Fixed 2026-11-04: one-shot clips used to receive the 0..1 phase, so
+  recover never stood back up and threat stopped at 83 % of the jaw opening.)
+- Validation captures: `echo model > run/interstice_autotest.flag`, then
+  `./gradlew runClient --args="--username Explorer --quickPlaySingleplayer autotest"` (world `autotest`,
+  superflat), then `python -I tools/creature/make_gifs.py`. The autotest logs subject state, FPS and
+  skinning cost at each capture.
 
-- **Ground contact is baked into the keyframes** (`ground()` in the generator): for every sampled
-  keyframe of idle, walk, run and rear, each declared limb's joints are re-solved through forward
-  kinematics (scipy Nelder-Mead; arm: elbow+fore+upper arm, leg: leg+shin+foot) so the claw tip / sole sits
-  on y=24 in stance and lifts in swing. Worst error: idle 0.00, walk 0.02, run 0.03, rear 0.00 px.
-  Catmull-Rom interpolation between keyframes can deviate slightly.
-- Verified by screenshots (2026-11-04): spider-splayed front, planted walk, planted rear with cocked head.
-
-**Next steps:**
-1. Final skin from PixelLab (batch C in `docs/PIXELLAB_ASSETS.md`; the UV layout changed with v3:
-   regenerate a UV template from the current `.bbmodel` before requesting it).
-2. Confirm the split-jaw opening direction during the screech/hunt in game (not captured mid-scream yet).
-3. Watch the creature moving in real time (only still frames were checked).
+**Known gaps:** Blockbench's own animation preview of the file is unverified (Blockbench is not driven from
+this environment); contacts are not validated across crossfades, turns or slopes; the texture is a single
+base colour map (no normal/roughness); limbs are leaner and less muscled than the reference images; worlds
+that contain the dimension trigger vanilla's "experimental settings" warning on load.
 
 ## Verification status
 
-- `./gradlew runGametest`: 10/10 passing (last run 2026-11-04, after the v3 creature) (world gen at several distances, bridge continuity across chunk
+- `./gradlew runGametest`: 10/10 passing (last run 2026-11-04, after the v4 creature, hitbox 1.4x1.8) (world gen at several distances, bridge continuity across chunk
   borders, safe spawn, wall clinging, fall → survive → recover, searcher hunts a lit visible player, hidden
   crouched player behind cover stays undetected, Stampede phase transition, real runners + falls, all
   director actions). Test-only mixin creates the dimension in the GameTest server (it ignores datapack dims).
@@ -136,7 +137,8 @@ re-synthesised as whispers with an LPC noise vocoder; replace with a real record
 - Minecraft EULA was **not** accepted (`build/gametest/eula.txt` stays `false`); headless testing uses
   Fabric's GameTest path.
 - Blockbench MCP (`jasonjgardner/blockbench-mcp-plugin`) is not registered: auto mode blocks installing
-  code from GitHub. Commands to run manually are in `docs/BLOCKBENCH.md`.
+  code from GitHub. Old manual commands: `docs/archive_BLOCKBENCH_cubes.md`.
+- The dev autotest `next()` sets `stepStart = ticks + 1`, so `t == 0` really runs on a step's first tick.
 - 379 skills from `P1kaCat/SkillsMachine` were installed into `~/.claude/skills` (Codex-oriented; ~26k
   tokens of descriptions per session). None covers Blockbench; the Blender skills (`creature-artist`,
   `body-horror-style`, `animation`, `rigging`) guided the creature design.

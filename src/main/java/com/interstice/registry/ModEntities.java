@@ -15,8 +15,8 @@ import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 public final class ModEntities {
     public static final EntityType<AdherentEntity> ADHERENT = Registry.register(BuiltInRegistries.ENTITY_TYPE, Interstice.id("adherent"),
             EntityType.Builder.of(AdherentEntity::new, MobCategory.MONSTER)
-                    .sized(1.3f, 2.4f)
-                    .eyeHeight(2.0f)
+                    .sized(1.4f, 1.8f)
+                    .eyeHeight(1.3f)
                     .clientTrackingRange(12)
                     .updateInterval(2)
                     .build("adherent"));

@@ -46,7 +46,7 @@ import org.joml.Vector3f;
 public final class HordeRenderer {
     public static final ResourceLocation SPRITE = Interstice.id("textures/entity/horde_sprite.png");
 
-    private static AdherentModel model;
+    private static AdherentMeshModel model;
     private static long hordeKey = Long.MIN_VALUE;
     /** Z reference the pack is built around (the listener's position when the horde began). */
     public static double refZ;
@@ -55,8 +55,8 @@ public final class HordeRenderer {
 
     private HordeRenderer() {}
 
-    private static AdherentModel model() {
-        if (model == null) model = new AdherentModel(Minecraft.getInstance().getEntityModels().bakeLayer(AdherentModel.LAYER));
+    private static AdherentMeshModel model() {
+        if (model == null) model = new AdherentMeshModel();
         return model;
     }
 
@@ -93,7 +93,7 @@ public final class HordeRenderer {
                 VertexConsumer mid = buffers.getBuffer(RenderType.entityCutoutNoCull(AdherentRenderer.TEXTURE));
                 for (int i = 0; i < midCount; i++) {
                     int o = i * MID_STRIDE;
-                    long ms = (long) ((midQ[o + 6] / (2 * Math.PI)) * AdherentAnimations.RUN.lengthInSeconds() * 1000 + midQ[o + 7] * 700);
+                    long ms = (long) ((midQ[o + 6] / (2 * Math.PI)) * 2600 + midQ[o + 7] * 700);
                     drawModel(ps, mid, (int) midQ[o], (float) midQ[o + 1], midQ[o + 2], midQ[o + 3], midQ[o + 4], (int) midQ[o + 5], (float) midQ[o + 8], ms);
                 }
                 buffers.endBatch(RenderType.entityCutoutNoCull(AdherentRenderer.TEXTURE));
@@ -228,22 +228,21 @@ public final class HordeRenderer {
     }
 
     private static void drawModel(PoseStack ps, VertexConsumer vc, int side, float heading, double dx, double dy, double dz, int light, float tumble, long ms) {
-        AdherentModel m = model();
-        m.poseRun(Math.max(0, ms));
+        AdherentMeshModel m = model();
         ps.pushPose();
         ps.translate(dx, dy, dz);
         Vector3f up = new Vector3f(-side, 0, 0);
         Vector3f fwd = new Vector3f(0, Mth.sin(heading), Mth.cos(heading));
         Vector3f back = new Vector3f(fwd).negate();
         Vector3f right = new Vector3f(up).cross(back);
-        ps.translate(side * 0.42f, 0.9f, 0);
+        ps.translate(side * 0.7f, 0.9f, 0);
         ps.mulPose(new Quaternionf().setFromNormalized(new Matrix3f(right, up, back)));
         if (tumble != 0) ps.mulPose(new Quaternionf().rotateX(tumble));
         ps.translate(0, -0.15f, 0);
         ps.scale(AdherentAnimator.SCALE, AdherentAnimator.SCALE, AdherentAnimator.SCALE);
         ps.scale(-1, -1, 1);
         ps.translate(0, -1.501f, 0);
-        m.renderToBuffer(ps, vc, light, OverlayTexture.NO_OVERLAY);
+        m.renderHorde(ps, vc, light, OverlayTexture.NO_OVERLAY, Math.max(0, ms) / 1000f);
         ps.popPose();
     }
 }

@@ -115,7 +115,8 @@ com.interstice.client         (separate Loom source set: never on the dedicated-
 ├─ render/veil/               VeilIntegration (post pipelines, uniforms, stage hooks), LampLightManager
 ├─ render/atmosphere/         AtmosphereController, sky renderer (wall continuation), dimension effects
 ├─ render/chains/             ChainField (placement), ChainMesh (procedural LOD meshes), ChainRenderer
-├─ render/creatures/          AdherentModel, AdherentAnimator, AdherentRenderer, HordeRenderer
+├─ render/creatures/          AdherentMeshModel, AdherentAnimator, AdherentRenderer, HordeRenderer,
+│                             mesh/ (SkinnedMeshAsset, SkinnedMeshPose: CPU-skinned organic mesh)
 ├─ audio/                     AudioDirector, LoopSound, VoicePlayer, EfxProcessor (OpenAL EFX)
 ├─ effects/                   dust particles, budgeted dust spawner, Veil quake camera shake
 ├─ ui/                        settings screen, HUD (whisper subtitle, diagnostics)
@@ -154,6 +155,10 @@ bloom, grading); Veil dynamic lights attach to fixtures (26 active / 253 known o
 grading during the Stampede; horde instances are simulated and drawn; real creatures render and animate; the
 whisper subtitle appears; EFX processing is active; diagnostics overlay works. About 119 FPS was observed
 on HIGH in a small dev window on the development machine. That is one observation, not a benchmark.
+
+**Creature (v4 organic mesh):** compiled, server behaviour covered by the GameTests above, observed in game in
+still views and in motion (walk, run, rear, fall/recover, wall climb). Proofs, measurements and remaining
+defects: [docs/CREATURE.md](docs/CREATURE.md), captures in `docs/creature/`.
 
 **Not verified:** the settings screen interaction (it is code-complete), audio as actually heard, multiplayer
 with more than one real client, dedicated server with real clients, Sodium/Iris compatibility (untested;

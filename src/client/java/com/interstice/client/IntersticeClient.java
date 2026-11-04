@@ -11,7 +11,6 @@ import com.interstice.client.effects.QuakeShake;
 import com.interstice.client.render.atmosphere.AtmosphereController;
 import com.interstice.client.render.atmosphere.IntersticeDimensionEffects;
 import com.interstice.client.render.atmosphere.IntersticeSkyRenderer;
-import com.interstice.client.render.creatures.AdherentModel;
 import com.interstice.client.render.creatures.AdherentRenderer;
 import com.interstice.client.render.veil.LampLightManager;
 import com.interstice.client.render.veil.VeilIntegration;
@@ -57,7 +56,18 @@ public class IntersticeClient implements ClientModInitializer {
         }
         ClientConfig.load();
 
-        EntityModelLayerRegistry.registerModelLayer(AdherentModel.LAYER, AdherentModel::createLayer);
+        net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.CLIENT_RESOURCES)
+                .registerReloadListener(new net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener() {
+                    @Override
+                    public net.minecraft.resources.ResourceLocation getFabricId() {
+                        return Interstice.id("adherent_mesh");
+                    }
+
+                    @Override
+                    public void onResourceManagerReload(net.minecraft.server.packs.resources.ResourceManager manager) {
+                        com.interstice.client.render.creatures.mesh.SkinnedMeshAsset.invalidate();
+                    }
+                });
         EntityRendererRegistry.register(ModEntities.ADHERENT, AdherentRenderer::new);
         ParticleFactoryRegistry.getInstance().register(ModEntities.FALLING_DUST, DustParticle.DustProvider::new);
         ParticleFactoryRegistry.getInstance().register(ModEntities.MOTE, DustParticle.MoteProvider::new);

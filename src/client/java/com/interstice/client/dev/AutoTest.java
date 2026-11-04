@@ -42,6 +42,15 @@ public final class AutoTest {
     }
 
     private static void shot(Minecraft mc, String name) {
+        if (!name.startsWith("seq_") || name.endsWith("_000")) {
+            int client = 0;
+            String where = "";
+            if (mc.level != null) for (var e : mc.level.entitiesForRendering()) if (e instanceof AdherentEntity a) { client++; where = a.position() + " " + a.mode() + " " + a.behavior(); }
+            Interstice.LOG.info("[autotest] {}: subject={} alive={} pos={} | client adherents={} {} | fps {} | mesh skinning {} ms/s, {} vertices/s", name,
+                    subject != null, subject != null && subject.isAlive(), subject != null ? subject.position() : null, client, where, mc.getFps(),
+                    String.format("%.2f", com.interstice.client.render.creatures.mesh.SkinnedMeshPose.nanosLastSecond / 1e6),
+                    com.interstice.client.render.creatures.mesh.SkinnedMeshPose.verticesLastSecond);
+        }
         Screenshot.grab(mc.gameDirectory, "interstice_" + name + ".png", mc.getMainRenderTarget(), msg -> Interstice.LOG.info("[autotest] {}", msg.getString()));
     }
 
@@ -51,7 +60,7 @@ public final class AutoTest {
 
     private static void next() {
         step++;
-        stepStart = ticks;
+        stepStart = ticks + 1;
         Interstice.LOG.info("[autotest] step {}", step);
     }
 
@@ -69,85 +78,166 @@ public final class AutoTest {
         return modelMode;
     }
 
-    /** Close-up turntable of the creature under light: front, side, three-quarter, hunting, on the wall. */
+    /**
+     * Creature validation sequence. Neutral, daylit superflat overworld with an armor stand as a
+     * player-size reference: still views (front, profile, three-quarter), then frame sequences for
+     * animated GIFs (walk, run, rear + threat, fall + recover). Then the Interstice: on a wall
+     * (cling, climb) and in the dimension light and fog.
+     */
+    private static int frame;
+
+    private static ServerPlayer sp(MinecraftServer s) {
+        return s.getPlayerList().getPlayers().get(0);
+    }
+
+    private static void posture(AdherentEntity e, float yaw, AdherentEntity.Behavior b) {
+        e.setYRot(yaw);
+        e.yBodyRot = yaw;
+        e.yBodyRotO = yaw;
+        e.setYHeadRot(yaw);
+        if (e.behavior() != b) e.setBehavior(b);
+    }
+
+    private static void seq(Minecraft mc, String name, int every) {
+        if ((ticks - stepStart) % every == 0) shot(mc, "seq_" + name + "_" + String.format("%03d", frame++));
+    }
+
     private static void modelTick(Minecraft mc) {
         var p = mc.player;
         mc.options.hideGui = true;
+        int t = ticks - stepStart;
         switch (step) {
             case 0 -> {
                 if (after(60)) {
                     server(mc, s -> {
-                        IntersticeServer is = IntersticeServer.get();
-                        is.director.setPaused(true);
-                        ServerPlayer sp = s.getPlayerList().getPlayers().get(0);
-                        IntersticeTeleport.enter(sp);
-                    });
-                    next();
-                }
-            }
-            case 1 -> {
-                if (after(160) && ClientState.inInterstice) {
-                    server(mc, s -> {
-                        IntersticeServer is = IntersticeServer.get();
-                        var level = is.level();
-                        ServerPlayer sp = s.getPlayerList().getPlayers().get(0);
-                        sp.teleportTo(level, sp.getX(), sp.getY(), sp.getZ(), 0f, 12f);
-                        net.minecraft.core.BlockPos base = sp.blockPosition();
-                        for (int[] o : new int[][]{{-3, 3, 2}, {3, 3, 2}, {0, 4, 5}, {-2, 0, 0}, {2, 0, 0}}) {
-                            level.setBlockAndUpdate(base.offset(o[0], o[1], o[2]), com.interstice.registry.ModBlocks.INDUSTRIAL_LAMP.defaultBlockState());
-                        }
-                        subject = is.population.createGround(level, sp.position().add(0, 0, 5.5));
+                        var level = s.overworld();
+                        level.setDayTime(6000);
+                        s.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_DAYLIGHT).set(false, s);
+                        s.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_WEATHER_CYCLE).set(false, s);
+                        level.setWeatherParameters(6000, 0, false, false);
+                        ServerPlayer pl = sp(s);
+                        // the save may have been left in the Interstice: use the overworld ground, not the player's y
+                        double gy = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, 0, 6);
+                        pl.removeEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION);
+                        pl.teleportTo(level, 0.5, gy, 0.5, 0f, 10f);
+                        subject = IntersticeServer.get().population.createGround(level, new Vec3(0.5, gy, 6.5));
                         if (subject != null) {
                             subject.setNoAi(true);
-                            subject.setBehavior(AdherentEntity.Behavior.IDLE);
-                            subject.setYRot(180f);
-                            subject.yBodyRot = 180f;
-                            subject.setYHeadRot(180f);
+                            posture(subject, 180f, AdherentEntity.Behavior.IDLE);
+                        }
+                        var stand = net.minecraft.world.entity.EntityType.ARMOR_STAND.create(level);
+                        if (stand != null) {
+                            stand.moveTo(3.2, gy, 6.5, 180f, 0f);
+                            level.addFreshEntity(stand);
                         }
                     });
                     next();
                 }
             }
-            case 2 -> { p.setYRot(0); p.setXRot(14); if (after(60)) { shot(mc, "m1_idle_front"); next(); } }
+            case 1 -> { p.setYRot(0); p.setXRot(12); if (after(80)) { shot(mc, "v1_front"); next(); } }
+            case 2 -> {
+                server(mc, s -> { if (subject != null) posture(subject, 90f, AdherentEntity.Behavior.IDLE); });
+                if (after(30)) { shot(mc, "v2_profile"); next(); }
+            }
             case 3 -> {
-                // side-on creeping walk: three frames of the gait
-                walk(mc, 90f, AdherentEntity.Behavior.CRAWL, 0.07);
-                if (after(30) && ticks - stepStart == 30) shot(mc, "m2a_walk");
-                if (after(37) && ticks - stepStart == 37) shot(mc, "m2b_walk");
-                if (after(44)) { shot(mc, "m2c_walk"); next(); }
+                server(mc, s -> { if (subject != null) posture(subject, 140f, AdherentEntity.Behavior.IDLE); });
+                if (after(30)) { shot(mc, "v3_three_quarter"); next(); }
             }
             case 4 -> {
-                walk(mc, 120f, AdherentEntity.Behavior.HUNT, 0.22);
-                if (after(16) && ticks - stepStart == 16) shot(mc, "m3a_hunt");
-                if (after(20)) { shot(mc, "m3b_hunt"); next(); }
+                if (t == 0) frame = 0;
+                stepMove(mc, 90f, AdherentEntity.Behavior.CRAWL, 0.045, t == 0);
+                if (t >= 10) seq(mc, "walk", 2);
+                if (t >= 10 + 88) next();
             }
             case 5 -> {
-                server(mc, s -> {
-                    if (subject == null) return;
-                    ServerPlayer sp = s.getPlayerList().getPlayers().get(0);
-                    subject.setPos(sp.getX(), sp.getY(), sp.getZ() + 4.5);
-                    subject.setYRot(180f); subject.yBodyRot = 180f; subject.setYHeadRot(180f);
-                    subject.setLookTarget(sp.getEyePosition());
-                    subject.setBehavior(AdherentEntity.Behavior.STARE);
-                });
-                p.setYRot(0); p.setXRot(-8);
-                if (after(60)) { shot(mc, "m4_rearing_stare"); next(); }
+                if (t == 0) frame = 0;
+                stepMove(mc, 90f, AdherentEntity.Behavior.RUN, 0.2, t == 0);
+                if (t >= 6) seq(mc, "run", 1);
+                if (t >= 6 + 36) next();
             }
             case 6 -> {
+                if (t == 0) {
+                    frame = 0;
+                    server(mc, s -> {
+                        if (subject == null) return;
+                        subject.setPos(0.5, sp(s).getY(), 8.0);
+                        posture(subject, 90f, AdherentEntity.Behavior.IDLE);
+                    });
+                }
+                if (t == 20) server(mc, s -> { if (subject != null) posture(subject, 90f, AdherentEntity.Behavior.HUNT); });
+                home(mc, -6);
+                if (t >= 18) seq(mc, "rear", 2);
+                if (t >= 18 + 40) next();
+            }
+            case 7 -> {
+                if (t == 0) {
+                    frame = 0;
+                    server(mc, s -> {
+                        if (subject == null) return;
+                        subject.setPos(0.5, sp(s).getY(), 7.0);
+                        posture(subject, 140f, AdherentEntity.Behavior.FALL);
+                    });
+                }
+                if (t == 24) server(mc, s -> { if (subject != null) posture(subject, 140f, AdherentEntity.Behavior.RECOVER); });
+                home(mc, 12);
+                if (t >= 4) seq(mc, "fall_recover", 2);
+                if (t >= 4 + 96) next();
+            }
+            case 8 -> {
+                if (t == 0) {
+                    frame = 0;
+                    server(mc, s -> {
+                        IntersticeServer is = IntersticeServer.get();
+                        is.director.setPaused(true);
+                        if (subject != null) subject.discard();
+                        IntersticeTeleport.enter(sp(s));
+                    });
+                }
+                if (t == 160) server(mc, s -> {
+                    IntersticeServer is = IntersticeServer.get();
+                    ServerPlayer pl = sp(s);
+                    int side = is.layout().sideOf(pl.getX(), pl.getZ());
+                    double faceX = is.layout().faceX(side, pl.getZ());
+                    pl.teleportTo(is.level(), faceX - side * 8, pl.getY(), pl.getZ(), side < 0 ? 90f : -90f, -22f);
+                    pl.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.NIGHT_VISION, 20 * 60, 0, false, false));
+                    subject = is.population.create(is.level(), side, pl.getY() + 4.5, pl.getZ() - 2.0);
+                    if (subject != null) {
+                        subject.setNoAi(true);
+                        subject.setBehavior(AdherentEntity.Behavior.IDLE);
+                    }
+                });
+                if (t == 230) shot(mc, "v4_wall_cling");
+                if (t > 232) next();
+            }
+            case 9 -> {
+                if (t == 0) frame = 0;
                 server(mc, s -> {
+                    if (subject == null) return;
+                    if (subject.behavior() != AdherentEntity.Behavior.CRAWL) subject.setBehavior(AdherentEntity.Behavior.CRAWL);
+                    subject.setPos(subject.getX(), subject.getY() + 0.034, subject.getZ() + 0.008);
+                });
+                p.setXRot(-30);
+                if (t >= 8) seq(mc, "climb", 2);
+                if (t >= 8 + 80) next();
+            }
+            case 10 -> {
+                if (t == 0) server(mc, s -> {
                     IntersticeServer is = IntersticeServer.get();
                     if (subject != null) subject.discard();
-                    ServerPlayer sp = s.getPlayerList().getPlayers().get(0);
-                    int side = is.layout().sideOf(sp.getX(), sp.getZ());
-                    double faceX = is.layout().faceX(side, sp.getZ());
-                    sp.teleportTo(is.level(), faceX - side * 7, sp.getY() + 0, sp.getZ(), side < 0 ? 90f : -90f, -20f);
-                    AdherentEntity w = is.population.create(is.level(), side, sp.getY() + 3.5, sp.getZ());
-                    if (w != null) { w.setNoAi(true); w.setBehavior(AdherentEntity.Behavior.IDLE); }
+                    ServerPlayer pl = sp(s);
+                    pl.removeEffect(net.minecraft.world.effect.MobEffects.NIGHT_VISION);
+                    Vec3 spot = IntersticeTeleport.findSafeSpot(is.level(), is.layout(), 0);
+                    pl.teleportTo(is.level(), spot.x, spot.y, spot.z, 0f, 8f);
+                    subject = is.population.createGround(is.level(), spot.add(0, 0, 6.5));
+                    if (subject != null) {
+                        subject.setNoAi(true);
+                        posture(subject, 150f, AdherentEntity.Behavior.IDLE);
+                    }
                 });
-                next();
+                if (t == 120) shot(mc, "v5_in_dimension");
+                if (t > 124) next();
             }
-            case 7 -> { if (after(80)) { shot(mc, "m5_on_wall"); next(); } }
-            case 8 -> {
+            case 11 -> {
                 if (after(30)) {
                     try { Files.deleteIfExists(Path.of(mc.gameDirectory.getPath(), "interstice_autotest.flag")); } catch (Exception ignored) {}
                     mc.stop();
@@ -158,26 +248,55 @@ public final class AutoTest {
         }
     }
 
-    /** Moves the AI-less subject along its facing so the client animator sees real travel. */
-    private static void walk(Minecraft mc, float yaw, AdherentEntity.Behavior behavior, double speed) {
+    /** Moves the AI-less subject along its facing so the animator sees real travel. */
+    private static void stepMove(Minecraft mc, float yaw, AdherentEntity.Behavior behavior, double speed, boolean reset) {
         server(mc, s -> {
             if (subject == null) return;
-            if (subject.behavior() != behavior) {
-                ServerPlayer sp = s.getPlayerList().getPlayers().get(0);
-                double r = Math.toRadians(yaw);
-                // start beside the camera's line of sight so the walk crosses the frame
-                subject.setPos(sp.getX() + Math.sin(r) * 3, sp.getY(), sp.getZ() + 5.5 - Math.cos(r) * 3);
-                subject.setBehavior(behavior);
-            }
-            subject.setYRot(yaw); subject.yBodyRot = yaw; subject.setYHeadRot(yaw);
             double r = Math.toRadians(yaw);
+            if (reset) subject.setPos(0.5 + Math.sin(r) * 4.5, sp(s).getY(), 7.5);
+            posture(subject, yaw, behavior);
             subject.setPos(subject.getX() - Math.sin(r) * speed, subject.getY(), subject.getZ() + Math.cos(r) * speed);
         });
+        track(mc, 7.0);
         mc.player.setYRot(0);
         mc.player.setXRot(12);
     }
 
+    /** Keeps the camera beside the subject (same interpolation as the subject, so it stays framed). */
+    private static void track(Minecraft mc, double distance) {
+        if (subject == null || mc.level == null) return;
+        var e = mc.level.getEntity(subject.getId());
+        if (e == null) return;
+        var p = mc.player;
+        p.setPos(e.getX(), p.getY(), e.getZ() - distance);
+        p.xo = p.xOld = e.xo;
+        p.zo = p.zOld = e.zo - distance;
+        p.setDeltaMovement(Vec3.ZERO);
+    }
+
+    /** Puts the camera back at the reference spot facing the subject area. */
+    private static void home(Minecraft mc, float pitch) {
+        var p = mc.player;
+        p.setPos(0.5, p.getY(), 0.5);
+        p.xo = p.xOld = 0.5;
+        p.zo = p.zOld = 0.5;
+        p.setDeltaMovement(Vec3.ZERO);
+        p.setYRot(0);
+        p.setXRot(pitch);
+    }
+
     public static void tick(Minecraft mc) {
+        if (enabled(mc) && mc.screen != null) {
+            // unattended run: accept the vanilla "experimental settings" warning for the test world
+            for (var child : mc.screen.children()) {
+                if (child instanceof net.minecraft.client.gui.components.Button button
+                        && button.getMessage().getString().toLowerCase().contains("know what")) {
+                    button.onPress();
+                    Interstice.LOG.info("[autotest] dismissed the experimental-settings warning");
+                    return;
+                }
+            }
+        }
         if (!enabled(mc) || mc.player == null || mc.level == null || mc.getSingleplayerServer() == null) return;
         ticks++;
         if (modelMode(mc)) {
