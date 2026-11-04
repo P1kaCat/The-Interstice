@@ -59,6 +59,8 @@ public final class SkinnedMeshAsset {
         public final boolean loop;
         /** Blocks travelled per cycle for distance-driven locomotion (0 for time-driven clips). */
         public final float cycleBlocks;
+        /** Degrees of body yaw per cycle for rotation-driven clips (turning in place; 0 otherwise). */
+        public final float cycleDegrees;
         public final Channel[] channels;
 
         Clip(String name, JsonObject o) {
@@ -66,6 +68,7 @@ public final class SkinnedMeshAsset {
             length = o.get("length").getAsFloat();
             loop = o.get("loop").getAsBoolean();
             cycleBlocks = o.has("cycleBlocks") ? o.get("cycleBlocks").getAsFloat() : 0f;
+            cycleDegrees = o.has("cycleDegrees") ? o.get("cycleDegrees").getAsFloat() : 0f;
             JsonArray a = o.getAsJsonArray("channels");
             channels = new Channel[a.size()];
             for (int i = 0; i < channels.length; i++) channels[i] = new Channel(a.get(i).getAsJsonObject());

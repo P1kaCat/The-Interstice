@@ -843,6 +843,52 @@ public class IntersticeGameTests implements FabricGameTest {
         });
     }
 
+    @GameTest(template = EMPTY_STRUCTURE, batch = "species12", timeoutTicks = 300)
+    public void hollowIsAgitatedByMovementNextToIt(GameTestHelper h) {
+        IntersticeServer s = server(h);
+        ServerLevel level = s.level();
+        IntersticeLayout L = s.layout();
+        Vec3 spot = IntersticeTeleport.findSafeSpot(level, L, -2900);
+        ServerPlayer p = survivalPlayer(h);
+        p.teleportTo(level, spot.x, spot.y, spot.z, 0, 0);
+        int side = -L.sideOf(spot.x, spot.z);
+        double y0 = IntersticeLayout.FLOOR_Y + 30;
+        for (int k = -2; k <= 2; k++) load(level, L, side, spot.z + k * 16);
+        // pair A: a hollow with an adherent crawling past it; pair B (20 blocks away): the adherent stays still
+        AdherentEntity[] e = new AdherentEntity[4];
+        double[] start = new double[2];
+        h.runAfterDelay(20, () -> {
+            e[0] = s.population.create(level, Species.HOLLOW, side, y0, spot.z - 10);
+            e[1] = s.population.create(level, Species.ADHERENT, side, y0 + 3, spot.z - 13);
+            e[2] = s.population.create(level, Species.HOLLOW, side, y0, spot.z + 10);
+            e[3] = s.population.create(level, Species.ADHERENT, side, y0 + 3, spot.z + 7);
+            for (int k = 0; k < 4; k++) {
+                check(e[k] != null, "could not attach creature " + k);
+                e[k].setBehaviorTimer(1_000_000);
+            }
+            e[1].beginCrawl(y0 + 3, spot.z - 4, 0.08);
+            start[0] = e[0].getZ();
+            start[1] = e[2].getZ();
+        });
+        boolean[] agitated = {false, false};
+        h.onEachTick(() -> {
+            if (e[0] == null) return;
+            for (int k = 0; k < 2; k++) {
+                AdherentEntity hollow = e[k * 2];
+                agitated[k] |= hollow.behavior() == AdherentEntity.Behavior.FLEE || hollow.mode() == AdherentEntity.Mode.FALLING;
+            }
+        });
+        h.runAfterDelay(200, () -> {
+            check(agitated[0], "the hollow ignored the crawler passing next to it (" + e[0].behavior() + ")");
+            check(!agitated[1], "the hollow next to a motionless neighbour startled");
+            System.out.printf("[interstice-test] hollow agitated by a crawling neighbour (%s), the one beside a still neighbour stayed %s%n",
+                    e[0].mode() == AdherentEntity.Mode.FALLING ? "lost its grip" : "fled", e[2].behavior());
+            for (AdherentEntity x : e) x.discard();
+            removePlayer(p);
+            h.succeed();
+        });
+    }
+
     private static double wallDist(AdherentEntity a, AdherentEntity b) {
         return Math.hypot(a.getY() - b.getY(), a.getZ() - b.getZ());
     }

@@ -10,3 +10,4 @@ idle     contact height error <= 0.005 px, slip per 1/240 s <= 0.0000 px (interp
 observe  contact height error <= 0.000 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.00 arm_r 0.00 leg_l 0.00 leg_r 0.00]
 search   contact height error <= 0.038 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.04 arm_r 0.04 leg_l 0.00 leg_r 0.00]
 rear     contact height error <= 0.089 px, slip per 1/240 s <= 0.0004 px (interpolated, sampled at 240 Hz) [leg_l 0.09 leg_r 0.09]
+turn     planted contact error <= 0.083 px height, 0.088 px on the ground (22.9 deg per cycle, interpolated, 240 Hz) [arm_r 0.05 leg_l 0.08 leg_r 0.09 arm_l 0.06]

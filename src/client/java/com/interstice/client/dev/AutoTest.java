@@ -68,6 +68,8 @@ public final class AutoTest {
     private static Boolean modelMode;
     /** Flag content "model bench": only the benchmarks, with vsync off and no frame cap (restored at the end). */
     private static boolean benchOnly;
+    /** Flag content "model turn": only the per-species turn-in-place sequences. */
+    private static boolean turnOnly;
     private static boolean savedVsync;
     private static int savedFps;
     private static AdherentEntity subject;
@@ -78,6 +80,7 @@ public final class AutoTest {
                 String flag = Files.readString(mc.gameDirectory.toPath().resolve("interstice_autotest.flag"));
                 modelMode = flag.contains("model");
                 benchOnly = flag.contains("bench");
+                turnOnly = flag.contains("turn");
             } catch (Exception e) {
                 modelMode = false;
             }
@@ -175,6 +178,11 @@ public final class AutoTest {
                 mc.getWindow().setFramerateLimit(260);
             }
             if (step == 5) server(mc, s -> sp(s).setGameMode(net.minecraft.world.level.GameType.CREATIVE));
+            next();
+            return;
+        }
+        if (turnOnly && (step == 1 || (step >= 3 && step < 8))) {   // "model turn": only the turn sequences
+            if (step >= 3) step = 7;
             next();
             return;
         }
@@ -368,7 +376,10 @@ public final class AutoTest {
                     }
                 });
                 place(mc, 0.5, 8.0 - d, 0f, 8f);
-                if (t == 28) {
+                if (turnOnly && t == 2) {
+                    phase = 7;
+                    stepStart = ticks + 1;
+                } else if (t == 28) {
                     shot(mc, id + "_" + views[phase]);
                     nextPhase();
                 }
@@ -398,6 +409,21 @@ public final class AutoTest {
                 place(mc, 0.5, 8.0 - d, 0f, 10f);
                 if (t >= 4) seq(mc, id + "_fall_recover", t - 4, 4);
                 if (t >= 4 + 4 * 36) nextPhase();
+            }
+            case 7 -> {   // turning in place: 90 degrees one way, 60 back, camera at three-quarter
+                if (t == 0) frame = 0;
+                final int tt = t;
+                server(mc, s -> {
+                    if (subject == null) return;
+                    subject.setPos(0.5, groundY, 8.0);
+                    float yaw = 140f + (tt < 70 ? Math.max(0, tt - 10) * 1.5f : 90f - (tt - 70) * 1.5f);
+                    subject.setYRot(yaw);
+                    subject.setYHeadRot(yaw);
+                    if (subject.behavior() != AdherentEntity.Behavior.IDLE) subject.setBehavior(AdherentEntity.Behavior.IDLE);
+                });
+                place(mc, 0.5 - d * 0.55, 8.0 - d * 0.75, -36f, 12f);
+                if (t >= 6) seq(mc, id + "_turn", t - 6, 3);
+                if (t >= 6 + 3 * 36) nextPhase();
             }
             default -> {
                 server(mc, s -> {

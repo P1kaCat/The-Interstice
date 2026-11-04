@@ -122,14 +122,19 @@ LOD), `docs/PERFORMANCE.md` (measurements). Key points for future work:
 - Models: `tools/creature/species_generator.py` (morph of the Adherent template; edit the `SPECIES` table),
   then `python -I tools/creature/export_adherent.py <species>`; `preview_lineup.py` renders a quick offline
   line-up. The Adherent itself still comes from the frozen `design_adherent.py`.
-- Captures: `echo model > run/interstice_autotest.flag` (full: ~850 screenshots, ~4 min), or `model bench`
-  (benchmarks only, uncapped FPS); then `python -I tools/creature/make_gifs.py`.
+- Captures: `echo model > run/interstice_autotest.flag` (full: ~850 screenshots, ~4 min), `model bench`
+  (benchmarks only, uncapped FPS) or `model turn` (turn-in-place sequences only); launch with
+  `--quickPlaySingleplayer autotest` (from PowerShell: the path has spaces); then
+  `python -I tools/creature/make_gifs.py`.
+- The Adherent's turn clip: `python -I tools/creature/species_generator.py adherent` merges it into
+  `models/adherent.bbmodel` (geometry and other clips untouched).
 - Watch out: a bash heredoc containing apostrophes breaks in this environment; write scripts to files.
 
 ## Verification status
 
-- `./gradlew runGametest`: 24/24 passing on 3 consecutive runs (2026-11-04, after the creature family:
-  10 original tests + 14 family tests, including stunned, hider, Burden avoidance and Watcher look-beyond; the three perception tests now allow 1400 ticks because detection by a
+- `./gradlew runGametest`: 25/25 passing (2026-11-04; 24/24 on 3 consecutive runs before the Hollow test was
+  added): 10 original tests + 15 family tests, including stunned, hider, Burden avoidance, Hollow agitation
+  and Watcher look-beyond; the three perception tests now allow 1400 ticks because detection by a
   wandering searcher was observed to take up to ~550 ticks) (world gen at several distances, bridge continuity across chunk
   borders, safe spawn, wall clinging, fall → survive → recover, searcher hunts a lit visible player, hidden
   crouched player behind cover stays undetected, Stampede phase transition, real runners + falls, all

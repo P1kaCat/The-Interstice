@@ -142,7 +142,7 @@ Key design points:
 
 See the delivery report in the session for the full matrix. Summary:
 
-**Implemented and runtime-tested (headless GameTests, `./gradlew runGametest`, 24/24 passing):**
+**Implemented and runtime-tested (headless GameTests, `./gradlew runGametest`, 25/25 passing):**
 custom dimension loading in a server, wall mass / void beyond / floor / bedrock generation at several distances,
 safe arrival spot, bridge continuity across 5 chunk borders, wall creature clinging to the real wall surface,
 fall → survive → RECOVER, ground searcher detecting a lit visible player (→ HUNT), hidden crouched player behind
@@ -155,8 +155,8 @@ of several species; ground dispositions follow species weights; a fleer (Hollow)
 without hunting; an investigator (Watcher) watches without hunting; Clingers hold on while Hollows flee;
 a moving Burden makes the structure vibrate (noise event); a stunned survivor lies still, ignores a lit
 player next to it and wakes as an investigator or a fleer; a hider walks to the foot of a wall, stays still
-and flees when found; smaller species give a Burden room while a Clinger stays; Watchers aim imperfectly
-and sometimes look past the player.
+and flees when found; smaller species give a Burden room while a Clinger stays; a Hollow is agitated by a neighbour moving
+past it; Watchers aim imperfectly and sometimes look past the player.
 
 **Client, verified in a scripted dev-client run (`dev/AutoTest`, screenshots, logs: no errors):** the dimension
 loads into an existing world; all Veil shaders compile; the `interstice:atmosphere` post pipeline runs (fog,

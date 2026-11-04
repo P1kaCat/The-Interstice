@@ -18,11 +18,21 @@ other species from the same anatomical template so the family shares one body pl
 Time convention (do not change): looping clips are written over a 0..1 phase, one-shot clips (observe,
 rear, threat, recover) receive seconds.
 
+Turning in place ("turn"): a looping clip in which the planted hands and feet counter-rotate around the
+support centre while the others step round. Played forwards when the body yaw increases, backwards when
+it decreases; its "cycle_degrees" says how much yaw one cycle covers, so the runtime drives it by the
+rotation actually made (like walk/run by distance).
+
 Space: Blockbench px (16 = 1 block), Y up, ground y = 0, front -Z. Rotations R = Rz * Ry * Rx.
 
 Usage: python -I tools/creature/species_generator.py <species> [<species> ...]   (or "all")
 Writes models/<species>.bbmodel and models/<species>_validation.txt; then export with
 python -I tools/creature/export_adherent.py <species>
+
+python -I tools/creature/species_generator.py adherent
+builds the unmorphed template, checks that its skeleton matches models/adherent.bbmodel, and adds (or
+replaces) only the "turn" clip in that file: the Adherent's geometry, texture and other clips are kept
+as design_adherent.py wrote them.
 """
 import base64
 import io
@@ -41,6 +51,9 @@ TEX = 512
 # ============================================================================ species table
 # Morph factors are relative to the Adherent template. Strides/positions are in the species' own px.
 SPECIES = {
+    # the template itself: only used to author clips merged into models/adherent.bbmodel
+    "adherent": dict(title="Adherent", scale=1.0, morph={}, bend={}, merge_only=True,
+                     palette=dict(skin=(0.42, 0.40, 0.40), fold=(0.38, 0.27, 0.28))),
     "crawler": dict(
         title="Crawler", scale=0.62,
         morph={"hips": dict(len=0.9), "spine": dict(len=0.9, thick=0.9), "chest": dict(thick=0.85, width=1.1),
@@ -149,13 +162,15 @@ DEFAULT_ANIM = dict(
     idle=dict(breath=1.0, twitch=0.0, irregular=0.0),
     observe=dict(neck=(-6, 9, 0), head=(-4, 14, 2), delay=0.25, turn=0.5),
     rear=dict(hips=71), threat=dict(jaw=-32), recover=dict(length=3.2),
+    # sweep: degrees a planted contact turns round the support centre during its stance
+    turn=dict(sweep=16.0, stance=0.7, offsets={"leg_l": 0.0, "arm_r": 0.25, "leg_r": 0.5, "arm_l": 0.75}),
 )
 
 if len(sys.argv) < 2:
     sys.exit("usage: species_generator.py <species>|all")
 if sys.argv[1] == "all":
     import subprocess
-    procs = [subprocess.Popen([sys.executable, "-I", __file__, n]) for n in SPECIES]
+    procs = [subprocess.Popen([sys.executable, "-I", __file__, n]) for n in SPECIES if not SPECIES[n].get("merge_only")]
     sys.exit(max(p.wait() for p in procs))
 NAME = sys.argv[1]
 if NAME not in SPECIES:
@@ -655,23 +670,27 @@ def add(pose, b, rot=(0, 0, 0), pos=(0, 0, 0)):
     e["pos"] = tuple(a + c for a, c in zip(e.get("pos", (0, 0, 0)), pos))
 
 
-def solve_contacts(pose, targets, flatten=True):
-    """targets: limb -> (dx, dy, dz) offsets of the contact from its rest position (body space)."""
+def solve_contacts(pose, targets, flatten=True, lateral=False):
+    """targets: limb -> (dx, dy, dz) offsets of the contact from its rest position (body space).
+    lateral: also solve x (the first joint gets an abduction degree of freedom), for turning."""
     from scipy.optimize import minimize
     for limb, off in targets.items():
         b, rest, joints = CONTACT[limb]
         goal = np.array(GOAL[limb]) + np.array(off)
         base = {j: pose.get(j, {}).get("rot", (0, 0, 0)) for j in joints}
-        reg = (0.0004, 0.0004, 0.001)
+        reg = (0.0004, 0.0004, 0.001, 0.0006)
 
         end, chain = FLATTEN[limb]
         end_rot = pose.get(end, {}).get("rot", (0, 0, 0))
 
         def with_(v):
             p = {k: dict(e) for k, e in pose.items()}
-            for j, dv in zip(joints, v):
+            for j, dv in zip(joints, v[:3]):
                 r = base[j]
                 p.setdefault(j, {})["rot"] = (r[0] + dv, r[1], r[2])
+            if lateral:
+                r = p[joints[0]]["rot"]
+                p[joints[0]]["rot"] = (r[0], r[1], r[2] + v[3])
             if flatten:   # palm / toes kept flat on the contact surface, inside the solve
                 tot = sum(p.get(c, {}).get("rot", (0, 0, 0))[0] for c in chain)
                 p.setdefault(end, {})["rot"] = (-tot, end_rot[1], end_rot[2])
@@ -679,10 +698,11 @@ def solve_contacts(pose, targets, flatten=True):
 
         def cost(v):
             w = point(globals_(with_(v)), b, rest)
-            return (w[1] - goal[1]) ** 2 + (w[2] - goal[2]) ** 2 + sum(rg * dv * dv for rg, dv in zip(reg, v))
+            ex = (w[0] - goal[0]) ** 2 if lateral else 0.0
+            return ex + (w[1] - goal[1]) ** 2 + (w[2] - goal[2]) ** 2 + sum(rg * dv * dv for rg, dv in zip(reg, v))
 
         best = None
-        for start in ((0, 0, 0), (15, -15, 0)):
+        for start in (((0, 0, 0, 0), (15, -15, 0, 0)) if lateral else ((0, 0, 0), (15, -15, 0))):
             r = minimize(cost, start, method="Nelder-Mead", options={"xatol": 1e-4, "fatol": 1e-9, "maxiter": 3000})
             best = r if best is None or r.fun < best.fun else best
         solved = with_(best.x)
@@ -926,6 +946,56 @@ def recover(t):
 
 
 
+def turn_pivot():
+    return np.array([0.0, 0.0, float(np.mean([GOAL[l][2] for l in CONTACT]))])
+
+
+def turn_angle(ph, stance, sweep):
+    """Angle (deg) of a contact round the pivot, in body space: planted contacts sweep -sweep/2 -> +sweep/2
+    (the body turns the other way above them); swinging ones come back, smoothstepped."""
+    if ph < stance:
+        return -sweep / 2 + sweep * ph / stance, 0.0
+    q = (ph - stance) / (1 - stance)
+    return sweep / 2 - sweep * q * q * (3 - 2 * q), q
+
+
+def turn_target(limb, ph, c):
+    a, q = turn_angle(ph, c["stance"], c["sweep"])
+    g = np.array(GOAL[limb], float) - turn_pivot()
+    ry = rot_mat((0, a, 0))
+    w = ry @ g + turn_pivot()
+    lift = (lifts_of(c)[limb] * math.sin(math.pi * q)) if q > 0 else 0.0
+    return w + np.array([0.0, lift, 0.0])
+
+
+def turn_cfg():
+    c = cfg("turn")
+    w = cfg("walk")
+    c.setdefault("length", round(w["length"] * 0.85, 3))   # the species' own cadence
+    c.setdefault("lifts", tuple(0.8 * x for x in w["lifts"]) if not isinstance(w["lifts"], dict)
+                 else {k: 0.8 * v for k, v in w["lifts"].items()})
+    return c
+
+
+@animation("turn", turn_cfg()["length"], "loop", 33, turn=turn_cfg())
+def turn(t):
+    c = turn_cfg()
+    p = TAU * t
+    pose = {}
+    # symmetric body motion only (the clip also plays backwards for the other direction)
+    add(pose, "hips", rot=(0, 1.2 * S(p * 2), 1.0 * S(p * 2 + 0.5)), pos=(0, -0.3 * abs(S(p * 2)) * SC, 0))
+    add(pose, "chest", rot=(0.8 * S(p * 2 + 1.0), -1.6 * S(p * 2), -1.2 * S(p * 2 + 0.5)))
+    add(pose, "neck", rot=(-0.8 * S(p * 2 + 1.4), 0, 0))
+    targets = {}
+    for limb, off in c["offsets"].items():
+        ph = (t + off) % 1.0
+        targets[limb] = tuple(turn_target(limb, ph, c) - np.array(GOAL[limb], float))
+        if limb.startswith("arm") and ph >= c["stance"]:
+            q = (ph - c["stance"]) / (1 - c["stance"])
+            add(pose, f"fingers_{limb[-1]}", rot=(-12 * math.sin(math.pi * q), 0, 0))
+    return solve_contacts(pose, targets, lateral=True)
+
+
 # ============================================================================ sampling, validation
 def catmull(p0, p1, p2, p3, f):
     return 0.5 * ((2 * p1) + (-p0 + p2) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f + (-p0 + 3 * p1 - 3 * p2 + p3) * f * f * f)
@@ -973,6 +1043,30 @@ for a in ANIMS:
     BAKED.append((a, times, channels))
 
     # validate contacts between keyframes at 240 Hz of animation time
+    if a["name"] == "turn":
+        c = a["turn"]
+        worst_y = worst_xz = 0.0
+        wl = {}
+        steps = int(a["length"] * 240)
+        for si in range(steps + 1):
+            tm = a["length"] * si / steps
+            pose = {}
+            for (b, ch), vals in channels.items():
+                pose.setdefault(b, {})[ch] = tuple(sample_channel(times, vals, tm, True, a["length"]))
+            G = globals_(pose)
+            for limb in CONTACT:
+                ph = (tm / a["length"] + c["offsets"][limb]) % 1
+                if ph >= c["stance"] * 0.97:
+                    continue
+                w = point(G, CONTACT[limb][0], CONTACT[limb][1])
+                e = turn_target(limb, ph, c)
+                worst_y = max(worst_y, abs(w[1] - e[1]))
+                d = math.hypot(w[0] - e[0], w[2] - e[2])
+                worst_xz = max(worst_xz, d)
+                wl[limb] = max(wl.get(limb, 0.0), abs(w[1] - e[1]), d)
+        report.append(f"turn     planted contact error <= {worst_y:.3f} px height, {worst_xz:.3f} px on the ground "
+                      f"({c['sweep'] / c['stance']:.1f} deg per cycle, interpolated, 240 Hz) ["
+                      + " ".join(f"{k} {v:.2f}" for k, v in wl.items()) + "]")
     if a["name"] in ("walk", "run", "climb", "idle", "cling", "rear", "observe", "search"):
         loop = a["loop"] == "loop"
         worst_y = worst_slip = 0.0
@@ -1052,9 +1146,41 @@ for a, times, channels in BAKED:
     meta = {}
     if a.get("stride"):
         meta["cycle_blocks"] = r(a["stride"] / a["stance"] / 16.0)
+    if a.get("turn"):
+        meta["cycle_degrees"] = r(a["turn"]["sweep"] / a["turn"]["stance"])
     animations.append({"uuid": str(uuid.uuid4()), "name": a["name"], "loop": a["loop"], "override": False, "length": a["length"],
                        "snapping": 24, "selected": False, "anim_time_update": "", "blend_weight": "", "start_delay": "",
                        "loop_delay": "", "animators": animators, "interstice": meta})
+
+if SP.get("merge_only"):
+    # the Adherent: keep design_adherent.py's file, add/replace only the clips authored here (turn)
+    with open(OUT, encoding="utf-8") as fh:
+        existing = json.load(fh)
+    groups = {}
+
+    def walk_groups(nodes):
+        for n in nodes:
+            if isinstance(n, dict):
+                groups[n["name"]] = n
+                walk_groups(n.get("children", []))
+    walk_groups(existing["outliner"])
+    worst = max(float(np.abs(np.array(groups[b]["origin"], float) - BONES[b][1]).max()) for b in ORDER)
+    if worst > 0.05:   # the file stores 4 decimals; the re-planted template lands within a few hundredths of a px
+        sys.exit(f"the template skeleton differs from models/adherent.bbmodel by {worst:.3f} px; not merging")
+    merged = [a for a in animations if a["name"] == "turn"]
+    for a in merged:
+        a["animators"] = {groups[an["name"]]["uuid"]: an for an in a["animators"].values()}
+    existing["animations"] = [a for a in existing["animations"] if a["name"] not in {m["name"] for m in merged}] + merged
+    NL = chr(10)
+    with open(OUT, "w", encoding="utf-8", newline=NL) as fh:
+        json.dump(existing, fh, indent=1)
+    turn_lines = [l for l in report if l.startswith("turn")]
+    with open(os.path.join(ROOT, "models", "adherent_turn_validation.txt"), "w", encoding="utf-8") as fh:
+        fh.write(f"adherent.bbmodel: template skeleton matches within {worst:.4f} px; merged clips: "
+                 + ", ".join(m["name"] for m in merged) + NL + NL.join(turn_lines) + NL)
+    print(f"merged {[m['name'] for m in merged]} into {OUT} (skeleton match {worst:.4f} px)")
+    print(NL.join(turn_lines))
+    sys.exit(0)
 
 buf = io.BytesIO()
 skin_png.save(buf, "PNG")

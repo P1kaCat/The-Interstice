@@ -154,6 +154,7 @@ def main():
         meta = a.get("interstice", {})
         anims[a["name"]] = {"length": float(a.get("length", 1)), "loop": a.get("loop") == "loop",
                             "cycleBlocks": round(float(meta.get("cycle_blocks", CYCLE_FALLBACK.get(a["name"], 0))), 4),
+                            "cycleDegrees": round(float(meta.get("cycle_degrees", 0)), 4),
                             "channels": chans}
 
     asset = {"format": 1, "source": f"models/{NAME}.bbmodel", "texture": f"interstice:textures/entity/{NAME}.png",

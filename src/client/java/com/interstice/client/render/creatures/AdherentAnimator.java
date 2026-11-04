@@ -14,7 +14,7 @@ import java.util.Arrays;
  * Drives the Adherent's authored animations (models/adherent.bbmodel, exported to
  * models/entity/adherent.json).
  * <p>
- * Base layers are crossfaded so their weights sum to one: idle, walk, run (ground), cling, climb
+ * Base layers are crossfaded so their weights sum to one: idle, turn (in place), walk, run (ground), cling, climb
  * (walls), rear, fall, recover. Overlays are added on top: observe (late, slow neck/head turn) and
  * threat (neck tension, progressive mouth opening). Locomotion clips are driven by distance actually
  * travelled using each clip's cycle length in blocks, so planted hands and feet keep pace with the
@@ -29,7 +29,7 @@ public final class AdherentAnimator {
     private static final float REAR_BEAT = 1.5f;     // seconds of rearing/threat before a hunt run
 
     public enum Layer {
-        IDLE("idle", true), WALK("walk", true), RUN("run", true), CLING("cling", true), CLIMB("climb", true),
+        IDLE("idle", true), TURN("turn", true), WALK("walk", true), RUN("run", true), CLING("cling", true), CLIMB("climb", true),
         REAR("rear", true), FALL("fall", true), RECOVER("recover", true), STUNNED("recover", true),
         OBSERVE("observe", false), THREAT("threat", false), SEARCH("search", false);
 
@@ -50,6 +50,9 @@ public final class AdherentAnimator {
         double lastX = Double.NaN, lastY, lastZ;
         double stride;
         float speed;
+        /** Accumulated body yaw (degrees, signed) driving the turn clip; smoothed yaw rate in degrees per tick. */
+        double turn;
+        float turnRate, lastYaw = Float.NaN;
         public float heading;
         float lookYaw;
         double huntStart = -1;
@@ -93,6 +96,16 @@ public final class AdherentAnimator {
         s.lastX = x;
         s.lastY = y;
         s.lastZ = z;
+        // turning in place: the turn clip advances with the rotation actually made (forwards when the yaw grows)
+        float bodyYaw = Mth.rotLerp(partialTick, e.yBodyRotO, e.yBodyRot);
+        if (!Float.isNaN(s.lastYaw) && dt > 0) {
+            float dyaw = Mth.wrapDegrees(bodyYaw - s.lastYaw);
+            if (Math.abs(dyaw) < 45f) {
+                s.turn += dyaw;
+                s.turnRate += ((float) (dyaw / dt) - s.turnRate) * (float) Math.min(1, dt * 0.4);
+            }
+        }
+        s.lastYaw = bodyYaw;
 
         Behavior b = e.behavior();
         if (b != s.lastBehavior) {
@@ -165,6 +178,13 @@ public final class AdherentAnimator {
                 if (b == Behavior.INVESTIGATE && moving < 0.5f) t[Layer.OBSERVE.ordinal()] = 1f;
             }
         }
+        // standing but rotating: step round instead of pivoting like a statue
+        float idle = t[Layer.IDLE.ordinal()];
+        if (idle > 0f) {
+            float turning = Mth.clamp((Math.abs(s.turnRate) - 0.3f) / 1.2f, 0f, 1f);
+            t[Layer.TURN.ordinal()] = idle * turning;
+            t[Layer.IDLE.ordinal()] = idle - t[Layer.TURN.ordinal()];
+        }
     }
 
     /** Builds the frame's pose: weighted clips plus the procedural late head turn. */
@@ -178,15 +198,19 @@ public final class AdherentAnimator {
             if (clip == null) continue;
             float seconds;
             if (clip.cycleBlocks > 0) seconds = (float) (s.stride / clip.cycleBlocks * clip.length);
+            else if (clip.cycleDegrees > 0) seconds = (float) (s.turn / clip.cycleDegrees * clip.length);
             else if (l == Layer.STUNNED) seconds = 0.45f + 0.05f * (float) Math.sin(s.time * 0.05);   // prone, faint twitch
             else if (l == Layer.IDLE || l == Layer.CLING || l == Layer.FALL || l == Layer.SEARCH) seconds = (float) (s.time / 20.0);
             else seconds = (float) ((s.time - s.started[l.ordinal()]) / 20.0);
             pose.add(clip, seconds, w);
         }
-        if (Math.abs(s.lookYaw) > 0.1f) {
+        // while turning, the head leads into the turn (same sign convention as the look yaw)
+        float lead = s.weight[Layer.TURN.ordinal()] * Mth.clamp(s.turnRate * 4f, -18f, 18f);
+        float headYaw = s.lookYaw + lead;
+        if (Math.abs(headYaw) > 0.1f) {
             int neck = pose.bone("neck"), head = pose.bone("head");
-            if (neck >= 0) pose.addRotation(neck, 0, s.lookYaw * 0.4f, 0);
-            if (head >= 0) pose.addRotation(head, 0, s.lookYaw * 0.6f, 0);
+            if (neck >= 0) pose.addRotation(neck, 0, headYaw * 0.4f, 0);
+            if (head >= 0) pose.addRotation(head, 0, headYaw * 0.6f, 0);
         }
     }
 }

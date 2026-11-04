@@ -39,8 +39,8 @@ per-species code path except the optional `WallStyle` behaviours.
   bends (posture), automatic planting on the ground (the shortest limb touches, IK flexes the others),
   species palette and surface patterns. Same 24-bone skeleton and bone names as the Adherent, so the
   exporter, the runtime skinning and the animator are shared. Editable sources: `models/<species>.bbmodel`.
-- 11 clips per species: idle, observe, search (new), walk, run, climb, cling, rear, threat, fall,
-  recover, with species parameters (cadence, stride, stance, gait phase offsets, lifts, body motion,
+- 12 clips per species: idle, observe, search, turn, walk, run, climb, cling, rear, threat, fall,
+  recover (the Adherent has the same set minus search), with species parameters (cadence, stride, stance, gait phase offsets, lifts, body motion,
   head steadiness, observation amplitude, recovery time). Examples: Crawler walk 1.1 s cycle, stride
   4.6 px; Strider walk 3.4 s, stride 13 px; Burden heavy body drop on every step; Hollow hitch in the
   gait and irregular breathing; Watcher steady head while walking, 32° head turn with a 16° tilt when
@@ -50,8 +50,18 @@ per-species code path except the optional `WallStyle` behaviours.
   worst hand/foot height error in walk/run/climb is between 0.15 and 0.85 px (Adherent: 0.24–0.63 px).
 - States used in game: idle, observe (stare), search (head low, sweeping), walk/run (distance-driven),
   climb/cling on walls, rear + threat (hunt start), fall, recover (landing), stunned (recover pose held
-  prone with a twitch), hide (cling pose on the ground). Not authored: a dedicated turning clip (bodies
-  turn through the vanilla body yaw) and a separate landing clip (the start of recover is the impact).
+  prone with a twitch), hide (cling pose on the ground), turn (standing while the body yaw changes). Not
+  authored: a separate landing clip (the start of recover is the impact).
+- Turning in place ("turn"): planted hands and feet counter-rotate round the support centre while the
+  others step round (16 degrees of sweep per stance, 22.9 degrees of yaw per cycle; the IK gets a
+  sideways degree of freedom at the shoulder and hip for this clip). The animator drives it by the body
+  yaw actually turned (forwards when the yaw grows, backwards when it shrinks), blends it in place of
+  idle above about 0.3 degrees per tick, and leads with the head into the turn. Validated like the other
+  clips (planted contacts within 0.04–0.37 px of the ideal rotated position, 240 Hz); the Adherent's
+  clip is generated from the unmorphed template and merged into `models/adherent.bbmodel` without
+  touching anything else in that file (`models/adherent_turn_validation.txt`). Captured:
+  `docs/creature/family/<species>_turn.gif` (90 degrees one way, 60 back; in the frames the planted near
+  hand stays in place while the body turns over it).
 
 ## Wall locomotion (server)
 
@@ -78,7 +88,8 @@ easing over reliefs), now with species parameters
   a Burden room (tested: Adherent, Crawler, Strider, Hollow, Watcher and Fractured placed 4.5 blocks from
   an idle Burden all move 3+ blocks away; a Clinger next to it does not move); Crawlers slip around larger
   bodies; Hollows are agitated by movement nearby and, rarely (2 %), lose their grip; Clingers make way for
-  nothing. Gathering prefers the same species. Not tested: the Crawler side-step and the Hollow agitation.
+  nothing. Gathering prefers the same species. Tested: a Hollow flees from a neighbour crawling past it
+  and stays put beside a motionless one. Not tested: the Crawler side-step.
 - Burden: while moving, every 22 ticks a low step, falling dust and a noise event (heard by ground
   creatures). Tested.
 - Director: new action BURDEN_MOVES (something heavy starts to move out of sight; heard and felt before
@@ -104,7 +115,8 @@ See [STAMPEDE.md](STAMPEDE.md).
   [PIXELLAB_ASSETS.md](PIXELLAB_ASSETS.md) batch G.
 - No custom shader, normal or roughness maps; the creatures use the vanilla entity pipeline, so the
   dimension fog and lighting apply to them as to every entity.
-- Contact validation covers the authored clips, not crossfades, turning or slopes.
-- Not covered by automated tests: the Crawler side-step around larger bodies, the Hollow's agitation and
-  grip loss, the Watcher's late re-aim timing, and every client-side animation layer (checked in the
+- Contact validation covers the authored clips, not crossfades or slopes; a very fast turn (several
+  degrees per tick) plays the turn steps quickly rather than switching to a different gait.
+- Not covered by automated tests: the Crawler side-step around larger bodies, the Hollow's grip loss
+  (2 %), the Watcher's late re-aim timing, and every client-side animation layer (checked in the
   captures only).

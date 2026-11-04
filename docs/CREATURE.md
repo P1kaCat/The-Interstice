@@ -54,10 +54,12 @@ python -I tools/creature/export_adherent.py
   red hurt overlay and Veil's deferred lights apply as for any entity.
 - `AdherentMeshModel` plugs this into the vanilla `MobRenderer`; `AdherentRenderer` orients the body on
   walls (belly to the surface, heading from movement) and tumbles it while falling.
-- `AdherentAnimator` crossfades base clips (idle, walk, run, cling, climb, rear, fall, recover) and adds
+- `AdherentAnimator` crossfades base clips (idle, turn, walk, run, cling, climb, rear, fall, recover) and adds
   overlays (observe, threat). Walk/run/climb are driven by distance travelled: one cycle per
   `cycleBlocks` (stride ÷ stance fraction), so planted contacts move at ground speed. A hunt begins with
-  a 1.5 s rear-and-threat beat. The head turns late towards what the creature is looking at.
+  a 1.5 s rear-and-threat beat. The head turns late towards what the creature is looking at. Standing
+  while the body yaw changes plays the turn clip, driven by the yaw turned (`cycleDegrees`), see
+  [CREATURE_ECOSYSTEM.md](CREATURE_ECOSYSTEM.md).
 - Horde mid-distance instances use LOD1 (vertex-clustered, about half the triangles) with the climb
   clip; far instances stay sprites.
 
@@ -107,7 +109,7 @@ check contacts.
   rotation sign convention Blockbench uses when previewing animations in this format has not been
   checked against the in-game result.
 - Contact validation (`models/adherent_validation.txt`) covers the authored clips, not crossfades
-  between clips, turning in place, or slopes/steps.
+  between clips or slopes/steps (turning in place: `models/adherent_turn_validation.txt`).
 - No normal/roughness maps; the skin is a single base-colour texture.
 - Compared with the reference images the limbs are leaner and the musculature less defined; the head
   projects forward more than it sinks between the shoulders.
