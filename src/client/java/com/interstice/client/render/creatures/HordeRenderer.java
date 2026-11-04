@@ -107,9 +107,19 @@ public final class HordeRenderer {
                         int o = i * MID_STRIDE;
                         if ((int) midQ[o + 9] != sp.ordinal()) continue;
                         float cycles = (float) (midQ[o + 6] / (2 * Math.PI) + midQ[o + 7] * 0.27);
-                        drawModel(ps, mid, sp, (int) midQ[o], (float) midQ[o + 1], midQ[o + 2], midQ[o + 3], midQ[o + 4], (int) midQ[o + 5], (float) midQ[o + 8], cycles);
+                        drawModel(ps, mid, sp, (int) midQ[o], (float) midQ[o + 1], midQ[o + 2], midQ[o + 3], midQ[o + 4], (int) midQ[o + 5], (float) midQ[o + 8], cycles, false);
                     }
                     buffers.endBatch(rt);
+                    // the eyes of the passing horde: a second, emissive pass over the same instances
+                    RenderType et = RenderType.eyes(com.interstice.Interstice.id("textures/entity/" + sp.id + "_eyes.png"));
+                    VertexConsumer eyes = buffers.getBuffer(et);
+                    for (int i = 0; i < midCount; i++) {
+                        int o = i * MID_STRIDE;
+                        if ((int) midQ[o + 9] != sp.ordinal()) continue;
+                        float cycles = (float) (midQ[o + 6] / (2 * Math.PI) + midQ[o + 7] * 0.27);
+                        drawModel(ps, eyes, sp, (int) midQ[o], (float) midQ[o + 1], midQ[o + 2], midQ[o + 3], midQ[o + 4], (int) midQ[o + 5], (float) midQ[o + 8], cycles, true);
+                    }
+                    buffers.endBatch(et);
                 }
             }
             farDrawn = farCount;
@@ -249,7 +259,7 @@ public final class HordeRenderer {
         vc.addVertex(x, y + hy, z - hz).setColor(col, col, col, 255).setUv(u0, 0).setOverlay(ov).setLight(light).setNormal(nx, 0, 0);
     }
 
-    private static void drawModel(PoseStack ps, VertexConsumer vc, Species sp, int side, float heading, double dx, double dy, double dz, int light, float tumble, float cycles) {
+    private static void drawModel(PoseStack ps, VertexConsumer vc, Species sp, int side, float heading, double dx, double dy, double dz, int light, float tumble, float cycles, boolean eyes) {
         AdherentMeshModel m = model();
         ps.pushPose();
         ps.translate(dx, dy, dz);
@@ -264,7 +274,8 @@ public final class HordeRenderer {
         ps.scale(AdherentAnimator.SCALE, AdherentAnimator.SCALE, AdherentAnimator.SCALE);
         ps.scale(-1, -1, 1);
         ps.translate(0, -1.501f, 0);
-        m.renderHordeCycle(sp, ps, vc, light, OverlayTexture.NO_OVERLAY, Math.max(0f, cycles));
+        if (eyes) m.renderHordeEyes(sp, ps, vc, Math.max(0f, cycles), AdherentAnimator.GLOW_HORDE);
+        else m.renderHordeCycle(sp, ps, vc, light, OverlayTexture.NO_OVERLAY, Math.max(0f, cycles));
         ps.popPose();
     }
 }

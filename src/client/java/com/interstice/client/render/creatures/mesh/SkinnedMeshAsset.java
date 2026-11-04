@@ -27,6 +27,8 @@ public final class SkinnedMeshAsset {
     public static final class Lod {
         public final float[] positions, normals, uvs, weights;
         public final int[] joints, indices;
+        /** Triangles of the eyes (indices into this LOD), drawn again in the emissive pass; empty if none. */
+        public final int[] eyeIndices;
         public final int vertexCount;
 
         Lod(JsonObject o) {
@@ -36,6 +38,7 @@ public final class SkinnedMeshAsset {
             weights = floats(o.getAsJsonArray("weights"));
             joints = ints(o.getAsJsonArray("joints"));
             indices = ints(o.getAsJsonArray("indices"));
+            eyeIndices = o.has("eyeIndices") ? ints(o.getAsJsonArray("eyeIndices")) : new int[0];
             vertexCount = positions.length / 3;
         }
     }
@@ -78,6 +81,9 @@ public final class SkinnedMeshAsset {
     public final String[] boneNames;
     public final int[] parents;
     public final float[] pivots;
+    /** Hanging bones (moss strands): rest direction (unit, Blockbench space) per bone, or NaN when not hanging. */
+    public final float[] dangle;
+    public final int[] dangleBones;
     public final Lod[] lods;
     public final Map<String, Clip> clips = new HashMap<>();
 
@@ -86,6 +92,9 @@ public final class SkinnedMeshAsset {
         boneNames = new String[bones.size()];
         parents = new int[bones.size()];
         pivots = new float[bones.size() * 3];
+        dangle = new float[bones.size() * 3];
+        java.util.Arrays.fill(dangle, Float.NaN);
+        java.util.List<Integer> hanging = new java.util.ArrayList<>();
         for (int i = 0; i < bones.size(); i++) {
             JsonObject b = bones.get(i).getAsJsonObject();
             boneNames[i] = b.get("name").getAsString();
@@ -93,7 +102,13 @@ public final class SkinnedMeshAsset {
             JsonArray p = b.getAsJsonArray("pivot");
             for (int k = 0; k < 3; k++) pivots[i * 3 + k] = p.get(k).getAsFloat();
             if (parents[i] >= i) throw new IllegalStateException("bones must be ordered parent-first");
+            if (b.has("dangle")) {
+                JsonArray d = b.getAsJsonArray("dangle");
+                for (int k = 0; k < 3; k++) dangle[i * 3 + k] = d.get(k).getAsFloat();
+                hanging.add(i);
+            }
         }
+        dangleBones = hanging.stream().mapToInt(Integer::intValue).toArray();
         JsonArray l = root.getAsJsonArray("lods");
         lods = new Lod[l.size()];
         for (int i = 0; i < lods.length; i++) lods[i] = new Lod(l.get(i).getAsJsonObject());

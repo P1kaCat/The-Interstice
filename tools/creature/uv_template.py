@@ -2,7 +2,7 @@
 Draws the UV layout of the exported Adherent mesh (LOD0) over its current skin, for texture painting
 (PixelLab or by hand). Output: docs/uv/adherent_uv_template_512.png (layout over the skin) and
 docs/uv/adherent_uv_wire_512.png (layout alone on transparent). Other species of the family:
-docs/uv/<species>_uv_template_512.png and docs/uv/<species>_uv_wire_512.png.
+docs/uv/<species>_uv_template_<size>.png and docs/uv/<species>_uv_wire_<size>.png (size = the atlas: 512, the Burden 1024).
 
 Usage: python -I tools/creature/uv_template.py [species ...|all]   (default: adherent)
 """
@@ -29,8 +29,8 @@ def main(name="adherent"):
         pts = [(uv[v * 2] * w, uv[v * 2 + 1] * h) for v in idx[i:i + 3]]
         d.polygon(pts, outline=(255, 40, 200, 255))
     os.makedirs(OUT, exist_ok=True)
-    wire.save(os.path.join(OUT, f"{name}_uv_wire_512.png"))
-    Image.alpha_composite(skin, wire).save(os.path.join(OUT, f"{name}_uv_template_512.png"))
+    wire.save(os.path.join(OUT, f"{name}_uv_wire_{w}.png"))
+    Image.alpha_composite(skin, wire).save(os.path.join(OUT, f"{name}_uv_template_{w}.png"))
     print(f"{name}: {len(idx) // 3} triangles drawn into {OUT}")
 
 

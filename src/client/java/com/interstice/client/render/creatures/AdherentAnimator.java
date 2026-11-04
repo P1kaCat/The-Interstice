@@ -50,6 +50,12 @@ public final class AdherentAnimator {
         double lastX = Double.NaN, lastY, lastZ;
         double stride;
         float speed;
+        /** World velocity and smoothed acceleration (blocks per tick, per tick^2), for the moss dynamics. */
+        double vx, vy, vz;
+        public final Vector3f accelWorld = new Vector3f();
+        /** Gravity and acceleration in Blockbench space (set by the renderer from the body's orientation). */
+        public final Vector3f gravity = new Vector3f(0, -1, 0), accelModel = new Vector3f();
+        public float frameDt;
         /** Accumulated body yaw (degrees, signed) driving the turn clip; smoothed yaw rate in degrees per tick. */
         double turn;
         float turnRate, lastYaw = Float.NaN;
@@ -85,6 +91,12 @@ public final class AdherentAnimator {
             double dx = x - s.lastX, dy = y - s.lastY, dz = z - s.lastZ;
             double d = mode == Mode.WALL ? Math.sqrt(dy * dy + dz * dz) : Math.sqrt(dx * dx + dz * dz);
             if (d < 2) {
+                double nvx = dx / dt, nvy = dy / dt, nvz = dz / dt;
+                float ka = (float) Math.min(1, dt * 0.5);
+                s.accelWorld.lerp(new Vector3f((float) ((nvx - s.vx) / dt), (float) ((nvy - s.vy) / dt), (float) ((nvz - s.vz) / dt)), ka);
+                s.vx = nvx;
+                s.vy = nvy;
+                s.vz = nvz;
                 s.stride += d;
                 s.speed += ((float) (d / dt) - s.speed) * (float) Math.min(1, dt * 0.35);
                 if (mode == Mode.WALL && d / dt > 0.01) {
@@ -96,6 +108,7 @@ public final class AdherentAnimator {
         s.lastX = x;
         s.lastY = y;
         s.lastZ = z;
+        s.frameDt = (float) dt;
         // turning in place: the turn clip advances with the rotation actually made (forwards when the yaw grows)
         float bodyYaw = Mth.rotLerp(partialTick, e.yBodyRotO, e.yBodyRot);
         if (!Float.isNaN(s.lastYaw) && dt > 0) {
@@ -135,6 +148,35 @@ public final class AdherentAnimator {
         }
         if (s.time - s.started[Layer.OBSERVE.ordinal()] > 8) s.lookYaw += (wantYaw - s.lookYaw) * (float) Math.min(1, dt * 0.06);
         s.initialised = true;
+    }
+
+    /** Eye glow per species (the Watcher's are the brightest; the Clinger's barely show). */
+    private static final float[] GLOW = {1.0f, 1.1f, 0.85f, 0.9f, 0.6f, 0.7f, 1.6f, 1.2f};
+    /** The passing horde's eyes: dimmer than a single creature's, there are hundreds of them. */
+    public static final float GLOW_HORDE = 0.7f;
+
+    public static float speciesGlow(AdherentEntity e) {
+        return GLOW[e.species().ordinal()];
+    }
+
+    /**
+     * Eye intensity, 0..1+: brightest when the creature is still or staring, dimmer while it moves, a slow
+     * pulse, and now and then a blink (a few ticks dark). Dying eyes fade.
+     */
+    public static float eyeGlow(AdherentEntity e, float partialTick) {
+        State s = state(e);
+        float still = 1f - Mth.clamp(s.speed / 0.06f, 0f, 1f);
+        Behavior b = e.behavior();
+        float k = 0.55f + 0.45f * still;
+        if (b == Behavior.STARE || b == Behavior.HUNT) k = 1f;
+        if (b == Behavior.STUNNED) k = 0.25f;
+        double t = e.tickCount + partialTick;
+        k *= 0.88f + 0.12f * (float) Math.sin(t * 0.07 + e.getId());
+        // a blink: 4 ticks in every 140-260
+        long period = 140 + Math.floorMod(e.getId() * 7919L, 120);
+        if (Math.floorMod((long) t + e.getId() * 31L, period) < 4) k *= 0.05f;
+        if (e.deathTime > 0) k *= Math.max(0f, 1f - e.deathTime / 12f);
+        return k * speciesGlow(e);
     }
 
     private static void targets(State s, Behavior b, Mode mode) {

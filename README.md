@@ -166,7 +166,7 @@ grading during the Stampede; horde instances are simulated and drawn; real creat
 whisper subtitle appears; EFX processing is active; diagnostics overlay works. About 119 FPS was observed
 on HIGH in a small dev window on the development machine. That is one observation, not a benchmark.
 
-**Creature (v4 organic mesh):** compiled, server behaviour covered by the GameTests above, observed in game in
+**Creature (v5 organic mesh, detailed anatomy):** compiled, server behaviour covered by the GameTests above, observed in game in
 still views and in motion (walk, run, rear, fall/recover, wall climb). Proofs, measurements and remaining
 defects: [docs/CREATURE.md](docs/CREATURE.md), captures in `docs/creature/`.
 
@@ -184,7 +184,7 @@ Veil logs that Iris is absent).
 
 - Textures: [docs/PIXELLAB_ASSETS.md](docs/PIXELLAB_ASSETS.md) lists every required PixelLab image with
   prompt, size, projection, transparency, tiling, filename and destination. Creature UV layout references:
-  `docs/uv/<species>_uv_template_512.png` (one per species; the species textures are generated development
+  `docs/uv/<species>_uv_template_<size>.png` (one per species, 1024 for the Burden, 512 otherwise; the species textures are generated development
   textures until replaced).
 - Audio: 53 original placeholder sounds synthesised by `tools/gen_audio.py`. Voice lines are LPC-whispered
   renders of local Windows TTS and should be replaced with a real whispered recording (mono Ogg Vorbis,

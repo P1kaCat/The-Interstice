@@ -10,7 +10,23 @@ tick time.
 RTX 3060, JDK 21, dev client (Fabric Loom `runClient`, not an optimised production launch), integrated
 server, preset HIGH, render distance 12, small dev window (854×480), 2026-11-04.
 
-## Scenes and results
+## v5 meshes (detailed anatomy, 5921 vertices instead of 1474)
+
+Same machine and scenes, after the v5 template (2026-11-04):
+
+| Scene | Frame cap | FPS | Creatures on the client | CPU skinning | Server tick (avg) |
+|---|---|---|---|---|---|
+| A. 40 real creatures + ambient, uncapped | none | 631 (v4: 895) | 45 | 20.8 ms/s, 3.74 M vertices/s | 1.45 ms |
+| B. Stampede horde passage, uncapped | none | 507–523 | 16–17 real runners; 1703–1770 simulated, 5–8 mid drawn | 19.5–20.8 ms/s | 1.14–1.27 ms |
+| A, in the full capture run | vsync, 120 | 97 (below the cap) | 46 | 43.6 ms/s, 7.05 M vertices/s | 1.28 ms |
+| B, in the full capture run | vsync, 120 | 99–107 | 13–15 real runners; 1686–1775 simulated, 53–60 far, 37–39 mid | 41–43 ms/s | 1.0–1.07 ms |
+
+The skinning cost per vertex is unchanged (about 5.6 ns); the meshes are four times heavier, so the
+45-creature scene costs about 1.6 ms per frame instead of 1.1. The capped rows were measured at the end of
+a run that had just written about 850 screenshots and they no longer hold the 120 FPS cap; the uncapped
+rows (a separate, benchmark-only run) are the ones to compare. The v4 tables below are kept for reference.
+
+## v4 scenes and results
 
 | Scene | Frame cap | FPS | Creatures on the client | CPU skinning | Server tick (avg) |
 |---|---|---|---|---|---|
@@ -40,15 +56,15 @@ lit only by the dimension's sparse lamps).
 
 - **Hybrid horde** ([STAMPEDE.md](STAMPEDE.md)): thousands of visual instances are closed-form functions of
   (seed, index, time) with no per-tick simulation and no networking; only near creatures are real.
-- **LOD**: real entities beyond 26 blocks are skinned on LOD1 (443–778 vertices depending on the species,
-  instead of 1474); mid horde instances always use LOD1; far instances are single quads.
+- **LOD**: real entities beyond 26 blocks are skinned on LOD1 (800–1960 vertices depending on the species,
+  instead of 5921); mid horde instances always use LOD1; far instances are single quads.
 - **Batching**: horde meshes are drawn in one batch per species texture; far quads in one batch.
 - **Bounded queries**: neighbour reactions use small box queries (7 blocks) every 20 ticks, staggered by
   entity id; population upkeep runs every 40 ticks; there is no scan of every creature every tick.
 - **No per-frame allocation in skinning**: pose and skinning buffers are reused per entity
   (`SkinnedMeshPose`); horde poses are reused per species.
-- **Assets**: 8 meshes (2.7 MB of JSON in the jar, parsed once and cached per species, reloaded with
-  resource packs) and 8 textures of 512×512 (1.6 MB).
+- **Assets**: 8 meshes (about 7 MB of JSON in the jar, parsed once and cached per species, reloaded with
+  resource packs) and 8 textures (seven 512×512, the Burden 1024×1024; about 2.8 MB).
 
 ## Diagnostics in game
 

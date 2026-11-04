@@ -9,6 +9,14 @@ What the exporter adds on top of the Blockbench file:
 - Smooth skinning at joints. In Blockbench each mesh is rigidly parented to one bone. Here every
   vertex near a joint is blended 50/50 at the pivot (fading out over JOINT_RADIUS) between the bone and
   its parent / child, so the two overlapping segments meet without a gap when the joint bends.
+- Gradient hand-over (the generator's "interstice_skin" block): a mesh can be carried by another bone at
+  one end and hand over to its own bone along its length (limbs growing out of the torso, connective
+  masses, moss roots). Mixed with the joint blending above.
+- Hanging bones (moss strands, "interstice": {"dangle": [x, y, z]} on the bone): written to the asset so
+  the game swings them; they never take part in the joint blending of body meshes.
+- Eyes (meshes whose name contains "_eye_"): their triangles are listed separately ("eyeIndices") for the
+  emissive pass, kept unreduced in LOD1; a second texture named <species>_eyes.png is the emissive atlas.
+- Moss (meshes "_moss_" / "_mossbed_") is left out of LOD1 (too small to read at that distance).
 - Smooth normals (per mesh, by position), oriented outwards.
 - LOD1 for the horde's mid-distance instances: vertex clustering (grid per dominant bone).
 - Animation channels (rotation degrees / position pixels) with Catmull-Rom interpolation, as authored.
@@ -39,6 +47,8 @@ def select(name):
     SRC = os.path.join(ROOT, "models", f"{name}.bbmodel")
     OUT_JSON = os.path.join(ASSET_DIR, "models", "entity", f"{name}.json")
     OUT_PNG = os.path.join(ASSET_DIR, "textures", "entity", f"{name}.png")
+    global OUT_GLOW
+    OUT_GLOW = os.path.join(ASSET_DIR, "textures", "entity", f"{name}_eyes.png")
 
 
 JOINT_RADIUS = 3.0     # px over which a joint blends between neighbouring bones
@@ -58,7 +68,8 @@ def main():
     with open(SRC, encoding="utf-8") as fh:
         model = json.load(fh)
     elements = {e["uuid"]: e for e in model.get("elements", [])}
-    bones, parents, pivots, mesh_bone = [], [], [], []
+    bones, parents, pivots, mesh_bone, dangles = [], [], [], [], []
+    extra = model.get("interstice_skin", {})
 
     def walk(node, parent):
         if isinstance(node, str):
@@ -74,6 +85,7 @@ def main():
         pivots.append([float(c) for c in node["origin"]])
         if any(abs(float(a)) > 1e-6 for a in node.get("rotation", [0, 0, 0])):
             fail(f"bone '{node['name']}' has a rest rotation; keep rest rotations at 0 and pose the mesh instead")
+        dangles.append(node.get("interstice", {}).get("dangle"))
         for c in node.get("children", []):
             walk(c, idx)
 
@@ -84,13 +96,18 @@ def main():
         fail(f"missing bones: {missing}")
     if len(set(bones)) != len(bones):
         fail("bone names must be unique")
-    children = {i: [j for j, p in enumerate(parents) if p == i] for i in range(len(bones))}
+    hanging = {i for i, d in enumerate(dangles) if d}
+    children = {i: [j for j, p in enumerate(parents) if p == i and j not in hanging] for i in range(len(bones))}
     P = np.array(pivots)
     tw = model.get("resolution", {}).get("width", 512)
     th = model.get("resolution", {}).get("height", 512)
 
     positions, normals, uvs, joints, weights, indices = [], [], [], [], [], []
+    kind = []   # per triangle: 0 body, 1 eye, 2 moss
     for e, b in mesh_bone:
+        ex = extra.get(e.get("uuid"))
+        ex_bone = bones.index(ex["bone"]) if ex and ex["bone"] in bones else None
+        tri_kind = 1 if "_eye_" in e["name"] else 2 if ("_moss_" in e["name"] or "_mossbed_" in e["name"]) else 0
         if any(abs(float(a)) > 1e-6 for a in e.get("rotation", [0, 0, 0])):
             fail(f"mesh '{e['name']}' is rotated; apply the rotation to its vertices")
         origin = np.array(e.get("origin", [0, 0, 0]), float)
@@ -121,6 +138,8 @@ def main():
                     nl = np.linalg.norm(n)
                     n = n / nl if nl > 1e-9 else np.array([0, 1.0, 0])
                     js, ws = skin_weights(p, b, parents, children, P)
+                    if ex_bone is not None:
+                        js, ws = mix_weights(js, ws, ex_bone, float(ex["w"][int(k[1:])]))
                     cache[key] = len(positions)
                     positions.append(p)
                     normals.append(n)
@@ -128,11 +147,32 @@ def main():
                     joints.append(js)
                     weights.append(ws)
                 indices.append(cache[key])
+            kind.append(tri_kind)
     positions, normals, uvs = np.array(positions), np.array(normals), np.array(uvs)
     joints, weights, indices = np.array(joints), np.array(weights), np.array(indices)
+    kind = np.array(kind)
+    tri = indices.reshape(-1, 3)
     lod0 = pack_lod(positions, normals, uvs, joints, weights, indices)
-    cell = LOD1_CELL if NAME == "adherent" else LOD1_CELL * max(0.5, float(np.ptp(positions[:, 2])) / 52.0)
-    lod1 = pack_lod(*cluster(positions, normals, uvs, joints, weights, indices, cell))
+    lod0["eyeIndices"] = [int(v) for v in tri[kind == 1].reshape(-1)]
+    cell = LOD1_CELL * max(0.5, float(np.ptp(positions[:, 2])) / 52.0)
+    body = tri[kind == 0].reshape(-1)
+    used = np.unique(body)
+    sub = np.full(len(positions), -1, int)
+    sub[used] = np.arange(len(used))
+    c_pos, c_nor, c_uv, c_jo, c_we, c_ind = cluster(positions[used], normals[used], uvs[used], joints[used], weights[used],
+                                                    sub[body], cell)
+    # the eyes go into LOD1 unreduced (a distant creature in the dark is mostly its eyes)
+    eye_v = np.unique(tri[kind == 1].reshape(-1)) if (kind == 1).any() else np.zeros(0, int)
+    remap = {int(v): len(c_pos) + i for i, v in enumerate(eye_v)}
+    if len(eye_v):
+        c_pos = np.concatenate([c_pos, positions[eye_v]])
+        c_nor = np.concatenate([c_nor, normals[eye_v]])
+        c_uv = np.concatenate([c_uv, uvs[eye_v]])
+        c_jo = np.concatenate([c_jo, joints[eye_v]])
+        c_we = np.concatenate([c_we, weights[eye_v]])
+    eye1 = np.array([remap[int(v)] for v in tri[kind == 1].reshape(-1)], int)
+    lod1 = pack_lod(c_pos, c_nor, c_uv, c_jo, c_we, np.concatenate([c_ind, eye1]).astype(int))
+    lod1["eyeIndices"] = [int(v) for v in eye1]
 
     anims = {}
     for a in model.get("animations", []):
@@ -158,8 +198,9 @@ def main():
                             "channels": chans}
 
     asset = {"format": 1, "source": f"models/{NAME}.bbmodel", "texture": f"interstice:textures/entity/{NAME}.png",
-             "bones": [{"name": n, "parent": -1 if p is None else p, "pivot": [round(c, 4) for c in pv]}
-                       for n, p, pv in zip(bones, parents, pivots)],
+             "bones": [dict({"name": n, "parent": -1 if p is None else p, "pivot": [round(c, 4) for c in pv]},
+                            **({"dangle": [round(float(c), 4) for c in d]} if d else {}))
+                       for n, p, pv, d in zip(bones, parents, pivots, dangles)],
              "lods": [lod0, lod1], "animations": anims}
     os.makedirs(os.path.dirname(OUT_JSON), exist_ok=True)
     with open(OUT_JSON, "w", encoding="utf-8", newline="\n") as fh:
@@ -169,6 +210,10 @@ def main():
     if src.startswith("data:image/png;base64,"):
         with open(OUT_PNG, "wb") as fh:
             fh.write(base64.b64decode(src.split(",", 1)[1]))
+    glow = [t for t in tex if t.get("name", "").endswith("_eyes.png") and t.get("source", "").startswith("data:image/png;base64,")]
+    if glow:
+        with open(OUT_GLOW, "wb") as fh:
+            fh.write(base64.b64decode(glow[0]["source"].split(",", 1)[1]))
     print(f"wrote {OUT_JSON}: {len(bones)} bones, LOD0 {len(lod0['indices']) // 3} tris / {len(lod0['positions']) // 3} verts, "
           f"LOD1 {len(lod1['indices']) // 3} tris / {len(lod1['positions']) // 3} verts, {len(anims)} animations "
           f"({os.path.getsize(OUT_JSON) // 1024} KB)")
@@ -199,6 +244,21 @@ def skin_weights(p, b, parents, children, P):
         js.append(b)
         ws.append(0.0)
     return js[:3], ws[:3]
+
+
+def mix_weights(js, ws, other, wo):
+    """(1 - wo) of the joint-blended weights, wo of the other bone; the three largest kept, renormalised."""
+    acc = {}
+    for j, w in zip(js, ws):
+        acc[j] = acc.get(j, 0.0) + w * (1 - wo)
+    acc[other] = acc.get(other, 0.0) + wo
+    top = sorted(acc.items(), key=lambda kv: -kv[1])[:3]
+    tot = sum(w for _, w in top) or 1.0
+    js2, ws2 = [j for j, _ in top], [w / tot for _, w in top]
+    while len(js2) < 3:
+        js2.append(js2[0])
+        ws2.append(0.0)
+    return js2, ws2
 
 
 def cluster(pos, nor, uv, jo, we, ind, cell=LOD1_CELL):

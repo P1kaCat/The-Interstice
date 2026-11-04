@@ -103,6 +103,7 @@ public class IntersticeClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             ClientState.reset();
             LampLightManager.clear();
+            com.interstice.client.render.veil.CreatureEyeLights.clear();
             AudioDirector.stopAll();
             lastPhase = StampedePhase.IDLE;
         });
@@ -113,6 +114,7 @@ public class IntersticeClient implements ClientModInitializer {
             VeilIntegration.frame();
             Minecraft mc = Minecraft.getInstance();
             if (mc.level != null) LampLightManager.update(mc.level, ctx.camera().getPosition());
+            com.interstice.client.render.veil.CreatureEyeLights.update(ctx.camera().getPosition());
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
@@ -120,6 +122,7 @@ public class IntersticeClient implements ClientModInitializer {
             boolean in = ClientState.inInterstice;
             if (wasInInterstice && !in) {
                 LampLightManager.clear();
+                com.interstice.client.render.veil.CreatureEyeLights.clear();
                 AudioDirector.stopAll();
             }
             wasInInterstice = in;

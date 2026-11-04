@@ -70,6 +70,8 @@ public final class AutoTest {
     private static boolean benchOnly;
     /** Flag content "model turn": only the per-species turn-in-place sequences. */
     private static boolean turnOnly;
+    /** Flag content "model extra": only turn, rearing and the dark portraits (for before/after comparisons). */
+    private static boolean extraOnly;
     private static boolean savedVsync;
     private static int savedFps;
     private static AdherentEntity subject;
@@ -81,6 +83,7 @@ public final class AutoTest {
                 modelMode = flag.contains("model");
                 benchOnly = flag.contains("bench");
                 turnOnly = flag.contains("turn");
+                extraOnly = flag.contains("extra");
             } catch (Exception e) {
                 modelMode = false;
             }
@@ -134,6 +137,27 @@ public final class AutoTest {
         if (t % every == 0) shot(mc, "seq_" + name + "_" + String.format("%03d", frame++));
     }
 
+    /** A standable spot with no lamp or flood light within 20 blocks (for the dark captures). */
+    private static Vec3 darkSpot(IntersticeServer is) {
+        var level = is.level();
+        Vec3 best = null;
+        for (int z = 340; z < 6000; z += 233) {
+            Vec3 c = IntersticeTeleport.findSafeSpot(level, is.layout(), z);
+            net.minecraft.core.BlockPos o = net.minecraft.core.BlockPos.containing(c);
+            boolean lit = false;
+            for (net.minecraft.core.BlockPos q : net.minecraft.core.BlockPos.betweenClosed(o.offset(-20, -10, -20), o.offset(20, 14, 32))) {
+                var b = level.getBlockState(q).getBlock();
+                if (b instanceof com.interstice.block.LampBlock || b instanceof com.interstice.block.FloodLampBlock) {
+                    lit = true;
+                    break;
+                }
+            }
+            if (best == null) best = c;
+            if (!lit) return c;
+        }
+        return best;
+    }
+
     private static void nextPhase() {
         phase++;
         stepStart = ticks + 1;
@@ -178,6 +202,10 @@ public final class AutoTest {
                 mc.getWindow().setFramerateLimit(260);
             }
             if (step == 5) server(mc, s -> sp(s).setGameMode(net.minecraft.world.level.GameType.CREATIVE));
+            next();
+            return;
+        }
+        if (extraOnly && (step == 1 || step == 4 || step == 6 || step == 7)) {
             next();
             return;
         }
@@ -281,7 +309,40 @@ public final class AutoTest {
                     }
                 });
                 if (t == 120) shot(mc, "family_interstice");
-                if (t == 122) {
+                if (t == 122) server(mc, s -> {
+                    // the family in the dark, motionless, staring at the camera: away from every light fixture
+                    IntersticeServer is = IntersticeServer.get();
+                    ServerPlayer pl = sp(s);
+                    Vec3 dark = darkSpot(is);
+                    Interstice.LOG.info("[autotest] dark spot {}", dark);
+                    Vec3 shift = dark.subtract(pl.position());
+                    pl.teleportTo(is.level(), dark.x, dark.y, dark.z, 0f, 6f);
+                    for (AdherentEntity e : extras) e.setPos(e.position().add(shift.x, shift.y, shift.z));
+                    for (AdherentEntity e : extras) {
+                        double yaw = Math.toDegrees(Math.atan2(-(sp(s).getX() - e.getX()), sp(s).getZ() - e.getZ()));
+                        posture(e, (float) yaw, AdherentEntity.Behavior.STARE);
+                    }
+                });
+                if (t == 230) shot(mc, "family_dark_eyes");
+                // one portrait per species, close, in the dark
+                int k = (t - 240) / 24, u = (t - 240) % 24;
+                if (t >= 240 && k < Species.values().length) {
+                    Species x = Species.values()[k];
+                    if (u == 0) server(mc, s -> {
+                        clearExtras();
+                        IntersticeServer is = IntersticeServer.get();
+                        ServerPlayer pl = sp(s);
+                        double dd = 2.0 + 0.75 * Math.max(LENGTH[x.ordinal()], 1.6 * x.t.height);
+                        AdherentEntity e = is.population.createGround(is.level(), x, pl.position().add(0, 0, dd));
+                        if (e != null) {
+                            e.setNoAi(true);
+                            posture(e, 180f, AdherentEntity.Behavior.STARE);
+                            extras.add(e);
+                        }
+                    });
+                    if (u == 20) shot(mc, "dark_" + x.id);
+                }
+                if (t == 240 + 24 * Species.values().length) {
                     server(mc, s -> clearExtras());
                     next();
                 }
@@ -376,7 +437,7 @@ public final class AutoTest {
                     }
                 });
                 place(mc, 0.5, 8.0 - d, 0f, 8f);
-                if (turnOnly && t == 2) {
+                if ((turnOnly || extraOnly) && t == 2) {
                     phase = 7;
                     stepStart = ticks + 1;
                 } else if (t == 28) {
@@ -423,7 +484,24 @@ public final class AutoTest {
                 });
                 place(mc, 0.5 - d * 0.55, 8.0 - d * 0.75, -36f, 12f);
                 if (t >= 6) seq(mc, id + "_turn", t - 6, 3);
-                if (t >= 6 + 3 * 36) nextPhase();
+                if (t >= 6 + 3 * 36) {
+                    if (turnOnly) phase = 99;
+                    nextPhase();
+                }
+            }
+            case 8 -> {   // rearing (the start of a hunt: rear and threat), in profile
+                if (t == 0) {
+                    frame = 0;
+                    server(mc, s -> {
+                        if (subject == null) return;
+                        subject.setPos(0.5, groundY, 8.0);
+                        posture(subject, 90f, AdherentEntity.Behavior.IDLE);
+                    });
+                }
+                if (t == 4) server(mc, s -> { if (subject != null) posture(subject, 90f, AdherentEntity.Behavior.HUNT); });
+                place(mc, 0.5, 8.0 - d, 0f, 6f);
+                if (t >= 4) seq(mc, id + "_rear", t - 4, 2);
+                if (t >= 4 + 2 * 20) nextPhase();
             }
             default -> {
                 server(mc, s -> {

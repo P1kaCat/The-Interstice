@@ -19,7 +19,9 @@ import org.joml.Vector3f;
  * Renders the Adherent. On walls the whole body is re-oriented so its belly
  * faces the wall surface and its head points along its real direction of
  * travel on the wall plane (derived from motion, not from yaw). Falling
- * creatures tumble. A faint emissive slit is the only part visible in darkness.
+ * creatures tumble. The body's orientation is also handed to the animator (gravity and acceleration in
+ * the model's own space) so the moss hangs and swings the right way on the ground, on walls and in a
+ * fall. The eyes glow through {@link AdherentEyesLayer}.
  */
 public class AdherentRenderer extends MobRenderer<AdherentEntity, AdherentMeshModel> {
     public static final ResourceLocation TEXTURE = Interstice.id("textures/entity/adherent.png");
@@ -42,6 +44,17 @@ public class AdherentRenderer extends MobRenderer<AdherentEntity, AdherentMeshMo
     public AdherentRenderer(EntityRendererProvider.Context ctx, Species species) {
         super(ctx, new AdherentMeshModel(), 0.93f * species.t.width);
         this.groundShadow = 0.93f * species.t.width;
+        addLayer(new AdherentEyesLayer(this));
+    }
+
+    private final Quaternionf orient = new Quaternionf();
+
+    /** Gravity and acceleration into the model's space, from the orientation set up for this frame. */
+    private void handOrientation(AdherentEntity entity) {
+        AdherentAnimator.State st = AdherentAnimator.state(entity);
+        Quaternionf inv = new Quaternionf(orient).conjugate();
+        inv.transform(st.gravity.set(0, -1, 0));
+        inv.transform(st.accelModel.set(st.accelWorld));
     }
 
     @Override
@@ -70,7 +83,8 @@ public class AdherentRenderer extends MobRenderer<AdherentEntity, AdherentMeshMo
                 Vector3f right = new Vector3f(up).cross(back);
                 Matrix3f m = new Matrix3f(right, up, back);
                 pose.translate(side * entity.getBbWidth() / 2f, entity.getBbHeight() / 2f, 0);
-                pose.mulPose(new Quaternionf().setFromNormalized(m));
+                orient.setFromNormalized(m);
+                pose.mulPose(new Quaternionf(orient));
                 pose.translate(0, -0.15f, 0);
             }
             case FALLING -> {
@@ -80,9 +94,16 @@ public class AdherentRenderer extends MobRenderer<AdherentEntity, AdherentMeshMo
                 pose.mulPose(Axis.XP.rotationDegrees(t * 11f + entity.getId() * 37));
                 pose.mulPose(Axis.ZP.rotationDegrees(Mth.sin(t * 0.3f) * 40f));
                 pose.translate(0, -0.9f, 0);
+                orient.rotationY((float) Math.toRadians(180f - yBodyRot))
+                        .rotateX((float) Math.toRadians(t * 11f + entity.getId() * 37))
+                        .rotateZ((float) Math.toRadians(Mth.sin(t * 0.3f) * 40f));
             }
-            default -> super.setupRotations(entity, pose, bob, yBodyRot, partialTick, scale);
+            default -> {
+                super.setupRotations(entity, pose, bob, yBodyRot, partialTick, scale);
+                orient.rotationY((float) Math.toRadians(180f - yBodyRot));
+            }
         }
+        handOrientation(entity);
     }
 
     @Override

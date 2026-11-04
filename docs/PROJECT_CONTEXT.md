@@ -77,22 +77,23 @@ loads into it, which also proved the dimension appears in pre-existing worlds.
   sync), `EfxProcessor` (OpenAL EFX reverb + occlusion low-pass, via mixin on `Channel.play`; disables
   itself if unsupported), `VoicePlayer` (listener-relative whisper + optional subtitle).
 
-## The creature (v4, organic skinned mesh)
+## The creature (v5, organic skinned mesh with detailed anatomy)
 
 Full description, files and regeneration commands: `docs/CREATURE.md`. Brief: `docs/MONSTER_REDESIGN_PROMPT_FR.md`,
 references `docs/monster-references/`. The cube-built v3 is archived (git tag `adherent-v3-cubes`,
 `models/archive/adherent_v3_cubes.bbmodel`, `tools/archive/bbmodel_cubes/`, `docs/archive_BLOCKBENCH_cubes.md`).
 
 ```
-tools/creature/design_adherent.py  -> models/adherent.bbmodel (editable source, Blockbench Generic format)
+tools/creature/species_generator.py adherent -> models/adherent.bbmodel (editable source, Blockbench Generic format)
                                       + models/adherent_validation.txt
 tools/creature/export_adherent.py  -> assets/interstice/models/entity/adherent.json + textures/entity/adherent.png
 tools/creature/make_gifs.py        -> docs/creature/*.gif, v*.png (from the dev autotest captures)
 ```
 
 - 24 bones (hips, spine, chest, neck, head, jaw, shoulder/arm/fore/hand/fingers x2, thigh/shin/foot/toes x2),
-  49 lofted meshes, 1474 vertices; LOD0 2296 triangles, LOD1 (vertex clustering, horde mid-distance) 1216.
-  512x512 painted skin. Sizes (blocks): length 3.27, shoulder 1.73, width 1.47, reared 3.27. Hitbox 1.4x1.8.
+  113 lofted meshes (v5: muscles, vertebrae, ribs, spurs, teeth, sockets), 5921 vertices; LOD0 9810 triangles,
+  LOD1 (vertex clustering) 3125. 512x512 painted skin with baked ambient occlusion. Sizes (blocks): length
+  3.32, shoulder 1.84, width 1.47, reared 3.30. Hitbox 1.4x1.8. v4 archived: models/archive/adherent_v4.bbmodel.
 - Rendering: CPU linear blend skinning (`SkinnedMeshPose`, up to 3 bones per vertex, joint weights computed
   by the exporter) into the vanilla entity vertex consumer (`AdherentMeshModel` inside the vanilla
   `MobRenderer`). No GeckoLib, no glTF loader; Veil is not involved in the creature mesh.
@@ -121,7 +122,7 @@ LOD), `docs/PERFORMANCE.md` (measurements). Key points for future work:
   one entity type per species, all `AdherentEntity`.
 - Models: `tools/creature/species_generator.py` (morph of the Adherent template; edit the `SPECIES` table),
   then `python -I tools/creature/export_adherent.py <species>`; `preview_lineup.py` renders a quick offline
-  line-up. The Adherent itself still comes from the frozen `design_adherent.py`.
+  line-up. Since v5 the Adherent also comes from it (`design_adherent.py` is the frozen v4 generator).
 - Captures: `echo model > run/interstice_autotest.flag` (full: ~850 screenshots, ~4 min), `model bench`
   (benchmarks only, uncapped FPS) or `model turn` (turn-in-place sequences only); launch with
   `--quickPlaySingleplayer autotest` (from PowerShell: the path has spaces); then

@@ -1,6 +1,6 @@
 # The creature family (ecosystem)
 
-The walls are inhabited by one family of related organisms. The **Adherent** (v4, see
+The walls are inhabited by one family of related organisms. The **Adherent** (v5, see
 [CREATURE.md](CREATURE.md)) is the dominant species and the anatomical template; seven related species
 share its body plan (forward-leaning humanoid frame, very long forelimbs, gripping hands with three
 fingers and a thumb, digitigrade hind legs, scapulae under the skin, a small eyeless wedge head with a
@@ -14,7 +14,7 @@ Status vocabulary used below: **tested** = covered by a GameTest (`./gradlew run
 
 | Species | Size (blocks, rest: length / height) | Hitbox | Model (relative to the Adherent) | Role |
 |---|---|---|---|---|
-| Adherent | 3.27 / 1.74 | 1.4 × 1.8 | the template (unchanged v4) | dominant, most of the horde; indifferent unless hunting |
+| Adherent | 3.32 / 1.84 | 1.4 × 1.8 | the template itself (v5) | dominant, most of the horde; indifferent unless hunting |
 | Crawler | 2.08 / 1.15 | 0.9 × 1.0 | 0.62 scale, longer flexible limbs splayed sideways, low profile, dark skin | small, agile, nervous; dashes and freezes; flees or hides when fallen |
 | Strider | 4.47 / 2.51 | 1.5 × 2.6 | limbs 1.75–1.9× longer, narrow torso, raised body, pale skin, tendon lines | long-distance traveller; huge deliberate strides; slow, difficult recovery |
 | Burden | 4.07 / 2.36 (2.86 wide) | 2.2 × 2.4 | 1.3 scale, limbs and torso 1.4–1.6× thicker, massive shoulders, short sunk neck | heavy; high inertia; the structure answers its weight (sound, dust, vibration) |
@@ -62,6 +62,39 @@ per-species code path except the optional `WallStyle` behaviours.
   touching anything else in that file (`models/adherent_turn_validation.txt`). Captured:
   `docs/creature/family/<species>_turn.gif` (90 degrees one way, 60 back; in the frames the planted near
   hand stays in place while the body turns over it).
+
+## Visual refinement (work in progress, 2026-11-04)
+
+Paused at the user's request; this is the state that was pushed.
+
+Done and in the committed assets:
+- Shoulders and hips: the arm and thigh meshes now start inside the ribcage / pelvis and hand over from
+  the scapula / hips to the limb along their length (per-vertex gradient weights, the generator's
+  `interstice_skin` block, mixed in by the exporter), plus pectoral, latissimus, groin and gluteal masses
+  bridging torso and limb. Deformation report in `models/<species>_validation.txt`: 98 % of junction edges
+  stay within 0.81–1.41× of their rest length in every clip; the extremes (0.37–2.07× on the Adherent's
+  arm root while rearing) are inside the hand-over zone.
+- Moss: hanging strands with their own bones, swung at runtime by a damped spring towards gravity in the
+  model's own space (correct on the ground, on walls and in a fall), kicked by the body's acceleration;
+  clumps lying on the back; per-species amounts, lengths and colours; alpha-tested; left out of LOD1.
+- Eyes: per-species count, size and glow; an emissive pass (`RenderType.eyes`, additive, full bright, below
+  the bloom threshold) from `textures/entity/<species>_eyes.png`; Veil point lights at the eyes of the six
+  nearest creatures (`CreatureEyeLights`, same API as the lamps, skipped when Veil or dynamic lighting is
+  unavailable); the passing horde's eyes are drawn too.
+- Captures: AutoTest `model` now adds a rearing sequence per species and dark portraits away from every
+  light fixture; `model extra` captures only turn, rearing and darkness (used for the "before" set).
+
+Known problems, not yet fixed:
+- **The eyes do not show in the committed models**: the socket meshes are capped and sit under the skin of
+  the head, which hides the eye. The fix (open sockets with a raised bony rim, the eye just above the
+  skin) is in `species_generator.py` but the models have **not been regenerated** with it.
+- In daylight the moss reads poorly: most strands hang under the belly and the clumps look like dark
+  spots. The generator change that drapes strands from the back down the flanks and frays the clumps is
+  in the source, also **not yet regenerated**.
+- Performance: the eye pass of the horde re-skins every mid-distance instance (Stampede scene at 58–69 FPS
+  against the 120 cap in the capture run, 99–119 before); to fix by caching the eye vertices from the
+  body pass. LOD0 is 7400–10000 vertices per species; real creatures switch to LOD1 beyond 20 blocks.
+- No before/after comparison sheet has been assembled yet (the "before" captures exist locally only).
 
 ## Wall locomotion (server)
 

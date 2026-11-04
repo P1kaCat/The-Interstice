@@ -1,6 +1,6 @@
-hollow.bbmodel (Hollow): 24 bones, 49 meshes, 1474 vertices, 1422 faces, texture 512x512, 5.9 texels/px
-rest pose size (blocks): width 1.07, height 1.87 (shoulder top 1.80), length 3.53
-reared height (blocks): 3.48
+hollow.bbmodel (Hollow): 32 bones, 143 meshes, 7435 vertices, 6952 faces, texture 512x512, 4.5 texels/px
+rest pose size (blocks): width 1.07, height 1.92 (shoulder top 1.85), length 3.54
+reared height (blocks): 3.49
 rest contact heights before IK (px): arm_l 0.12, arm_r 0.12, leg_l 0.12, leg_r 0.12
 walk     contact height error <= 0.185 px, slip per 1/240 s <= 0.0088 px (interpolated, sampled at 240 Hz) [arm_l 0.13 leg_l 0.04 leg_r 0.05 arm_r 0.19]
 run      contact height error <= 0.468 px, slip per 1/240 s <= 0.0828 px (interpolated, sampled at 240 Hz) [leg_l 0.04 leg_r 0.04 arm_r 0.44 arm_l 0.47]
@@ -11,3 +11,9 @@ observe  contact height error <= 0.000 px, slip per 1/240 s <= 0.0000 px (interp
 search   contact height error <= 0.041 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.04 arm_r 0.04 leg_l 0.00 leg_r 0.00]
 rear     contact height error <= 0.145 px, slip per 1/240 s <= 0.0004 px (interpolated, sampled at 240 Hz) [leg_l 0.14 leg_r 0.14]
 turn     planted contact error <= 0.064 px height, 0.041 px on the ground (22.9 deg per cycle, interpolated, 240 Hz) [arm_r 0.05 leg_l 0.04 leg_r 0.03 arm_l 0.06]
+walk     junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.96-1.05, extremes 0.80-1.43 (worst: arm_r#19 0.95-1.43, arm_l#13 0.95-1.41)
+run      junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.90-1.14, extremes 0.71-1.85 (worst: arm_r#19 0.92-1.85, arm_l#13 0.93-1.79)
+climb    junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.88-1.34, extremes 0.60-1.81 (worst: arm_l#13 0.96-1.81, arm_r#19 0.96-1.81)
+rear     junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.83-1.44, extremes 0.54-2.09 (worst: thigh_l#16 0.82-2.09, thigh_r#22 0.82-2.09)
+turn     junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.95-1.05, extremes 0.75-1.25 (worst: thigh_l#16 0.75-1.23, thigh_r#22 0.80-1.25)
+moss: 8 hanging strands (own bones), 8 clumps; eyes: 6

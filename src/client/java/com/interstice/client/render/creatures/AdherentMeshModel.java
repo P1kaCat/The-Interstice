@@ -20,8 +20,13 @@ public class AdherentMeshModel extends EntityModel<AdherentEntity> {
         super(RenderType::entityCutoutNoCull);
     }
 
-    /** Real entities farther than this (blocks) are skinned on the reduced LOD. */
-    public static final double LOD1_DISTANCE = 26.0;
+    /** Real entities farther than this (blocks) are skinned on the reduced LOD (no moss; eyes kept). */
+    public static final double LOD1_DISTANCE = 20.0;
+
+    /** The pose skinned for the entity being rendered (render layers use it: the eyes). */
+    public SkinnedMeshPose current() {
+        return current;
+    }
 
     @Override
     public void setupAnim(AdherentEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
@@ -33,6 +38,9 @@ public class AdherentMeshModel extends EntityModel<AdherentEntity> {
         AdherentAnimator.apply(s, s.pose);
         net.minecraft.world.phys.Vec3 cam = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         boolean far = entity.distanceToSqr(cam) > LOD1_DISTANCE * LOD1_DISTANCE;
+        s.pose.gravity.set(s.gravity);
+        s.pose.accel.set(s.accelModel);
+        s.pose.simDt = s.frameDt;
         s.pose.skin(far ? 1 : 0);
         current = s.pose;
     }
@@ -58,6 +66,21 @@ public class AdherentMeshModel extends EntityModel<AdherentEntity> {
         if (asset == null) return false;
         SkinnedMeshAsset.Clip c = asset.clip("climb");
         return renderHorde(sp, poseStack, consumer, light, overlay, cycles * (c != null ? c.length : 2.6f));
+    }
+
+    /** The eyes of a horde instance (emissive pass): the same pose as {@link #renderHordeCycle}. */
+    public void renderHordeEyes(com.interstice.entity.species.Species sp, PoseStack poseStack, VertexConsumer consumer, float cycles, float glow) {
+        SkinnedMeshAsset asset = SkinnedMeshAsset.of(sp);
+        if (asset == null) return;
+        SkinnedMeshAsset.Clip c = asset.clip("climb");
+        SkinnedMeshPose hordePose = hordePoses[sp.ordinal()];
+        if (hordePose == null || hordePose.asset() != asset) hordePoses[sp.ordinal()] = hordePose = new SkinnedMeshPose(asset);
+        hordePose.reset();
+        hordePose.add(c, cycles * (c != null ? c.length : 2.6f), 1f);
+        hordePose.skin(1);
+        int k = Math.max(0, Math.min(255, (int) (255 * glow)));
+        hordePose.emitEyes(poseStack.last(), consumer, 0xF000F0, net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
+                net.minecraft.util.FastColor.ARGB32.color(255, k, k, k));
     }
 
     public boolean renderHorde(com.interstice.entity.species.Species sp, PoseStack poseStack, VertexConsumer consumer, int light, int overlay, float seconds) {

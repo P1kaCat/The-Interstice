@@ -1,10 +1,34 @@
-# The Adherent: model, animation and rendering pipeline (v4)
+# The Adherent: model, animation and rendering pipeline (v5)
 
 The Adherent is now the dominant species of a family of eight; the other seven are derived from this model
 (see [CREATURE_ECOSYSTEM.md](CREATURE_ECOSYSTEM.md)). This document covers the Adherent and the shared
 pipeline (exporter, runtime skinning, animator), which every species uses.
 
-The v4 creature replaces the cube-built v3 (archived as git tag `adherent-v3-cubes` and
+## v5: detailed anatomy (2026-11-04)
+
+The v5 template replaces the smooth v4 tubes (v4 kept as `models/archive/adherent_v4.bbmodel`, its generator
+`tools/creature/design_adherent.py` frozen for reference). Every species, the Adherent included, now comes
+from `tools/creature/species_generator.py`:
+
+- Geometry: Catmull-Rom subdivided lofts (3-4x the rings, 12-16 sides); muscle bellies on every limb
+  (deltoid, biceps/triceps, forearm flexors, quadriceps/hamstrings, calf), tendon ridges towards the wrists
+  and ankles, skin folds ringing the neck, erector muscles either side of the spine, pectoral/serratus
+  masses; a row of 14 irregular vertebral processes breaking the skin of the back; 5 ribs under each
+  flank; a ridge along each scapula; the point of the elbow, a knee cap and a bony spur at each hock;
+  swollen finger joints; on the head a brow ridge, three sunken sockets per side where eyes would be,
+  nostril slits and two interlocking rows of teeth (the upper row an overbite outside the jaw, the lower
+  row showing when the mouth opens).
+- 5921 vertices, 9810 triangles (v4: 1474 / 2296); LOD1 800-1960 vertices depending on the species.
+- Skin: ambient occlusion baked from the rest pose into the texture (a voxelised solid probed per texel:
+  armpits, the groin, between the ribs, fingers and teeth darken), countershading (a darker back, a paler
+  flushed belly), wrinkles concentrated at the joints, mottling, pores, darker extremities; bone and teeth
+  have their own pale materials, the sockets and nostrils a near-black one. Still a generated development
+  texture until the PixelLab art replaces it; the Burden gets a 1024 atlas to keep about 5 texels per px.
+- Animation: unchanged skeleton and clips (same bone pivots); contacts re-validated on the new geometry
+  (`models/<species>_validation.txt`: walk/run/climb 0.15-0.85 px, turn 0.06-0.37 px).
+- Captures: `docs/creature/family/` (regenerated with v5).
+
+The v4 creature replaced the cube-built v3 (archived as git tag `adherent-v3-cubes` and
 `models/archive/adherent_v3_cubes.bbmodel`). Design brief: `docs/MONSTER_REDESIGN_PROMPT_FR.md`;
 references: `docs/monster-references/`.
 
@@ -12,8 +36,9 @@ references: `docs/monster-references/`.
 
 | File | Role |
 |---|---|
-| `models/adherent.bbmodel` | **Editable source.** Blockbench *Generic* (`free`) format: 24 bones, organic meshes rigidly parented to bones in the editor, 512×512 skin embedded, 10 keyframed animations. |
-| `tools/creature/design_adherent.py` | Generator that produced the source: lofted tapered meshes, UV atlas and painted skin, animation authoring, IK solve of contacts and validation report. Re-running it **overwrites** the `.bbmodel`. |
+| `models/adherent.bbmodel` | **Editable source.** Blockbench *Generic* (`free`) format: 24 bones, organic meshes rigidly parented to bones in the editor, 512×512 skin embedded, 11 keyframed animations. |
+| `tools/creature/species_generator.py` | Generator of the source (v5, every species: `python -I tools/creature/species_generator.py adherent`): lofted meshes with anatomical detail, UV atlas and painted skin with baked ambient occlusion, animation authoring, IK solve of contacts and validation report. Re-running it **overwrites** the `.bbmodel`. |
+| `tools/creature/design_adherent.py` | The frozen v4 generator (its output is archived as `models/archive/adherent_v4.bbmodel`). |
 | `tools/creature/export_adherent.py` | Exporter: `.bbmodel` → game asset. Works on any edited version of the file. |
 | `src/client/resources/assets/interstice/models/entity/adherent.json` | Game asset: bones, LOD0 + LOD1 meshes with skin weights, animation channels. |
 | `src/client/resources/assets/interstice/textures/entity/adherent.png` | Skin, extracted from the `.bbmodel`. |
@@ -37,7 +62,7 @@ python -I tools/creature/export_adherent.py
 To rebuild everything from the generator (this discards manual Blockbench edits):
 
 ```bash
-python -I tools/creature/design_adherent.py
+python -I tools/creature/species_generator.py adherent
 ```
 
 ```bash
