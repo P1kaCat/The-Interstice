@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "interstice",
+  "version": "${version}",
+  "name": "The Interstice",
+  "description": "A cinematic psychological horror dimension: two colossal walls, giant chains, and things that live on the walls.",
+  "authors": [
+    "The Interstice Team"
+  ],
+  "license": "All-Rights-Reserved",
+  "icon": "assets/interstice/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.interstice.Interstice"
+    ],
+    "client": [
+      "com.interstice.client.IntersticeClient"
+    ]
+  },
+  "mixins": [
+    "interstice.mixins.json",
+    {
+      "config": "interstice.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "accessWidener": "interstice.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "recommends": {
+    "veil": ">=4.5.0"
+  },
+  "custom": {
+    "interstice:note": "Veil is required on the client and must not be installed on dedicated servers."
+  }
+}

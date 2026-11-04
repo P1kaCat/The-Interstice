@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "interstice:block/flood_lamp"
+    },
+    "facing=down": {
+      "model": "interstice:block/flood_lamp",
+      "x": 180
+    },
+    "facing=north": {
+      "model": "interstice:block/flood_lamp",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "interstice:block/flood_lamp",
+      "x": 90,
+      "y": 180
+    },
+    "facing=west": {
+      "model": "interstice:block/flood_lamp",
+      "x": 90,
+      "y": 270
+    },
+    "facing=east": {
+      "model": "interstice:block/flood_lamp",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "stages": [
+    {
+      "type": "veil:blit",
+      "shader": "interstice:atmosphere/fog",
+      "in": "minecraft:main",
+      "out": "fogged",
+      "clear": false
+    },
+    {
+      "type": "veil:blit",
+      "shader": "interstice:atmosphere/threshold",
+      "in": "fogged",
+      "out": "bright",
+      "clear": false
+    },
+    {
+      "type": "veil:blit",
+      "shader": "veil:core/blur",
+      "in": "bright",
+      "out": "b1",
+      "clear": false
+    },
+    {
+      "type": "veil:blit",
+      "shader": "veil:core/blur",
+      "in": "b1",
+      "out": "b2",
+      "clear": false
+    },
+    {
+      "type": "veil:blit",
+      "shader": "veil:core/blur",
+      "in": "b2",
+      "out": "b3",
+      "clear": false
+    },
+    {
+      "type": "veil:blit",
+      "shader": "veil:core/unblur",
+      "in": "b3",
+      "out": "b2",
+      "clear": false
+    },
+    {
+      "type": "veil:blit",
+      "shader": "veil:core/unblur",
+      "in": "b2",
+      "out": "b1",
+      "clear": false
+    },
+    {
+      "type": "veil:blit",
+      "shader": "veil:core/unblur",
+      "in": "b1",
+      "out": "bloom",
+      "clear": false
+    },
+    {
+      "type": "veil:blit",
+      "shader": "interstice:atmosphere/grade",
+      "in": "fogged",
+      "clear": false
+    }
+  ],
+  "framebuffers": {
+    "fogged": {
+      "depth": false,
+      "format": "RGB16F"
+    },
+    "bright": {
+      "width": "q.screen_width / 2.0",
+      "height": "q.screen_height / 2.0",
+      "depth": false,
+      "filter": {
+        "blur": true
+      },
+      "format": "R11F_G11F_B10F"
+    },
+    "b1": {
+      "width": "q.screen_width / 4.0",
+      "height": "q.screen_height / 4.0",
+      "depth": false,
+      "filter": {
+        "blur": true
+      },
+      "format": "R11F_G11F_B10F"
+    },
+    "b2": {
+      "width": "q.screen_width / 8.0",
+      "height": "q.screen_height / 8.0",
+      "depth": false,
+      "filter": {
+        "blur": true
+      },
+      "format": "R11F_G11F_B10F"
+    },
+    "b3": {
+      "width": "q.screen_width / 16.0",
+      "height": "q.screen_height / 16.0",
+      "depth": false,
+      "filter": {
+        "blur": true
+      },
+      "format": "R11F_G11F_B10F"
+    },
+    "bloom": {
+      "width": "q.screen_width / 2.0",
+      "height": "q.screen_height / 2.0",
+      "depth": false,
+      "filter": {
+        "blur": true
+      },
+      "format": "R11F_G11F_B10F"
+    }
+  },
+  "textures": {
+    "BloomSampler": {
+      "type": "framebuffer",
+      "name": "bloom"
+    }
+  },
+  "renderStage": "after_level"
+}

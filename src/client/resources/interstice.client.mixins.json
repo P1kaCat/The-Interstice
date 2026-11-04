@@ -1,0 +1,10 @@
+{
+  "required": true,
+  "package": "com.interstice.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ChannelMixin",
+    "FogRendererMixin"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}

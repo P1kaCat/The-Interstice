@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "interstice-gametest",
+  "version": "1.0.0",
+  "name": "The Interstice GameTests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "com.interstice.test.IntersticeGameTests"
+    ]
+  },
+  "depends": {
+    "interstice": "*",
+    "fabric-gametest-api-v1": "*"
+  },
+  "mixins": [
+    "interstice-gametest.mixins.json"
+  ]
+}

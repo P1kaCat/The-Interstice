@@ -1,0 +1,350 @@
+{
+  "ambient.drone": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/drone",
+        "stream": true
+      }
+    ]
+  },
+  "ambient.air": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/air",
+        "stream": true
+      }
+    ]
+  },
+  "ambient.hum": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/hum",
+        "stream": true
+      }
+    ]
+  },
+  "env.impact_far": {
+    "sounds": [
+      {
+        "name": "interstice:env/impact_far_1",
+        "attenuation_distance": 256
+      },
+      {
+        "name": "interstice:env/impact_far_2",
+        "attenuation_distance": 256
+      },
+      {
+        "name": "interstice:env/impact_far_3",
+        "attenuation_distance": 256
+      }
+    ],
+    "subtitle": "subtitles.interstice.impact_far"
+  },
+  "env.chain_groan": {
+    "sounds": [
+      {
+        "name": "interstice:env/chain_groan_1",
+        "attenuation_distance": 200
+      },
+      {
+        "name": "interstice:env/chain_groan_2",
+        "attenuation_distance": 200
+      },
+      {
+        "name": "interstice:env/chain_groan_3",
+        "attenuation_distance": 200
+      }
+    ],
+    "subtitle": "subtitles.interstice.chain_groan"
+  },
+  "env.chain_impact": {
+    "sounds": [
+      {
+        "name": "interstice:env/chain_impact_1",
+        "attenuation_distance": 220
+      },
+      {
+        "name": "interstice:env/chain_impact_2",
+        "attenuation_distance": 220
+      }
+    ],
+    "subtitle": "subtitles.interstice.chain_impact"
+  },
+  "env.structure_groan": {
+    "sounds": [
+      {
+        "name": "interstice:env/structure_groan_1",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "interstice:env/structure_groan_2",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "interstice:env/structure_groan_3",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.interstice.structure_groan"
+  },
+  "env.rumble": {
+    "sounds": [
+      {
+        "name": "interstice:env/rumble_1",
+        "attenuation_distance": 256
+      },
+      {
+        "name": "interstice:env/rumble_2",
+        "attenuation_distance": 256
+      }
+    ],
+    "subtitle": "subtitles.interstice.rumble"
+  },
+  "env.debris": {
+    "sounds": [
+      {
+        "name": "interstice:env/debris_1",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "interstice:env/debris_2",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "interstice:env/debris_3",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.interstice.debris"
+  },
+  "env.scuttle_far": {
+    "sounds": [
+      {
+        "name": "interstice:env/scuttle_far_1",
+        "attenuation_distance": 128
+      },
+      {
+        "name": "interstice:env/scuttle_far_2",
+        "attenuation_distance": 128
+      },
+      {
+        "name": "interstice:env/scuttle_far_3",
+        "attenuation_distance": 128
+      }
+    ],
+    "subtitle": "subtitles.interstice.scuttle"
+  },
+  "env.unexplained": {
+    "sounds": [
+      {
+        "name": "interstice:env/unexplained_1",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "interstice:env/unexplained_2",
+        "attenuation_distance": 96
+      },
+      {
+        "name": "interstice:env/unexplained_3",
+        "attenuation_distance": 96
+      }
+    ],
+    "subtitle": "subtitles.interstice.unexplained"
+  },
+  "env.lamp_fail": {
+    "sounds": [
+      {
+        "name": "interstice:env/lamp_fail",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.interstice.lamp_fail"
+  },
+  "event.quake": {
+    "sounds": [
+      {
+        "name": "interstice:event/quake",
+        "attenuation_distance": 256,
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.interstice.quake"
+  },
+  "event.horde": {
+    "sounds": [
+      {
+        "name": "interstice:event/horde",
+        "attenuation_distance": 200,
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.interstice.horde"
+  },
+  "event.premonition": {
+    "sounds": [
+      {
+        "name": "interstice:event/premonition",
+        "stream": true
+      }
+    ]
+  },
+  "creature.idle": {
+    "sounds": [
+      {
+        "name": "interstice:creature/idle_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "interstice:creature/idle_2",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "interstice:creature/idle_3",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.interstice.creature.idle"
+  },
+  "creature.hurt": {
+    "sounds": [
+      {
+        "name": "interstice:creature/hurt_1",
+        "attenuation_distance": 24
+      },
+      {
+        "name": "interstice:creature/hurt_2",
+        "attenuation_distance": 24
+      }
+    ],
+    "subtitle": "subtitles.interstice.creature.hurt"
+  },
+  "creature.death": {
+    "sounds": [
+      {
+        "name": "interstice:creature/death",
+        "attenuation_distance": 32
+      }
+    ],
+    "subtitle": "subtitles.interstice.creature.death"
+  },
+  "creature.scream": {
+    "sounds": [
+      {
+        "name": "interstice:creature/scream_1",
+        "attenuation_distance": 64
+      },
+      {
+        "name": "interstice:creature/scream_2",
+        "attenuation_distance": 64
+      }
+    ],
+    "subtitle": "subtitles.interstice.creature.scream"
+  },
+  "creature.step": {
+    "sounds": [
+      {
+        "name": "interstice:creature/step_1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "interstice:creature/step_2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "interstice:creature/step_3",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "interstice:creature/step_4",
+        "attenuation_distance": 16
+      }
+    ]
+  },
+  "creature.alert": {
+    "sounds": [
+      {
+        "name": "interstice:creature/alert",
+        "attenuation_distance": 40
+      }
+    ],
+    "subtitle": "subtitles.interstice.creature.alert"
+  },
+  "creature.land": {
+    "sounds": [
+      {
+        "name": "interstice:creature/land",
+        "attenuation_distance": 48
+      }
+    ],
+    "subtitle": "subtitles.interstice.creature.land"
+  },
+  "creature.sniff": {
+    "sounds": [
+      {
+        "name": "interstice:creature/sniff_1",
+        "attenuation_distance": 20
+      },
+      {
+        "name": "interstice:creature/sniff_2",
+        "attenuation_distance": 20
+      }
+    ],
+    "subtitle": "subtitles.interstice.creature.sniff"
+  },
+  "voice.hide": {
+    "sounds": [
+      {
+        "name": "interstice:voice/hide"
+      }
+    ]
+  },
+  "voice.dont_move": {
+    "sounds": [
+      {
+        "name": "interstice:voice/dont_move"
+      }
+    ]
+  },
+  "voice.not_yet": {
+    "sounds": [
+      {
+        "name": "interstice:voice/not_yet"
+      }
+    ]
+  },
+  "voice.go": {
+    "sounds": [
+      {
+        "name": "interstice:voice/go"
+      }
+    ]
+  },
+  "voice.they_hear": {
+    "sounds": [
+      {
+        "name": "interstice:voice/they_hear"
+      }
+    ]
+  },
+  "voice.look_up": {
+    "sounds": [
+      {
+        "name": "interstice:voice/look_up"
+      }
+    ]
+  },
+  "voice.closer": {
+    "sounds": [
+      {
+        "name": "interstice:voice/closer"
+      }
+    ]
+  },
+  "voice.stay": {
+    "sounds": [
+      {
+        "name": "interstice:voice/stay"
+      }
+    ]
+  }
+}

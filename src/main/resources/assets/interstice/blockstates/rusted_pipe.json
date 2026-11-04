@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "interstice:block/rusted_pipe"
+    },
+    "axis=z": {
+      "model": "interstice:block/rusted_pipe",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "interstice:block/rusted_pipe",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/orientable_vertical",
+  "textures": {
+    "front": "interstice:block/flood_lamp_front",
+    "side": "interstice:block/flood_lamp_side"
+  }
+}

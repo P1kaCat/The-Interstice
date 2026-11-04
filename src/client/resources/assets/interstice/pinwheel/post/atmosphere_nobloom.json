@@ -1,0 +1,24 @@
+{
+  "stages": [
+    {
+      "type": "veil:blit",
+      "shader": "interstice:atmosphere/fog",
+      "in": "minecraft:main",
+      "out": "fogged",
+      "clear": false
+    },
+    {
+      "type": "veil:blit",
+      "shader": "interstice:atmosphere/grade_nobloom",
+      "in": "fogged",
+      "clear": false
+    }
+  ],
+  "framebuffers": {
+    "fogged": {
+      "depth": false,
+      "format": "RGB16F"
+    }
+  },
+  "renderStage": "after_level"
+}

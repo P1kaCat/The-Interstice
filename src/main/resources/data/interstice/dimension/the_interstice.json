@@ -1,0 +1,7 @@
+{
+  "type": "interstice:the_interstice",
+  "generator": {
+    "type": "interstice:interstice",
+    "biome_source": { "type": "minecraft:fixed", "biome": "interstice:the_interstice" }
+  }
+}

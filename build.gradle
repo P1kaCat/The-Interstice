@@ -1,0 +1,93 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    maven { name = 'BlameJared (Veil)'; url = 'https://maven.blamejared.com/' }
+    maven { name = 'Ladysnake'; url = 'https://maven.ladysnake.org/releases' }
+    maven { name = 'Terraformers (Mod Menu)'; url = 'https://maven.terraformersmc.com/' }
+    mavenCentral()
+}
+
+sourceSets {
+    // Headless runtime tests (Fabric GameTest). Never packaged into the mod jar.
+    gametest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
+loom {
+    // Client-only code lives in src/client so the dedicated server can never load it.
+    splitEnvironmentSourceSets()
+
+    mods {
+        "interstice" {
+            sourceSet sourceSets.main
+            sourceSet sourceSets.client
+        }
+        "interstice-gametest" {
+            sourceSet sourceSets.gametest
+        }
+    }
+
+    accessWidenerPath = file("src/main/resources/interstice.accesswidener")
+
+    runs {
+        client {
+            programArgs "--username", "Explorer"
+        }
+        gametest {
+            server()
+            name "Game Test"
+            vmArg "-Dfabric-api.gametest"
+            vmArg "-Dfabric-api.gametest.report-file=${project.layout.buildDirectory.get().asFile}/gametest-report.xml"
+            runDir "build/gametest"
+            source sourceSets.gametest
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    // Mojang official mappings: Veil itself is developed against them, which keeps API reading 1:1.
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Veil is client-only: its Fabric build hard-depends on client-environment Fabric modules and cannot
+    // load on a dedicated server. Only src/client references Veil classes.
+    modClientImplementation "foundry.veil:veil-fabric-${project.minecraft_version}:${project.veil_version}"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+    it.options.encoding = 'UTF-8'
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
