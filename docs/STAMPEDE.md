@@ -59,7 +59,7 @@ in space. A visual instance and a real runner are not the same individual: there
 
 ## Tests
 
-GameTests: phase transition; real runners and real falls during HORDE_PASSAGE; runners of at least 4
+GameTests: phase transition; real runners and real falls during HORDE_PASSAGE; a stunned survivor of a real fall; runners of at least 4
 species when the composition is even; species distribution within 1.2 % of the configured weights,
 normalised variation and surge rate; sync codec and client/server species agreement.
 Not automated: the visual horde tiers (client rendering) — see the benchmark in

@@ -73,6 +73,8 @@ public class AdherentEntity extends Monster {
     private double laneY;
     private double fallStartY;
     public boolean forceSurvive;
+    /** Tests and commands: the disposition taken on landing instead of the species roll (null = roll). */
+    @Nullable public GroundDisposition forceDisposition;
     private int attackCooldown;
     public long spawnTick;
 
@@ -520,7 +522,8 @@ public class AdherentEntity extends Monster {
             setMode(Mode.GROUND);
             role = Role.SEARCHER;
             // forced survivors (the guaranteed searcher of a Stampede, tests) keep the full brain
-            disposition = forceSurvive ? GroundDisposition.HUNTER : species.rollDisposition(random.nextFloat());
+            disposition = forceDisposition != null ? forceDisposition
+                    : forceSurvive ? GroundDisposition.HUNTER : species.rollDisposition(random.nextFloat());
             if (disposition == GroundDisposition.STUNNED) {
                 setBehavior(Behavior.STUNNED);
                 behaviorTimer = (int) ((220 + random.nextInt(200)) * species.t.recoverMul);

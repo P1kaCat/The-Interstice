@@ -635,4 +635,274 @@ public class IntersticeGameTests implements FabricGameTest {
             removePlayer(p);
         });
     }
+
+    /** Forces the chunks of a square around a point (entity-ticking in the test server). */
+    private static void forceAround(ServerLevel level, double x, double z, int radius) {
+        for (int dx = -radius; dx <= radius; dx += 16)
+            for (int dz = -radius; dz <= radius; dz += 16) level.setChunkForced(((int) Math.floor(x) + dx) >> 4, ((int) Math.floor(z) + dz) >> 4, true);
+    }
+
+    /** A standable floor point between dMin and dMax blocks in front of a wall face, or null. */
+    private static Vec3 floorNearWall(ServerLevel level, IntersticeLayout L, int side, double z, int dMin, int dMax) {
+        for (int d = dMin; d <= dMax; d++) {
+            int x = (int) Math.floor(L.faceX(side, z) - side * d);
+            for (int y = IntersticeLayout.FLOOR_Y + 8; y >= IntersticeLayout.FLOOR_Y - 4; y--) {
+                BlockPos b = new BlockPos(x, y, (int) Math.floor(z));
+                if (level.getBlockState(b).getCollisionShape(level, b).isEmpty()) continue;
+                if (level.getBlockState(b.above()).isAir() && level.getBlockState(b.above(2)).isAir() && level.getBlockState(b.above(3)).isAir())
+                    return new Vec3(x + 0.5, y + 1, Math.floor(z) + 0.5);
+                break;
+            }
+        }
+        return null;
+    }
+
+    @GameTest(template = EMPTY_STRUCTURE, batch = "species8", timeoutTicks = 1100)
+    public void stunnedCreatureLiesStillThenWakesAsNonHunter(GameTestHelper h) {
+        IntersticeServer s = server(h);
+        ServerLevel level = s.level();
+        IntersticeLayout L = s.layout();
+        Vec3 spot = IntersticeTeleport.findSafeSpot(level, L, 2100);
+        ServerPlayer p = survivalPlayer(h);
+        p.teleportTo(level, spot.x, spot.y, spot.z, 0, 0);
+        forceAround(level, L.faceX(1, spot.z), spot.z, 32);
+        AdherentEntity e = s.population.create(level, Species.ADHERENT, 1, IntersticeLayout.FLOOR_Y + 14, spot.z);
+        check(e != null, "could not attach creature");
+        e.forceSurvive = true;
+        e.forceDisposition = Species.GroundDisposition.STUNNED;
+        e.startFalling();
+        boolean[] f = new boolean[4];   // landed, stunned seen, woke, hunted
+        int[] stunTicks = {0};
+        Vec3[] stunPos = {null};
+        double[] maxDisp = {0};
+        Species.GroundDisposition[] wokeAs = {null};
+        h.onEachTick(() -> {
+            AdherentEntity.Behavior b = e.behavior();
+            f[3] |= b == AdherentEntity.Behavior.HUNT;
+            if (!f[0] && e.mode() == AdherentEntity.Mode.GROUND) {
+                f[0] = true;
+                // a visible, lit player right next to it: a stunned creature must not react
+                Vec3 at = e.position().add(-2.5, 0.2, 0);
+                p.teleportTo(level, at.x, at.y, at.z, 90, 0);
+                level.setBlockAndUpdate(BlockPos.containing(at).above(3), ModBlocks.INDUSTRIAL_LAMP.defaultBlockState());
+            }
+            if (b == AdherentEntity.Behavior.STUNNED) {
+                f[1] = true;
+                stunTicks[0]++;
+                if (stunPos[0] == null) stunPos[0] = e.position();
+                maxDisp[0] = Math.max(maxDisp[0], e.position().multiply(1, 0, 1).distanceTo(stunPos[0].multiply(1, 0, 1)));
+            } else if (f[1] && !f[2]) {
+                f[2] = true;
+                wokeAs[0] = e.disposition;
+            }
+        });
+        h.succeedWhen(() -> {
+            check(e.isAlive(), "forced survivor died");
+            check(!f[3], "a stunned creature hunted");
+            check(f[1], "never stunned (" + e.behavior() + ")");
+            check(f[2] && e.behavior() != AdherentEntity.Behavior.RECOVER, "still stunned or recovering (" + e.behavior() + ", " + stunTicks[0] + " ticks stunned)");
+            int expected = (int) (220 * Species.ADHERENT.t.recoverMul) - 2;
+            check(stunTicks[0] >= expected, "stunned only " + stunTicks[0] + " ticks (expected at least " + expected + ")");
+            check(maxDisp[0] < 0.5, "moved " + maxDisp[0] + " blocks while stunned");
+            check(wokeAs[0] == Species.GroundDisposition.INVESTIGATOR || wokeAs[0] == Species.GroundDisposition.FLEER, "woke up as " + wokeAs[0]);
+            System.out.printf("[interstice-test] stunned for %d ticks (moved %.2f), woke up as %s, now %s, never hunted%n", stunTicks[0], maxDisp[0], wokeAs[0], e.behavior());
+            e.discard();
+            removePlayer(p);
+        });
+    }
+
+    @GameTest(template = EMPTY_STRUCTURE, batch = "species9", timeoutTicks = 1400)
+    public void hiderGoesToTheWallFootAndFleesWhenFound(GameTestHelper h) {
+        IntersticeServer s = server(h);
+        ServerLevel level = s.level();
+        IntersticeLayout L = s.layout();
+        Vec3 spot = IntersticeTeleport.findSafeSpot(level, L, 2400);
+        ServerPlayer p = survivalPlayer(h);
+        Vec3 away = IntersticeTeleport.findSafeSpot(level, L, 2400 - 90);
+        p.teleportTo(level, away.x, away.y, away.z, 0, 0);
+        int side = 1;
+        Vec3 start = null;
+        for (int dz = 0; dz < 40 && start == null; dz += 4) {
+            start = floorNearWall(level, L, side, spot.z + dz, 9, 15);
+            if (start == null) {
+                side = -side;
+                start = floorNearWall(level, L, side, spot.z + dz, 9, 15);
+            }
+        }
+        check(start != null, "no floor 9-15 blocks in front of a wall near z=" + spot.z);
+        Vec3 st = start;
+        int sd = side;
+        double startDepth = L.wallDepth(st.x, st.z);
+        check(startDepth < -6, "start too close to the wall (depth " + startDepth + ")");
+        forceAround(level, st.x, st.z, 32);
+        AdherentEntity[] ref = {null};
+        h.runAfterDelay(20, () -> {
+            AdherentEntity e = s.population.createGround(level, Species.CRAWLER, st);
+            check(e != null, "spawn failed");
+            e.disposition = Species.GroundDisposition.HIDER;
+            e.setBehavior(AdherentEntity.Behavior.RECOVER);
+            e.setBehaviorTimer(1);
+            ref[0] = e;
+        });
+        int[] hideTicks = {0};
+        long[] hiddenAt = {-1};
+        Vec3[] hidePos = {null};
+        double[] maxDisp = {0}, hideDepth = {0};
+        boolean[] found = {false}, fled = {false};
+        h.onEachTick(() -> {
+            AdherentEntity e = ref[0];
+            if (e == null) return;
+            AdherentEntity.Behavior b = e.behavior();
+            if (!found[0] && b == AdherentEntity.Behavior.HIDE) {
+                if (hidePos[0] == null) {
+                    hidePos[0] = e.position();
+                    hiddenAt[0] = level.getGameTime();
+                    hideDepth[0] = L.wallDepth(e.getX(), e.getZ());
+                }
+                hideTicks[0]++;
+                maxDisp[0] = Math.max(maxDisp[0], e.position().multiply(1, 0, 1).distanceTo(hidePos[0].multiply(1, 0, 1)));
+                if (hideTicks[0] == 120) {
+                    // found: a lit player steps right up to it
+                    found[0] = true;
+                    Vec3 at = e.position().add(-sd * 2.5, 0.1, 0);
+                    p.teleportTo(level, at.x, at.y, at.z, sd > 0 ? -90 : 90, 0);
+                    level.setBlockAndUpdate(BlockPos.containing(at).above(3), ModBlocks.INDUSTRIAL_LAMP.defaultBlockState());
+                }
+            }
+            if (found[0] && b == AdherentEntity.Behavior.FLEE) fled[0] = true;
+        });
+        h.succeedWhen(() -> {
+            AdherentEntity e = ref[0];
+            check(e != null && e.isAlive(), "no hider");
+            check(hidePos[0] != null, "not hiding yet (" + e.behavior() + " depth " + L.wallDepth(e.getX(), e.getZ()) + ")");
+            check(hideDepth[0] > -5, "hid away from the wall (depth " + hideDepth[0] + ")");
+            check(found[0], "hidden for " + hideTicks[0] + " ticks");
+            check(maxDisp[0] < 0.3, "moved " + maxDisp[0] + " blocks while hidden");
+            check(fled[0], "found but not fleeing (" + e.behavior() + ")");
+            System.out.printf("[interstice-test] crawler (hider) walked from depth %.1f to the wall foot (depth %.1f), stayed still for %d ticks (moved %.2f), fled when found%n",
+                    startDepth, hideDepth[0], hideTicks[0], maxDisp[0]);
+            e.discard();
+            removePlayer(p);
+        });
+    }
+
+    @GameTest(template = EMPTY_STRUCTURE, batch = "species10", timeoutTicks = 500)
+    public void smallerSpeciesGiveTheBurdenRoom(GameTestHelper h) {
+        IntersticeServer s = server(h);
+        ServerLevel level = s.level();
+        IntersticeLayout L = s.layout();
+        Vec3 spot = IntersticeTeleport.findSafeSpot(level, L, -2300);
+        ServerPlayer p = survivalPlayer(h);
+        p.teleportTo(level, spot.x, spot.y, spot.z, 0, 0);
+        int side = -L.sideOf(spot.x, spot.z);   // the far wall: the player must not startle them
+        double z0 = spot.z, y0 = IntersticeLayout.FLOOR_Y + 30;
+        for (int k = -2; k <= 2; k++) load(level, L, side, z0 + k * 16);
+        Species[] small = {Species.ADHERENT, Species.CRAWLER, Species.STRIDER, Species.HOLLOW, Species.WATCHER, Species.FRACTURED};
+        double[][] off = {{2, 4}, {-2, 4}, {2, -4}, {-2, -4}, {4.5, 0}, {-4.5, 0}};
+        java.util.List<AdherentEntity> others = new java.util.ArrayList<>();
+        AdherentEntity[] burden = {null}, clinger = {null};
+        double[] d0 = new double[small.length];
+        h.runAfterDelay(20, () -> {
+            AdherentEntity b = s.population.create(level, Species.BURDEN, side, y0, z0);
+            check(b != null, "could not attach the burden");
+            b.setBehaviorTimer(1_000_000);
+            burden[0] = b;
+            for (int k = 0; k < small.length; k++) {
+                AdherentEntity o = s.population.create(level, small[k], side, y0 + off[k][0], z0 + off[k][1]);
+                check(o != null, "could not attach " + small[k].id);
+                o.setBehaviorTimer(1_000_000);   // idle: any movement comes from the reaction
+                others.add(o);
+            }
+            AdherentEntity c = s.population.create(level, Species.CLINGER, side, y0 - 3, z0 + 1.5);
+            check(c != null, "could not attach the clinger");
+            c.setBehaviorTimer(1_000_000);
+            clinger[0] = c;
+        });
+        double[] c0 = new double[2];
+        h.runAfterDelay(22, () -> {
+            for (int k = 0; k < small.length; k++) d0[k] = wallDist(others.get(k), burden[0]);
+            c0[0] = clinger[0].getY();
+            c0[1] = clinger[0].getZ();
+        });
+        h.succeedWhen(() -> {
+            check(clinger[0] != null && d0[0] > 0, "not set up yet");
+            StringBuilder log = new StringBuilder();
+            for (int k = 0; k < small.length; k++) {
+                double d = wallDist(others.get(k), burden[0]);
+                check(d > d0[k] + 3, small[k].id + " did not make room: " + d0[k] + " -> " + d);
+                log.append(String.format("%s %.1f->%.1f ", small[k].id, d0[k], d));
+            }
+            AdherentEntity c = clinger[0];
+            double moved = Math.hypot(c.getY() - c0[0], c.getZ() - c0[1]);
+            check(moved < 0.5, "the clinger made way (moved " + moved + ")");
+            System.out.println("[interstice-test] species gave the burden room: " + log + "; clinger stayed (moved " + String.format("%.2f", moved) + ")");
+            for (AdherentEntity o : others) o.discard();
+            burden[0].discard();
+            c.discard();
+            removePlayer(p);
+        });
+    }
+
+    private static double wallDist(AdherentEntity a, AdherentEntity b) {
+        return Math.hypot(a.getY() - b.getY(), a.getZ() - b.getZ());
+    }
+
+    @GameTest(template = EMPTY_STRUCTURE, batch = "species11", timeoutTicks = 1600)
+    public void watcherAimsImperfectlyAndSometimesLooksPastThePlayer(GameTestHelper h) {
+        IntersticeServer s = server(h);
+        ServerLevel level = s.level();
+        IntersticeLayout L = s.layout();
+        Vec3 safe = IntersticeTeleport.findSafeSpot(level, L, 2700);
+        int side = L.sideOf(safe.x, safe.z);
+        Vec3 floor = null;
+        for (int dz = 0; dz < 60 && floor == null; dz += 6) floor = floorNearWall(level, L, side, safe.z + dz, 14, 30);
+        check(floor != null, "no floor 14-30 blocks from the wall near z=" + safe.z);
+        Vec3 spot = floor;
+        ServerPlayer p = survivalPlayer(h);
+        p.teleportTo(level, spot.x, spot.y, spot.z, 0, 0);
+        double y = IntersticeLayout.FLOOR_Y + 22;
+        for (int k = -2; k <= 2; k++) load(level, L, side, spot.z + k * 16);
+        java.util.List<AdherentEntity> watchers = new java.util.ArrayList<>();
+        h.runAfterDelay(20, () -> {
+            for (int k = 0; k < 10; k++) {
+                AdherentEntity w = s.population.create(level, Species.WATCHER, side, y, spot.z - 18 + k * 4);
+                check(w != null, "could not attach watcher " + k);
+                double d = w.distanceTo(p);
+                check(d > 9.5 && d < 46, "watcher " + k + " at " + d + " blocks from the player (needs 9.5-46)");
+                watchers.add(w);
+            }
+        });
+        java.util.Map<AdherentEntity, org.joml.Vector3f> last = new java.util.HashMap<>();
+        int[] aimed = {0}, past = {0}, elsewhere = {0};
+        double[] errSum = {0};
+        h.onEachTick(() -> {
+            for (AdherentEntity w : watchers) {
+                // compress the long idle pauses: the next wall activity is chosen at once (the choice is the real one)
+                if (w.behavior() == AdherentEntity.Behavior.IDLE) w.setBehaviorTimer(1);
+                if (w.behavior() != AdherentEntity.Behavior.STARE) continue;
+                org.joml.Vector3f v = w.lookTarget();
+                if (v.lengthSquared() < 1e-6 || v.equals(last.get(w))) continue;
+                last.put(w, new org.joml.Vector3f(v));
+                Vec3 lt = new Vec3(v.x(), v.y(), v.z());
+                double err = lt.distanceTo(p.getEyePosition());
+                Vec3 toP = p.position().subtract(w.position()).multiply(1, 0, 1), toL = lt.subtract(w.position()).multiply(1, 0, 1);
+                if (err < 5) {
+                    aimed[0]++;
+                    errSum[0] += err;
+                } else if (lt.distanceTo(p.position()) > 35 && toL.normalize().dot(toP.normalize()) > 0.985 && toL.length() > toP.length() + 30) past[0]++;
+                else elsewhere[0]++;
+            }
+        });
+        h.succeedWhen(() -> {
+            check(watchers.size() == 10, "watchers not spawned yet");
+            check(aimed[0] >= 4, "only " + aimed[0] + " aims at the player so far");
+            check(past[0] >= 1, "never looked past the player yet (" + aimed[0] + " aims, " + elsewhere[0] + " elsewhere)");
+            double mean = errSum[0] / aimed[0];
+            check(mean > 0.3, "aim too exact (mean error " + mean + ")");
+            System.out.printf("[interstice-test] watchers: %d aims at the player (mean error %.2f blocks), %d looks past the player, %d at the corridor%n",
+                    aimed[0], mean, past[0], elsewhere[0]);
+            for (AdherentEntity w : watchers) w.discard();
+            removePlayer(p);
+        });
+    }
 }

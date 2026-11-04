@@ -65,7 +65,8 @@ easing over reliefs), now with species parameters
   journeys along the corridor), HEAVY (Burden: vibration), STILL (Clinger: 2–6 minutes idle, rare slow
   repositioning, rare sudden jerk), IRREGULAR (Hollow: uneven pace, hesitations), WATCH (Watcher: stares
   at the player with an aiming error, re-aims late, sometimes looks past the player at something
-  unseen), LURCH (Fractured: long-short rhythm and a sideways drift).
+  unseen; tested: aims land on average 1.4 blocks off the player's eyes, and some looks go 40+ blocks
+  beyond the player in its exact direction), LURCH (Fractured: long-short rhythm and a sideways drift).
 - Tested: every species attaches and stays on the real wall surface for 200 ticks (a creature may be in
   transition over a relief, but never off its surface for more than 10 ticks).
 
@@ -74,8 +75,10 @@ easing over reliefs), now with species parameters
 - Startle (player within 9 blocks): species-specific stare-or-flee (Clinger 85 % stare and holds for 10+ s,
   Watcher 60 %, Crawler 10 %).
 - Neighbour reactions every 20 ticks (bounded box query, staggered by entity id): smaller species give
-  a Burden room; Crawlers slip around larger bodies; Hollows are agitated by movement nearby and, rarely
-  (2 %), lose their grip; Clingers make way for nothing. Gathering prefers the same species.
+  a Burden room (tested: Adherent, Crawler, Strider, Hollow, Watcher and Fractured placed 4.5 blocks from
+  an idle Burden all move 3+ blocks away; a Clinger next to it does not move); Crawlers slip around larger
+  bodies; Hollows are agitated by movement nearby and, rarely (2 %), lose their grip; Clingers make way for
+  nothing. Gathering prefers the same species. Not tested: the Crawler side-step and the Hollow agitation.
 - Burden: while moving, every 22 ticks a low step, falling dust and a noise event (heard by ground
   creatures). Tested.
 - Director: new action BURDEN_MOVES (something heavy starts to move out of sight; heard and felt before
@@ -83,9 +86,11 @@ easing over reliefs), now with species parameters
 - Ground dispositions, rolled per individual on landing from species weights (tested): HUNTER (full
   brain), INVESTIGATOR (searches, then watches from 6+ blocks, backs away, never attacks; tested),
   FLEER (runs from the player, then climbs back; tested), HIDER (goes to the foot of a wall and stays
-  pressed and still, flees if found; not verified), STUNNED (lies prone for 11–21 s × species factor,
-  then gets up as an investigator or a fleer; not verified). Forced survivors (the guaranteed searcher of
-  a Stampede) keep the HUNTER brain.
+  pressed and still, flees if found; tested: from 9 blocks out to the wall foot, still for 120 ticks, flees
+  when a lit player steps up to it), STUNNED (lies prone for 11–21 s × species factor, then gets up as an
+  investigator or a fleer; tested after a real fall: did not move or react to a lit player 2.5 blocks away
+  for the whole stun, never hunted). Forced survivors (the guaranteed searcher of a Stampede) keep the
+  HUNTER brain; `forceDisposition` overrides the roll (tests).
 
 ## Stampede and horde
 
@@ -100,5 +105,6 @@ See [STAMPEDE.md](STAMPEDE.md).
 - No custom shader, normal or roughness maps; the creatures use the vanilla entity pipeline, so the
   dimension fog and lighting apply to them as to every entity.
 - Contact validation covers the authored clips, not crossfades, turning or slopes.
-- Hider and stunned dispositions, interspecies avoidance and the Watcher's look-beyond behaviour are not
-  covered by automated tests.
+- Not covered by automated tests: the Crawler side-step around larger bodies, the Hollow's agitation and
+  grip loss, the Watcher's late re-aim timing, and every client-side animation layer (checked in the
+  captures only).
