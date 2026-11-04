@@ -216,6 +216,54 @@ for _ in range(60):
         _lo = _mid
 plant(["shin_l", "shin_r"], -2.8, -1.95, lambda: world("foot_l", (0, 0.6, -2))[1])
 
+# ======================================================================= ground contact (IK baked into keyframes)
+LIMBS = {
+    "arm_l": ("hand_l", (0, 2.1 + 6.0 + 1.6, 0), ("elbow_l", "fore_l", "arm_l")),
+    "arm_r": ("hand_r", (0, 2.1 + 6.0 + 1.6, 0), ("elbow_r", "fore_r", "arm_r")),
+    "leg_l": ("foot_l", (0, 0.6, -2), ("leg_l", "shin_l", "foot_l")),
+    "leg_r": ("foot_r", (0, 0.6, -2), ("leg_r", "shin_r", "foot_r")),
+}
+REST_CONTACT = {limb: world(end, local) for limb, (end, local, _) in LIMBS.items()}
+CONTACT_ERR = {}
+
+
+def ground(sample, anim_name):
+    """Re-solves each declared limb's two joint angles so its contact point (claw tip / sole) sits at
+    the target: the rest contact shifted forward by dz and raised by lift (y = 24 - lift)."""
+    from scipy.optimize import minimize
+    targets = sample.pop("_contact", None)
+    if not targets:
+        return sample
+    for limb, (dz, lift) in targets.items():
+        end, local, joints = LIMBS[limb]
+        ty, tz = 24.0 - lift, REST_CONTACT[limb][2] + dz
+        bases = [list(sample.get(j, {}).get("rot", (0, 0, 0))) for j in joints]
+        # the first two joints do the work; a third (upper arm) only helps at full reach
+        reg = [0.0005, 0.0005, 0.05][:len(joints)]
+
+        def pose_with(v):
+            pz = dict(sample)
+            for j, b, dv in zip(joints, bases, v):
+                pz[j] = dict(sample.get(j, {}), rot=(b[0] + dv, b[1], b[2]))
+            return pz
+
+        def cost(v):
+            w = world(end, local, pose_with(v))
+            return (w[1] - ty) ** 2 + (w[2] - tz) ** 2 + sum(rg * dv * dv for rg, dv in zip(reg, v))
+
+        best = None
+        n = len(joints)
+        for start in ((0.0,) * n, (0.4, -0.4, 0.0)[:n], (-0.4, 0.4, 0.0)[:n]):
+            res = minimize(cost, start, method="Nelder-Mead", options={"xatol": 1e-6, "fatol": 1e-9, "maxiter": 2000})
+            if best is None or res.fun < best.fun:
+                best = res
+        sample.update({j: pose_with(best.x)[j] for j in joints})
+        w = world(end, local, sample)
+        err = math.hypot(w[1] - ty, w[2] - tz)
+        CONTACT_ERR[anim_name] = max(CONTACT_ERR.get(anim_name, 0.0), err)
+    return sample
+
+
 # ======================================================================= animations
 # Each animation: (name, length s, loop mode, sampler(t01) -> {bone: {"rot": (x,y,z), "pos": (x,y,z)}}, keys)
 TAU = 2 * math.pi
@@ -252,6 +300,7 @@ def idle(t):
         "hand_r": {"rot": (0.12 * max(0, S(p * 2 + 2.5)), 0, 0)},
         "arm_l": {"rot": (0.03 * S(p * 2), 0, 0)},
         "arm_r": {"rot": (0.03 * S(p * 2 + 1), 0, 0)},
+        "_contact": {limb: (0.0, 0.0) for limb in ("arm_l", "arm_r", "leg_l", "leg_r")},
     }
 
 
@@ -259,6 +308,7 @@ def crawl(t, amp=1.0, run=False):
     """Diagonal crawl / bounding gallop. Swing lifts the elbows higher (mantis reach)."""
     p = TAU * t
     out = {}
+    contact = {}
     pairs = {"l": 0.0, "r": math.pi} if not run else {"l": 0.0, "r": 0.35}
     leg_ph = {"l": math.pi, "r": 0.0} if not run else {"l": math.pi, "r": math.pi + 0.35}
     for side, o in pairs.items():
@@ -268,12 +318,15 @@ def crawl(t, amp=1.0, run=False):
         out[f"elbow_{side}"] = {"rot": (0.35 * lift * amp, 0, 0)}
         out[f"fore_{side}"] = {"rot": (-0.28 * lift * amp + 0.15 * sw * amp, 0, 0)}
         out[f"hand_{side}"] = {"rot": (0.25 * sw * amp, 0, 0)}
+        contact[f"arm_{side}"] = (-(6.0 if run else 4.0) * sw, (4.5 if run else 3.0) * lift)
     for side, o in leg_ph.items():
         sw = S(p + o)
         lift = max(0.0, C(p + o))
         out[f"leg_{side}"] = {"rot": (0.28 * sw * amp + 0.25 * lift * amp, 0, 0)}
         out[f"shin_{side}"] = {"rot": (-0.3 * lift * amp + 0.12 * sw * amp, 0, 0)}
         out[f"foot_{side}"] = {"rot": (-0.2 * sw * amp, 0, 0)}
+        contact[f"leg_{side}"] = (-(4.5 if run else 4.0) * sw, (3.5 if run else 2.5) * lift)
+    out["_contact"] = contact
     bob = (abs(S(p)) if not run else abs(S(p))) * (1.2 if run else 0.7) * amp
     out["hips"] = {"rot": ((0.1 * S(p) if run else 0.0), 0.06 * S(p) * (0 if run else 1), 0.05 * S(p)), "pos": (0, -bob, 0)}
     out["chest"] = {"rot": ((-0.12 * S(p) if run else 0.0), -0.08 * S(p) * (0 if run else 1), -0.07 * S(p))}
@@ -311,6 +364,7 @@ def rear(t):
         "neck": {"rot": (1.1 * k, 0, 0)},
         "head": {"rot": (0.15 * k, 0, 0.45 * k)},
         "jaw_l": {"rot": (0, 0.12 * k, 0)}, "jaw_r": {"rot": (0, -0.12 * k, 0)},
+        "_contact": {"leg_l": (0.0, 0.0), "leg_r": (0.0, 0.0)},
     }
 
 
@@ -490,13 +544,13 @@ for name, (g, par) in groups.items():
     (groups[par][0]["children"] if par else outliner).append(g)
 
 
-def keyframes_for(fn, length, keys, loop, interp):
-    """Samples an authoring function into Blockbench keyframes (Blockbench axes/units)."""
+def keyframes_for(fn, length, keys, loop, interp, anim_name=""):
+    """Samples an authoring function into Blockbench keyframes (Blockbench axes/units), with ground contact solved."""
     times = [length * i / (keys - 1) for i in range(keys)]
-    samples = [fn(min(t / length, 1.0 - 1e-9) if loop == "loop" and i < keys - 1 else min(t / length, 1.0))
+    samples = [ground(fn(min(t / length, 1.0 - 1e-9) if loop == "loop" and i < keys - 1 else min(t / length, 1.0)), anim_name)
                for i, t in enumerate(times)]
     if loop == "loop":
-        samples[-1] = fn(0.0)                                  # seamless cycle
+        samples[-1] = samples[0]                               # seamless cycle
     animators = {}
     bones = sorted({b for s in samples for b in s})
     for b in bones:
@@ -521,7 +575,7 @@ animations = []
 for (name, length, loop, fn, keys, interp) in ANIMS:
     animations.append({"uuid": str(uuid.uuid4()), "name": name, "loop": loop, "override": False, "length": length,
                        "snapping": 24, "selected": False, "anim_time_update": "", "blend_weight": "", "start_delay": "",
-                       "loop_delay": "", "animators": keyframes_for(fn, length, keys, loop, interp)})
+                       "loop_delay": "", "animators": keyframes_for(fn, length, keys, loop, interp, name)})
 
 buf = io.BytesIO()
 Image.fromarray((img * 255).astype(np.uint8), "RGBA").save(buf, "PNG")
@@ -542,4 +596,5 @@ with open(OUT, "w", encoding="utf-8", newline="\n") as fh:
 
 rest = contacts()
 print(f"wrote {OUT}: {len(P)} bones, {len(elements)} cubes, {len(alloc)} UV islands, {len(animations)} animations")
+print("worst ground-contact error per animation (px): " + ", ".join(f"{k} {v:.2f}" for k, v in CONTACT_ERR.items()))
 print("rest pose (model px, ground y=24): " + ", ".join(f"{k} y={v:.1f}" for k, v in rest.items()))

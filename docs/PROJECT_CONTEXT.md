@@ -98,18 +98,22 @@ tools/bbmodel/bbmodel_to_java.py  -> AdherentGeometry.java + AdherentAnimations.
 - The generator plants the rest pose automatically (lowers the body until claws touch y=24, bisects shin
   angles for the soles).
 
-**Open problems (next steps, in order):**
-1. **Bake IK into the keyframes**: in `design_adherent.py`, after sampling each animation, solve limb
-   angles (arm: elbow+fore; leg: leg+shin) with the `world()` FK so stance-phase hands/feet sit on y=24.
-   Needed for: walk/run (feet don't fully touch), rear (the body floats; feet must stay planted), idle.
-2. Re-run the model autotest and judge: the last screenshots predate the v3 skull/splayed arms (the earlier
-   v3 head looked boxy/cartoonish, the arms stood up like rabbit ears from the front).
-3. Re-run `./gradlew runGametest` (last full pass was before the v3 creature; hitbox changed since).
-4. Jaw opening direction (yRot sign) not yet visually confirmed.
+- **Ground contact is baked into the keyframes** (`ground()` in the generator): for every sampled
+  keyframe of idle, walk, run and rear, each declared limb's joints are re-solved through forward
+  kinematics (scipy Nelder-Mead; arm: elbow+fore+upper arm, leg: leg+shin+foot) so the claw tip / sole sits
+  on y=24 in stance and lifts in swing. Worst error: idle 0.00, walk 0.02, run 0.03, rear 0.00 px.
+  Catmull-Rom interpolation between keyframes can deviate slightly.
+- Verified by screenshots (2026-11-04): spider-splayed front, planted walk, planted rear with cocked head.
+
+**Next steps:**
+1. Final skin from PixelLab (batch C in `docs/PIXELLAB_ASSETS.md`; the UV layout changed with v3:
+   regenerate a UV template from the current `.bbmodel` before requesting it).
+2. Confirm the split-jaw opening direction during the screech/hunt in game (not captured mid-scream yet).
+3. Watch the creature moving in real time (only still frames were checked).
 
 ## Verification status
 
-- `./gradlew runGametest`: 10/10 passing (world gen at several distances, bridge continuity across chunk
+- `./gradlew runGametest`: 10/10 passing (last run 2026-11-04, after the v3 creature) (world gen at several distances, bridge continuity across chunk
   borders, safe spawn, wall clinging, fall → survive → recover, searcher hunts a lit visible player, hidden
   crouched player behind cover stays undetected, Stampede phase transition, real runners + falls, all
   director actions). Test-only mixin creates the dimension in the GameTest server (it ignores datapack dims).
