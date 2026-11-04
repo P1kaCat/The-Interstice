@@ -103,11 +103,17 @@ public final class HordeRenderer {
                     if (!any) continue;
                     RenderType rt = RenderType.entityCutoutNoCull(AdherentRenderer.texture(sp));
                     VertexConsumer mid = buffers.getBuffer(rt);
+                    if (eyeOff.length < midCount) { eyeOff = new int[midCount * 2]; eyeLen = new int[midCount * 2]; }
+                    int eyeFloats = 0;
                     for (int i = 0; i < midCount; i++) {
                         int o = i * MID_STRIDE;
                         if ((int) midQ[o + 9] != sp.ordinal()) continue;
                         float cycles = (float) (midQ[o + 6] / (2 * Math.PI) + midQ[o + 7] * 0.27);
-                        drawModel(ps, mid, sp, (int) midQ[o], (float) midQ[o + 1], midQ[o + 2], midQ[o + 3], midQ[o + 4], (int) midQ[o + 5], (float) midQ[o + 8], cycles, false);
+                        drawModel(ps, mid, sp, (int) midQ[o], (float) midQ[o + 1], midQ[o + 2], midQ[o + 3], midQ[o + 4], (int) midQ[o + 5], (float) midQ[o + 8], cycles, 0, -1);
+                        // keep the skinned eye vertices: the emissive pass reuses them instead of re-skinning
+                        eyeOff[i] = eyeFloats;
+                        eyeLen[i] = model().cacheHordeEyes(sp, eyeCache, eyeFloats);
+                        eyeFloats += eyeLen[i] * com.interstice.client.render.creatures.mesh.SkinnedMeshPose.EYE_STRIDE;
                     }
                     buffers.endBatch(rt);
                     // the eyes of the passing horde: a second, emissive pass over the same instances
@@ -115,9 +121,8 @@ public final class HordeRenderer {
                     VertexConsumer eyes = buffers.getBuffer(et);
                     for (int i = 0; i < midCount; i++) {
                         int o = i * MID_STRIDE;
-                        if ((int) midQ[o + 9] != sp.ordinal()) continue;
-                        float cycles = (float) (midQ[o + 6] / (2 * Math.PI) + midQ[o + 7] * 0.27);
-                        drawModel(ps, eyes, sp, (int) midQ[o], (float) midQ[o + 1], midQ[o + 2], midQ[o + 3], midQ[o + 4], (int) midQ[o + 5], (float) midQ[o + 8], cycles, true);
+                        if ((int) midQ[o + 9] != sp.ordinal() || eyeLen[i] == 0) continue;
+                        drawModel(ps, eyes, sp, (int) midQ[o], (float) midQ[o + 1], midQ[o + 2], midQ[o + 3], midQ[o + 4], (int) midQ[o + 5], (float) midQ[o + 8], 0f, eyeOff[i], eyeLen[i]);
                     }
                     buffers.endBatch(et);
                 }
@@ -135,6 +140,9 @@ public final class HordeRenderer {
     private static double[] farQ = new double[FAR_STRIDE * 512];
     private static double[] midQ = new double[MID_STRIDE * 64];
     private static int farCount, midCount;
+    /** Skinned eye vertices of the mid instances of the species being drawn (filled by the body pass). */
+    private static final float[][] eyeCache = {new float[4096]};
+    private static int[] eyeOff = new int[64], eyeLen = new int[64];
 
     private static void collectHorde(ClientLevel level, IntersticeLayout L, Vec3 cam, CullFrustum cull, GraphicsPreset preset) {
         double t = ClientState.time - ClientState.hordeStart;
@@ -259,7 +267,9 @@ public final class HordeRenderer {
         vc.addVertex(x, y + hy, z - hz).setColor(col, col, col, 255).setUv(u0, 0).setOverlay(ov).setLight(light).setNormal(nx, 0, 0);
     }
 
-    private static void drawModel(PoseStack ps, VertexConsumer vc, Species sp, int side, float heading, double dx, double dy, double dz, int light, float tumble, float cycles, boolean eyes) {
+    /** Body pass when {@code eyeCount < 0}; otherwise the emissive eye pass from the cached entries. */
+    private static void drawModel(PoseStack ps, VertexConsumer vc, Species sp, int side, float heading, double dx, double dy, double dz, int light, float tumble, float cycles,
+                                  int eyeOffset, int eyeCount) {
         AdherentMeshModel m = model();
         ps.pushPose();
         ps.translate(dx, dy, dz);
@@ -274,7 +284,7 @@ public final class HordeRenderer {
         ps.scale(AdherentAnimator.SCALE, AdherentAnimator.SCALE, AdherentAnimator.SCALE);
         ps.scale(-1, -1, 1);
         ps.translate(0, -1.501f, 0);
-        if (eyes) m.renderHordeEyes(sp, ps, vc, Math.max(0f, cycles), AdherentAnimator.GLOW_HORDE);
+        if (eyeCount >= 0) AdherentMeshModel.renderCachedHordeEyes(ps, vc, eyeCache[0], eyeOffset, eyeCount, AdherentAnimator.GLOW_HORDE);
         else m.renderHordeCycle(sp, ps, vc, light, OverlayTexture.NO_OVERLAY, Math.max(0f, cycles));
         ps.popPose();
     }

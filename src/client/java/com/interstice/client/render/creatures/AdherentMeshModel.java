@@ -68,7 +68,28 @@ public class AdherentMeshModel extends EntityModel<AdherentEntity> {
         return renderHorde(sp, poseStack, consumer, light, overlay, cycles * (c != null ? c.length : 2.6f));
     }
 
-    /** The eyes of a horde instance (emissive pass): the same pose as {@link #renderHordeCycle}. */
+    /**
+     * Copies the eyes of the horde instance just drawn by {@link #renderHordeCycle} into {@code dst}
+     * (grown if needed; the possibly new array is returned through {@code out[0]}). Returns the entry count.
+     */
+    public int cacheHordeEyes(com.interstice.entity.species.Species sp, float[][] out, int off) {
+        SkinnedMeshPose p = hordePoses[sp.ordinal()];
+        if (p == null || p.asset() != SkinnedMeshAsset.of(sp)) return 0;
+        int n = p.eyeEntryCount();
+        if (n == 0) return 0;
+        int need = off + n * SkinnedMeshPose.EYE_STRIDE;
+        if (out[0].length < need) out[0] = java.util.Arrays.copyOf(out[0], Math.max(need, out[0].length * 2));
+        return p.copyEyes(out[0], off);
+    }
+
+    /** Emits horde eyes cached by {@link #cacheHordeEyes} (emissive pass, full bright). */
+    public static void renderCachedHordeEyes(PoseStack poseStack, VertexConsumer consumer, float[] cache, int off, int count, float glow) {
+        int k = Math.max(0, Math.min(255, (int) (255 * glow)));
+        SkinnedMeshPose.emitCachedEyes(poseStack.last(), consumer, cache, off, count, 0xF000F0,
+                net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY, net.minecraft.util.FastColor.ARGB32.color(255, k, k, k));
+    }
+
+    /** The eyes of a horde instance (emissive pass): the same pose as {@link #renderHordeCycle}, re-skinned. */
     public void renderHordeEyes(com.interstice.entity.species.Species sp, PoseStack poseStack, VertexConsumer consumer, float cycles, float glow) {
         SkinnedMeshAsset asset = SkinnedMeshAsset.of(sp);
         if (asset == null) return;

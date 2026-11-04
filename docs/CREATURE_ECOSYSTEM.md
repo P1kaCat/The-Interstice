@@ -84,33 +84,24 @@ Done and in the committed assets:
 - Captures: AutoTest `model` now adds a rearing sequence per species and dark portraits away from every
   light fixture; `model extra` captures only turn, rearing and darkness (used for the "before" set).
 
-Known problems, not yet fixed:
-- **The eyes do not show in the committed models**: the socket meshes are capped and sit under the skin of
-  the head, which hides the eye. The fix (open sockets with a raised bony rim, the eye just above the
-  skin) is in `species_generator.py` but the models have **not been regenerated** with it.
-- In daylight the moss reads poorly: most strands hang under the belly and the clumps look like dark
-  spots. The generator change that drapes strands from the back down the flanks and frays the clumps is
-  in the source, also **not yet regenerated**.
-- Performance: the eye pass of the horde re-skins every mid-distance instance (Stampede scene at 58–69 FPS
-  against the 120 cap in the capture run, 99–119 before); to fix by caching the eye vertices from the
-  body pass. LOD0 is 7400–10000 vertices per species; real creatures switch to LOD1 beyond 20 blocks.
-- No before/after comparison sheet has been assembled yet (the "before" captures exist locally only).
+Status (2026-11-04, second PC, about 6x slower: the generator took ~30 min instead of ~6):
+- Models regenerated with the open eye sockets, draped moss and ragged clumps; exported, UV templates
+  redrawn. Captured with `model extra` (turn, rear, dark portraits): the eyes now read red in the dark on
+  Adherent, Crawler, Watcher, Fractured, Hollow and Clinger (faint on the Strider); the Burden's eyes stay
+  mostly dark in their deep sockets. Moss strands now hang on the flanks.
+- Horde eye pass: the body pass copies the skinned eye vertices (`SkinnedMeshPose.copyEyes`) and the
+  emissive pass draws them from that cache (`AdherentMeshModel.renderCachedHordeEyes`) instead of re-skinning
+  each instance. **Not measured yet**: the `model extra` run has no benchmark; run `model bench`.
+- `./gradlew runGametest`: 25/25 on two runs; one earlier run failed `clingersHoldOnWhenTheWallsFlee` with
+  "only 18/24 test creatures are visible to the reaction query" (the test reacts 10 ticks after spawning,
+  entity sections were not ready yet on the slow PC). Timing flake, not a behaviour failure.
 
-To resume (in order):
-1. Regenerate with the source fixes (eyes in open sockets, draped moss, ragged clumps), about 6 min:
-   `python -I tools/creature/species_generator.py all`
-2. Export and redraw the UV templates: `python -I tools/creature/export_adherent.py all`, then
-   `python -I tools/creature/uv_template.py all`
-3. Horde eye pass: in `HordeRenderer`, cache the eye vertices during the body pass instead of re-skinning
-   each instance in `AdherentMeshModel.renderHordeEyes`.
-4. Build and test: `./gradlew build`, then `./gradlew runGametest`
-5. Capture in game (PowerShell, the path has spaces): write `model` to `run/interstice_autotest.flag`, then
-   `./gradlew runClient --args="--username Explorer --quickPlaySingleplayer autotest"` and
-   `python -I tools/creature/make_gifs.py`. Check `dark_<species>` (eyes visible and red), the side views
-   (moss on the flanks), `<species>_rear.gif` and the `BENCH` lines in the log.
-6. "Before" set for the comparisons: put the assets from commit 6d21ed4 or 44ce58e back into
-   `src/client/resources` (the json and png of the 8 species), capture with the flag `model extra`, then
-   restore the current assets.
+Still to do:
+- The Burden's eyes: brighter or less recessed.
+- Measure the horde eye cache (`model bench`) and update `docs/PERFORMANCE.md`.
+- Before/after comparison sheet: the "before" dark portraits and rear/turn GIFs are in git at 861a449
+  (`docs/creature/family/`); the "after" ones are the current files.
+- Make the clinger test wait until all 24 creatures are visible instead of a fixed delay.
 
 ## Wall locomotion (server)
 

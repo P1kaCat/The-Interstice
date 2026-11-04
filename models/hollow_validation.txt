@@ -1,5 +1,5 @@
-hollow.bbmodel (Hollow): 32 bones, 143 meshes, 7435 vertices, 6952 faces, texture 512x512, 4.5 texels/px
-rest pose size (blocks): width 1.07, height 1.92 (shoulder top 1.85), length 3.54
+hollow.bbmodel (Hollow): 32 bones, 148 meshes, 7381 vertices, 6840 faces, texture 512x512, 4.5 texels/px
+rest pose size (blocks): width 1.07, height 1.92 (shoulder top 1.85), length 3.52
 reared height (blocks): 3.49
 rest contact heights before IK (px): arm_l 0.12, arm_r 0.12, leg_l 0.12, leg_r 0.12
 walk     contact height error <= 0.185 px, slip per 1/240 s <= 0.0088 px (interpolated, sampled at 240 Hz) [arm_l 0.13 leg_l 0.04 leg_r 0.05 arm_r 0.19]

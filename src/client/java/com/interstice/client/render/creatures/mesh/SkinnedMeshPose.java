@@ -242,6 +242,59 @@ public final class SkinnedMeshPose {
         return true;
     }
 
+    /** Floats per cached eye index entry: position (3), normal (3), uv (2). */
+    public static final int EYE_STRIDE = 8;
+
+    /** Number of eye index entries of the last skinned LOD (0 before skin() or without eyes). */
+    public int eyeEntryCount() {
+        if (lodSkinned < 0) return 0;
+        return asset.lods[Math.min(lodSkinned, asset.lods.length - 1)].eyeIndices.length;
+    }
+
+    /**
+     * Copies the skinned eye vertices of the last skinned LOD into {@code dst} at {@code off}
+     * ({@link #EYE_STRIDE} floats per index entry), so a later emissive pass can draw them without
+     * re-skinning the whole mesh. Returns the number of entries written.
+     */
+    public int copyEyes(float[] dst, int off) {
+        int n = eyeEntryCount();
+        if (n == 0) return 0;
+        SkinnedMeshAsset.Lod lod = asset.lods[Math.min(lodSkinned, asset.lods.length - 1)];
+        int[] idx = lod.eyeIndices;
+        float[] uv = lod.uvs;
+        for (int i = 0; i < n; i++) {
+            int v = idx[i], o = off + i * EYE_STRIDE;
+            dst[o] = skinned[v * 3];
+            dst[o + 1] = skinned[v * 3 + 1];
+            dst[o + 2] = skinned[v * 3 + 2];
+            dst[o + 3] = skinnedN[v * 3];
+            dst[o + 4] = skinnedN[v * 3 + 1];
+            dst[o + 5] = skinnedN[v * 3 + 2];
+            dst[o + 6] = uv[v * 2];
+            dst[o + 7] = uv[v * 2 + 1];
+        }
+        return n;
+    }
+
+    /** Emits eyes cached by {@link #copyEyes} as triangles (degenerate quads), like {@link #emitEyes}. */
+    public static void emitCachedEyes(PoseStack.Pose pose, VertexConsumer vc, float[] src, int off, int count, int light, int overlay, int color) {
+        for (int i = 0; i + 2 < count; i += 3) {
+            cachedVertex(pose, vc, src, off + i * EYE_STRIDE, light, overlay, color);
+            cachedVertex(pose, vc, src, off + (i + 1) * EYE_STRIDE, light, overlay, color);
+            cachedVertex(pose, vc, src, off + (i + 2) * EYE_STRIDE, light, overlay, color);
+            cachedVertex(pose, vc, src, off + (i + 2) * EYE_STRIDE, light, overlay, color);
+        }
+    }
+
+    private static void cachedVertex(PoseStack.Pose pose, VertexConsumer vc, float[] s, int o, int light, int overlay, int color) {
+        vc.addVertex(pose, s[o] / 16f, s[o + 1] / 16f, s[o + 2] / 16f)
+                .setColor(color)
+                .setUv(s[o + 6], s[o + 7])
+                .setOverlay(overlay)
+                .setLight(light)
+                .setNormal(pose, s[o + 3], s[o + 4], s[o + 5]);
+    }
+
     /** Mean position of the eyes of the last skinned LOD, in Minecraft model space (blocks); false if none. */
     public boolean eyeCentre(Vector3f out) {
         if (lodSkinned < 0) return false;
