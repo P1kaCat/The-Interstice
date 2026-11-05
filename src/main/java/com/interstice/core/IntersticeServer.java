@@ -83,7 +83,7 @@ public final class IntersticeServer {
 
     public void syncTo(ServerPlayer p) {
         IntersticeLayout l = layout();
-        if (l != null) ModNetwork.send(p, new ModNetwork.LayoutSync(l.seed()));
+        if (l != null) ModNetwork.send(p, new ModNetwork.LayoutSync(l.seed(), l.version()));
         stampede.syncTo(p);
     }
 
@@ -94,6 +94,7 @@ public final class IntersticeServer {
         long now = level.getGameTime();
         noise.prune(now);
         for (ServerPlayer p : level.players()) updateTrack(level, p, now);
+        if (now % 20 == 0) for (ServerPlayer p : server.getPlayerList().getPlayers()) com.interstice.item.FlashlightItem.drain(p);
         stampede.tick(level);
         environment.tick(level);
         director.tick(level);
@@ -107,18 +108,32 @@ public final class IntersticeServer {
         if (t.last != null) {
             double dx = pos.x - t.last.x, dz = pos.z - t.last.z;
             t.speed = t.speed * 0.6 + Math.sqrt(dx * dx + dz * dz) * 0.4;
+            t.vel = new Vec3(t.vel.x * 0.6 + dx * 0.4, 0, t.vel.z * 0.6 + dz * 0.4);
         }
         t.last = pos;
         t.ticksInDimension++;
+        // three seconds after arriving, close to the ear: the only instruction the place ever gives
+        if (t.ticksInDimension == 60 && !p.isSpectator()) com.interstice.event.VoiceEvents.say(p, "find_a_way", 1.0f);
+        // first arrival only (player tag, saved with the player): a flashlight and one spare battery
+        if (t.ticksInDimension == 20 && !p.isSpectator() && p.addTag("interstice_arrival_kit")) {
+            for (net.minecraft.world.item.ItemStack s : new net.minecraft.world.item.ItemStack[]{
+                    new net.minecraft.world.item.ItemStack(com.interstice.registry.ModItems.FLASHLIGHT),
+                    new net.minecraft.world.item.ItemStack(com.interstice.registry.ModItems.BATTERY)}) {
+                if (!p.getInventory().add(s)) p.drop(s, false);
+            }
+        }
         boolean onGround = p.onGround();
         if (!p.isSpectator() && !p.isCreative()) {
             if (onGround && !t.wasOnGround && t.lastFall > 2.0f) noise.emit(pos, 10 + Math.min(10, t.lastFall), now, p);
             if (!onGround && t.wasOnGround && p.getDeltaMovement().y > 0.2) noise.emit(pos, 7, now, p);
             if (now % 5 == 0 && onGround) {
-                if (p.isSprinting()) noise.emit(pos, 17, now, p);
-                else if (!p.isShiftKeyDown() && t.speed > 0.06) noise.emit(pos, 6.5f, now, p);
+                float surface = com.interstice.survival.SurvivalRules.footstepLoudness(level, p.blockPosition());
+                if (p.isSprinting()) noise.emit(pos, 17 * surface, now, p);
+                else if (!p.isShiftKeyDown() && t.speed > 0.06) noise.emit(pos, 6.5f * surface, now, p);
+                else if (p.isShiftKeyDown() && t.speed > 0.03 && surface > 1.4f) noise.emit(pos, 3.5f * surface, now, p);   // even sneaking, metal rings
             }
         }
+        if (!p.isSpectator() && !p.isCreative()) t.leaveScent(pos, now, onGround, p.isShiftKeyDown());
         t.lastFall = p.fallDistance;
         t.wasOnGround = onGround;
     }
@@ -142,5 +157,27 @@ public final class IntersticeServer {
         public float lastFall;
         public float tension;
         public long lastEncounterTick;
+        /** Smoothed horizontal velocity (blocks per tick): where the player was heading. */
+        public Vec3 vel = Vec3.ZERO;
+        /** Scent trail, oldest first: creatures with a nose can follow it (see {@code ScentTrail}). */
+        public final java.util.ArrayDeque<Scent> scent = new java.util.ArrayDeque<>();
+
+        public record Scent(Vec3 pos, long tick, float strength) {}
+
+        /** Scent lasts two minutes. */
+        public static final int SCENT_LIFE = 2400;
+
+        /**
+         * A mark every half block or so of travel on the ground; sneaking leaves a faint one, standing still leaves
+         * nothing new (an old mark under a still player fades like the rest).
+         */
+        void leaveScent(Vec3 pos, long now, boolean onGround, boolean sneaking) {
+            while (!scent.isEmpty() && now - scent.peekFirst().tick() > SCENT_LIFE) scent.removeFirst();
+            if (!onGround || now % 5 != 0) return;
+            Scent last = scent.peekLast();
+            if (last != null && last.pos().distanceToSqr(pos) < 0.6 * 0.6) return;
+            scent.addLast(new Scent(pos, now, sneaking ? 0.4f : 1.0f));
+            if (scent.size() > 600) scent.removeFirst();
+        }
     }
 }

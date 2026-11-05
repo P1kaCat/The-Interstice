@@ -54,8 +54,8 @@ public final class ClientState {
     public static float searchTension;
     public static double time;
 
-    public static void onLayout(long seed) {
-        if (layout == null || layout.seed() != seed) layout = new IntersticeLayout(seed);
+    public static void onLayout(long seed, int version) {
+        if (layout == null || layout.seed() != seed || layout.version() != version) layout = new IntersticeLayout(seed, version);
     }
 
     public static void onStampede(ModNetwork.StampedeSync p) {
@@ -190,6 +190,8 @@ public final class ClientState {
             }
         }
 
+        // the Stampede shakes the chains: a tremor in the premonition, the full shudder while the horde passes
+        chain = Math.max(chain, Math.max(horde * 0.85f, prem * 0.3f));
         quake = q;
         silence = sil;
         chainExcitation = chain;

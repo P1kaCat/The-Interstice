@@ -1,7 +1,18 @@
 {
   "variants": {
-    "": {
-      "model": "interstice:block/concrete_panel"
-    }
+    "": [
+      {
+        "model": "interstice:block/concrete_panel"
+      },
+      {
+        "model": "interstice:block/concrete_panel_1"
+      },
+      {
+        "model": "interstice:block/concrete_panel_2"
+      },
+      {
+        "model": "interstice:block/concrete_panel_3"
+      }
+    ]
   }
 }

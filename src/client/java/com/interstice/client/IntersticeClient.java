@@ -56,6 +56,16 @@ public class IntersticeClient implements ClientModInitializer {
         }
         ClientConfig.load();
 
+        // The Corridor's 32x32 water (the only vanilla block left in its generation, a fluid): a built-in pack,
+        // on by default, can be turned off in Options > Resource Packs. Our own textures (tools/assets/make_corridor_copies.py).
+        net.fabricmc.fabric.api.resource.ResourceManagerHelper.registerBuiltinResourcePack(
+                Interstice.id("corridor_water"),
+                net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer(Interstice.MOD_ID).orElseThrow(),
+                net.minecraft.network.chat.Component.literal("Interstice: Corridor water (32x)"),
+                net.fabricmc.fabric.api.resource.ResourcePackActivationType.DEFAULT_ENABLED);
+
+        com.interstice.client.render.blocks.ConnectedTextures.init();   // connected textures and material transitions
+
         net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.CLIENT_RESOURCES)
                 .registerReloadListener(new net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener() {
                     @Override
@@ -71,9 +81,21 @@ public class IntersticeClient implements ClientModInitializer {
         for (com.interstice.entity.species.Species sp : com.interstice.entity.species.Species.values()) {
             EntityRendererRegistry.register(ModEntities.type(sp), ctx -> new AdherentRenderer(ctx, sp));
         }
+        EntityRendererRegistry.register(ModEntities.LURE, net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
         ParticleFactoryRegistry.getInstance().register(ModEntities.FALLING_DUST, DustParticle.DustProvider::new);
         ParticleFactoryRegistry.getInstance().register(ModEntities.MOTE, DustParticle.MoteProvider::new);
-        BlockRenderLayerMap.INSTANCE.putBlocks(RenderType.cutout(), ModBlocks.METAL_GRATE, ModBlocks.INDUSTRIAL_LAMP, ModBlocks.SODIUM_LAMP, ModBlocks.EMERGENCY_LAMP);
+        // the 3D flashlight shows its lens lit or dark
+        net.minecraft.client.renderer.item.ItemProperties.register(com.interstice.registry.ModItems.FLASHLIGHT, Interstice.id("lit"),
+                (stack, level, entity, seed) -> com.interstice.item.FlashlightItem.isLit(stack) ? 1f : 0f);
+        BlockRenderLayerMap.INSTANCE.putBlocks(RenderType.cutout(), ModBlocks.METAL_GRATE, ModBlocks.INDUSTRIAL_LAMP, ModBlocks.SODIUM_LAMP, ModBlocks.EMERGENCY_LAMP, ModBlocks.GROWTH_VEINS, ModBlocks.WARD_EMITTER);
+        BlockRenderLayerMap.INSTANCE.putBlocks(RenderType.translucent(), ModBlocks.GRIMY_GLASS_PANE, ModBlocks.GRIMY_GLASS, ModBlocks.BLACKOUT_PANE);
+        BlockRenderLayerMap.INSTANCE.putBlocks(RenderType.cutout(), ModBlocks.RUSTED_BARS);
+        BlockRenderLayerMap.INSTANCE.putBlocks(RenderType.cutout(), ModBlocks.WORN_DOOR, ModBlocks.ROTTEN_DOOR, ModBlocks.PALE_DOOR, ModBlocks.STEEL_DOOR,
+                ModBlocks.RUSTED_LADDER, ModBlocks.CHEM_STAND, ModBlocks.DUST_WEB, ModBlocks.DEAD_ROOTS, ModBlocks.RUSTED_CHAIN, ModBlocks.RUSTED_FUNNEL,
+                ModBlocks.RUSTED_BASIN, ModBlocks.HOSPITAL_BED, ModBlocks.WORN_BED);
+        // the spawn eggs have their own drawn 32x32 textures: no two-colour tint
+        net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry.ITEM.register((stack, layer) -> -1,
+                ModEntities.SPAWN_EGGS.values().toArray(new net.minecraft.world.level.ItemLike[0]));
 
         DimensionRenderingRegistry.registerDimensionEffects(Interstice.id("the_interstice"), new IntersticeDimensionEffects());
         DimensionRenderingRegistry.registerSkyRenderer(ModWorld.INTERSTICE, new IntersticeSkyRenderer());
@@ -82,7 +104,7 @@ public class IntersticeClient implements ClientModInitializer {
         ClientChunkEvents.CHUNK_LOAD.register(LampLightManager::onChunkLoad);
         ClientChunkEvents.CHUNK_UNLOAD.register((level, chunk) -> LampLightManager.onChunkUnload(chunk));
 
-        ClientPlayNetworking.registerGlobalReceiver(ModNetwork.LayoutSync.TYPE, (p, ctx) -> ClientState.onLayout(p.seed()));
+        ClientPlayNetworking.registerGlobalReceiver(ModNetwork.LayoutSync.TYPE, (p, ctx) -> ClientState.onLayout(p.seed(), p.version()));
         ClientPlayNetworking.registerGlobalReceiver(ModNetwork.StampedeSync.TYPE, (p, ctx) -> {
             ClientState.onStampede(p);
             if (ClientState.phase != lastPhase) {
@@ -93,6 +115,7 @@ public class IntersticeClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(ModNetwork.EnvEvent.TYPE, (p, ctx) -> {
             ClientState.onEnvEvent(p);
             AudioDirector.onEnvEvent(p);
+            if (p.kind() == ModNetwork.EnvEvent.FLASH) com.interstice.client.render.veil.DeviceLights.flash(p.x(), p.y(), p.z(), p.duration());
         });
         ClientPlayNetworking.registerGlobalReceiver(ModNetwork.Voice.TYPE, (p, ctx) -> VoicePlayer.play(p.line(), p.volume()));
         ClientPlayNetworking.registerGlobalReceiver(ModNetwork.Debug.TYPE, (p, ctx) -> {
@@ -104,6 +127,7 @@ public class IntersticeClient implements ClientModInitializer {
             ClientState.reset();
             LampLightManager.clear();
             com.interstice.client.render.veil.CreatureEyeLights.clear();
+            com.interstice.client.render.veil.DeviceLights.clear();
             AudioDirector.stopAll();
             lastPhase = StampedePhase.IDLE;
         });
@@ -115,6 +139,7 @@ public class IntersticeClient implements ClientModInitializer {
             Minecraft mc = Minecraft.getInstance();
             if (mc.level != null) LampLightManager.update(mc.level, ctx.camera().getPosition());
             com.interstice.client.render.veil.CreatureEyeLights.update(ctx.camera().getPosition());
+            com.interstice.client.render.veil.DeviceLights.update(ctx.camera().getPosition(), ctx.tickCounter().getGameTimeDeltaPartialTick(false));
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(mc -> {
@@ -127,6 +152,7 @@ public class IntersticeClient implements ClientModInitializer {
             }
             wasInInterstice = in;
             AudioDirector.tick();
+            if (ClientState.inInterstice && mc.player != null) com.interstice.client.render.chains.ChainRenderer.collide(mc.player);
             DustEffects.tick();
             QuakeShake.update();
             while (settingsKey.consumeClick()) mc.setScreen(new IntersticeConfigScreen(mc.screen));

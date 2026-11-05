@@ -40,7 +40,9 @@ public class Interstice implements ModInitializer {
     public void onInitialize() {
         ServerConfig.load();
         ModBlocks.init();
+        com.interstice.registry.ModItems.init();
         ModSounds.init();
+        com.interstice.registry.SpeciesSounds.init();
         ModEntities.init();
         ModWorld.init();
         ModNetwork.init();
@@ -48,6 +50,7 @@ public class Interstice implements ModInitializer {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> IntersticeCommands.register(dispatcher));
 
+        ServerLifecycleEvents.SERVER_STARTING.register(com.interstice.world.GenerationVersion::detect);
         ServerLifecycleEvents.SERVER_STARTED.register(IntersticeServer::start);
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> IntersticeServer.stop());
         ServerTickEvents.END_SERVER_TICK.register(server -> {

@@ -1,7 +1,18 @@
 {
   "variants": {
-    "": {
-      "model": "interstice:block/weathered_concrete"
-    }
+    "": [
+      {
+        "model": "interstice:block/weathered_concrete"
+      },
+      {
+        "model": "interstice:block/weathered_concrete_1"
+      },
+      {
+        "model": "interstice:block/weathered_concrete_2"
+      },
+      {
+        "model": "interstice:block/weathered_concrete_3"
+      }
+    ]
   }
 }

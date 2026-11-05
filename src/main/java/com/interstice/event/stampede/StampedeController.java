@@ -168,6 +168,8 @@ public final class StampedeController {
                 for (ServerPlayer pl : level.players()) s.population.react(level, pl.position(), 90, true, null);
             }
             case HORDE_PASSAGE -> {
+                // the walls tremble under the horde all the time it passes (a lesser quake)
+                s.environment.quake(level, 0.22f + 0.1f * intensity, phaseDuration + 60, false);
                 for (ServerPlayer pl : level.players()) {
                     PlayerState st = new PlayerState();
                     ServerConfig c = ServerConfig.INSTANCE;
@@ -210,6 +212,13 @@ public final class StampedeController {
                         Vec3 far = pl.position().add(0, 30, -direction * 200);
                         s.population.react(level, pl.position(), 80, false, far, sp -> sp != Species.WATCHER);
                     }
+                }
+            }
+            case STRUCTURAL_DISTURBANCE -> {
+                // a few seconds before the great quake: the cry of the horde, from where it is coming
+                if (t == Math.max(0, phaseDuration - 60)) {
+                    ModNetwork.EnvEvent cry = new ModNetwork.EnvEvent(ModNetwork.EnvEvent.HORDE_SCREAM, now, 140, intensity, direction, 0, 0, 0);
+                    for (ServerPlayer pl : level.players()) ModNetwork.send(pl, cry);
                 }
             }
             case EARTHQUAKE -> {

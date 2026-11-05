@@ -35,10 +35,19 @@ public final class IntersticeLayout {
     public static final int EAST = 1;
 
     private final long seed;
+    private final int version;
+    /** The finite Corridor plan (generation version 2), or null for the legacy endless Corridor. */
+    private final CorridorPlan plan;
     private final long sCenter, sWidth, sWidthFine, sButtress, sPanel, sLedge, sFloor, sAnomaly;
 
     public IntersticeLayout(long seed) {
+        this(seed, GenerationVersion.LEGACY);
+    }
+
+    public IntersticeLayout(long seed, int version) {
         this.seed = seed;
+        this.version = version;
+        this.plan = version >= 2 ? new CorridorPlan(Hash.of(seed, 909)) : null;
         this.sCenter = Hash.of(seed, 101);
         this.sWidth = Hash.of(seed, 102);
         this.sWidthFine = Hash.of(seed, 103);
@@ -51,6 +60,20 @@ public final class IntersticeLayout {
 
     public long seed() {
         return seed;
+    }
+
+    public int version() {
+        return version;
+    }
+
+    /** The finite Corridor (regions, ends), or null in a legacy (version 1) world. */
+    public CorridorPlan plan() {
+        return plan;
+    }
+
+    /** Region at z, or null in a legacy world. */
+    public CorridorPlan.Region regionAt(double z) {
+        return plan == null ? null : plan.regionAt(z);
     }
 
     public long sub(long salt) {
@@ -198,6 +221,12 @@ public final class IntersticeLayout {
         int x0 = cx * PIT_CELL + 3 + (int) (Hash.unit(h, 3) * (PIT_CELL - sx - 6));
         int z0 = cz * PIT_CELL + 3 + (int) (Hash.unit(h, 4) * (PIT_CELL - sz - 6));
         if (Math.abs(z0) < 40) return null; // keep the arrival area intact
+        if (plan != null) {
+            // version 2: shafts only in the Ironworks and the Dead Expanse, inside the Corridor, never under a building
+            if (!plan.inside(z0 - 30) || !plan.inside(z0 + sz + 30)) return null;
+            CorridorPlan.Region r = plan.regionAt(z0 + sz / 2.0);
+            if (r != CorridorPlan.Region.IRONWORKS && r != CorridorPlan.Region.DEAD_EXPANSE) return null;
+        }
         // must lie fully inside the corridor with a margin
         for (int i = 0; i < 4; i++) {
             int px = (i & 1) == 0 ? x0 - 1 : x0 + sx;

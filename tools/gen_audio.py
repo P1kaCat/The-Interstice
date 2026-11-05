@@ -429,7 +429,7 @@ def main():
         creature_step(i)
     lamp_fail(); quake(); horde(); premonition(); creature_death(); creature_alert(); creature_land()
     if args.voices:
-        for name in ["hide", "dont_move", "not_yet", "go", "they_hear", "look_up", "closer", "stay"]:
+        for name in ["hide", "dont_move", "not_yet", "go", "they_hear", "look_up", "closer", "stay", "find_a_way"]:
             p = os.path.join(args.voices, name + ".wav")
             if os.path.exists(p):
                 whisper(p, f"voice/{name}")

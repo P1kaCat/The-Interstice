@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "tile=0": {
+      "model": "interstice:block/asphalt_0"
+    },
+    "tile=1": {
+      "model": "interstice:block/asphalt_1"
+    },
+    "tile=2": {
+      "model": "interstice:block/asphalt_2"
+    },
+    "tile=3": {
+      "model": "interstice:block/asphalt_3"
+    }
+  }
+}

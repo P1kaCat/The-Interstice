@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "interstice:block/rusted_ladder",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "interstice:block/rusted_ladder"
+    },
+    "facing=south": {
+      "model": "interstice:block/rusted_ladder",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "interstice:block/rusted_ladder",
+      "y": 270
+    }
+  }
+}

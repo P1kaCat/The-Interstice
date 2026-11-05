@@ -1,0 +1,27 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "interstice:block/wall_spotlight"
+    },
+    "facing=east": {
+      "model": "interstice:block/wall_spotlight",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "interstice:block/wall_spotlight",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "interstice:block/wall_spotlight",
+      "y": 270
+    },
+    "facing=up": {
+      "model": "interstice:block/wall_spotlight",
+      "x": 270
+    },
+    "facing=down": {
+      "model": "interstice:block/wall_spotlight",
+      "x": 90
+    }
+  }
+}

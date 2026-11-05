@@ -70,7 +70,8 @@ SPECIES = {
         anim=dict(walk=dict(length=1.1, stride=4.6, stance=0.62, lifts=(1.6, 1.3), centers=0.6, amp=0.7, low=1.0),
                   run=dict(length=0.5, stride=7.5, stance=0.38, lifts=(2.4, 2.0), centers=1.6, amp=0.8),
                   climb=dict(length=1.3, stride=4.2, stance=0.66, lifts=(1.8, 1.4)),
-                  idle=dict(breath=0.6, twitch=5.0), recover=dict(length=1.8), rear=dict(hips=48))),
+                  idle=dict(breath=0.6, twitch=5.0), recover=dict(length=1.8), rear=dict(hips=48),
+                  crawl=dict(length=1.1, stride=5.0, spread=(30, 24), weave=1.4))),
     "strider": dict(
         title="Strider", scale=1.0,
         morph={"hips": dict(len=1.1, thick=0.75, width=0.8), "spine": dict(len=1.2, thick=0.72, width=0.75),
@@ -80,7 +81,7 @@ SPECIES = {
                "shin": dict(len=1.9, thick=0.65), "foot": dict(len=1.7, thick=0.7), "toes": dict(len=1.1)},
         bend={"neck": (8, 0, 0)},
         palette=dict(skin=(0.52, 0.49, 0.47), fold=(0.44, 0.33, 0.33), tendons=1.6),
-        anim=dict(walk=dict(length=3.4, stride=13.0, stance=0.74, lifts=(5.0, 4.5), centers=2.0, amp=0.6),
+        anim=dict(walk=dict(length=3.4, stride=13.0, stance=0.74, lifts=(5.0, 4.5), centers=2.0, amp=0.6, peel=10.0),
                   run=dict(length=1.5, stride=19.0, stance=0.45, lifts=(7.0, 6.0), centers=6.5, amp=0.7),
                   climb=dict(length=3.6, stride=11.0, stance=0.75, lifts=(5.0, 4.0)),
                   idle=dict(breath=0.8), recover=dict(length=5.2), rear=dict(hips=58))),
@@ -93,7 +94,7 @@ SPECIES = {
                "hand": dict(thick=1.35, width=1.3), "fingers": dict(len=0.85, thick=1.4), "thigh": dict(len=0.85, thick=1.55),
                "shin": dict(len=0.85, thick=1.5), "foot": dict(len=0.9, thick=1.4), "toes": dict(thick=1.3)},
         bend={"neck": (-12, 0, 0)},
-        palette=dict(skin=(0.40, 0.36, 0.35), fold=(0.36, 0.24, 0.24), scars=0.5),
+        palette=dict(skin=(0.40, 0.36, 0.35), fold=(0.36, 0.24, 0.24), scars=0.5), rib_relief=0.4,
         anim=dict(walk=dict(length=3.2, stride=7.5, stance=0.8, lifts=(1.6, 1.2), centers=1.2, amp=1.6, heavy=1.0),
                   run=dict(length=1.25, stride=11.0, stance=0.5, lifts=(2.6, 2.2), centers=3.5, amp=1.3, heavy=1.0),
                   climb=dict(length=3.4, stride=6.5, stance=0.8, lifts=(2.4, 1.8)),
@@ -119,7 +120,7 @@ SPECIES = {
                "arm": dict(len=1.05, thick=0.55), "fore": dict(len=1.1, thick=0.5), "hand": dict(thick=0.7),
                "fingers": dict(len=1.15, thick=0.7), "thigh": dict(thick=0.55), "shin": dict(thick=0.5), "foot": dict(thick=0.6)},
         bend={"chest": (-8, 0, 0), "neck": (5, 0, 0)},
-        palette=dict(skin=(0.58, 0.55, 0.53), fold=(0.50, 0.38, 0.38), ribs=0.35),
+        palette=dict(skin=(0.58, 0.55, 0.53), fold=(0.50, 0.38, 0.38), ribs=0.35), rib_relief=1.8,
         anim=dict(walk=dict(length=2.8, stride=5.5, stance=0.74, lifts=(2.2, 1.8), centers=1.0, amp=0.9, hitch=1.0,
                             offsets={"leg_l": 0.0, "arm_l": 0.31, "leg_r": 0.52, "arm_r": 0.79}),
                   run=dict(length=1.0, stride=9.0, stance=0.42, lifts=(3.2, 2.8), centers=2.6, amp=1.0, hitch=0.6),
@@ -135,6 +136,7 @@ SPECIES = {
                   run=dict(length=0.95, stride=10.0, stance=0.42, lifts=(3.4, 3.0), centers=3.0, amp=0.6, steady_head=1.0),
                   climb=dict(length=2.8, stride=6.0, stance=0.75, lifts=(2.8, 2.2)),
                   observe=dict(neck=(-10, 22, 0), head=(-8, 32, 16), delay=0.6, turn=1.6),
+                  crawl=dict(neck=-78.0, head=62.0),
                   idle=dict(breath=0.4), recover=dict(length=3.4), rear=dict(hips=74))),
     "fractured": dict(
         title="Fractured", scale=1.0,
@@ -147,7 +149,7 @@ SPECIES = {
         palette=dict(skin=(0.45, 0.41, 0.40), fold=(0.40, 0.27, 0.27), scars=0.9),
         anim=dict(walk=dict(length=2.4, stride=6.0, stance=0.7, lifts={"arm_l": 3.2, "arm_r": 1.6, "leg_l": 2.0, "leg_r": 2.4},
                             centers={"arm_l": 1.6, "arm_r": 0.4}, amp=1.0, roll=6.0,
-                            offsets={"leg_l": 0.0, "arm_l": 0.16, "leg_r": 0.47, "arm_r": 0.86}),
+                            offsets={"leg_l": 0.0, "arm_l": 0.16, "leg_r": 0.47, "arm_r": 0.86}, peel=10.0),
                   run=dict(length=0.9, stride=10.0, stance=0.42, lifts={"arm_l": 4.2, "arm_r": 2.4, "leg_l": 2.8, "leg_r": 3.4},
                            centers={"arm_l": 3.6, "arm_r": 2.0}, amp=1.1, roll=8.0,
                            offsets={"leg_l": 0.0, "leg_r": 0.1, "arm_l": 0.5, "arm_r": 0.62}),
@@ -181,13 +183,24 @@ for _k, _v in LOOK.items():
     SPECIES[_k].update(_v)
 
 DEFAULT_ANIM = dict(
+    # stab: share of the body's pitch/yaw/roll the head cancels (the gaze holds its line); reach: forward
+    # overshoot of a swinging hand or foot before it plants; peel: degrees the wrist lifts off the ground at the
+    # end of a hand's stance (the fingers stay down) and the toes trail after lift-off; sway: (px, deg) the
+    # pelvis shifts and rolls over the limbs carrying the weight
     walk=dict(length=2.2, stride=6.0, stance=0.72, lifts=(2.4, 1.8), centers=1.0, amp=1.0,
-              offsets={"leg_l": 0.0, "arm_l": 0.25, "leg_r": 0.5, "arm_r": 0.75}),
+              offsets={"leg_l": 0.0, "arm_l": 0.25, "leg_r": 0.5, "arm_r": 0.75},
+              stab=0.55, reach=0.12, peel=22.0, sway=(0.35, 1.6), bounce=0.35),
     run=dict(length=0.85, stride=10.0, stance=0.42, lifts=(3.5, 3.0), centers=3.0, amp=1.0,
-             offsets={"leg_l": 0.0, "leg_r": 0.08, "arm_l": 0.48, "arm_r": 0.56}),
+             offsets={"leg_l": 0.0, "leg_r": 0.08, "arm_l": 0.48, "arm_r": 0.56},
+             stab=0.4, reach=0.08, peel=14.0, sway=(0.2, 1.0), bounce=1.6),
     climb=dict(length=2.6, stride=6.0, stance=0.75, lifts=(2.8, 2.2),
-               offsets={"leg_l": 0.0, "arm_r": 0.25, "leg_r": 0.5, "arm_l": 0.75}),
+               offsets={"leg_l": 0.0, "arm_r": 0.25, "leg_r": 0.5, "arm_l": 0.75},
+               stab=0.3, reach=0.1, peel=16.0, sway=(0.0, 1.2)),
     cling=dict(breath=0.18, grip=10, spread=(24, 18)),
+    # crawl: flattened to pass under one block (the body drops until the back is below CRAWL_TOP px), limbs
+    # splayed out like a lizard's, the spine weaving side to side, the head kept low
+    crawl=dict(length=2.0, stride=8.0, stance=0.72, lifts=(1.4, 1.1), spread=(46, 38), neck=-8.0, head=6.0, weave=1.0,
+               offsets={"leg_l": 0.0, "arm_r": 0.25, "leg_r": 0.5, "arm_l": 0.75}),
     idle=dict(breath=1.0, twitch=0.0, irregular=0.0),
     observe=dict(neck=(-6, 9, 0), head=(-4, 14, 2), delay=0.25, turn=0.5),
     rear=dict(hips=71), threat=dict(jaw=-32), recover=dict(length=3.2),
@@ -209,9 +222,29 @@ SC = SP["scale"]
 TEX = SP.get("tex", TEX)   # a bigger body gets a bigger atlas, to keep about 4-5 texels per px
 
 
+# v7 gait: the v6 strides were far too short for the speeds the server moves the creatures at (5-6 leg cycles a
+# second: a frantic hop). Strides are scaled up for every species, the run gets a short stance (moments with no
+# limb on the ground) and a bounce driven by which limbs carry the weight; the game picks walk or run from the
+# actual speed (AdherentAnimator), not only from the behaviour.
+GAIT = {"walk": dict(stride=1.9, lift=1.15),
+        "run": dict(stride=1.45, stance=0.85, stance_min=0.32, lift=1.3)}
+
+
 def cfg(clip):
     c = dict(DEFAULT_ANIM.get(clip, {}))
     c.update(SP.get("anim", {}).get(clip, {}))
+    g = GAIT.get(clip)
+    if g:
+        c["stride"] = c["stride"] * g["stride"]
+        if "stance" in g:
+            c["stance"] = max(g["stance_min"], c["stance"] * g["stance"])
+        l = c["lifts"]
+        c["lifts"] = {k: v * g["lift"] for k, v in l.items()} if isinstance(l, dict) else tuple(v * g["lift"] for v in l)
+        # the hands' stance moves forward with the longer stride: an arm reaches well ahead of the shoulder but not
+        # far behind it (with the v6 centres the planted hand lost the ground at the end of a long stance)
+        k = g["stride"] * 1.25
+        ce = c.get("centers", 0.0)
+        c["centers"] = {a: v * k for a, v in ce.items()} if isinstance(ce, dict) else ce * k
     return c
 
 
@@ -381,12 +414,30 @@ def torso_shape(a, s):
     return kx * (1 + erector), ky * (1 + erector * 0.5)
 
 
+RIB_S = (0.16, 0.3, 0.44, 0.58, 0.72)   # where the ribs run along the chest
+
+
+def rib_relief(a, s):
+    """Ribs pressing out through the skin of the flanks: narrow ridges slanting back and down, strongest at
+    mid-flank, fading towards the spine and the belly, with sunken intercostal grooves between them."""
+    sa, ca = math.sin(a), abs(math.cos(a))
+    flank = ca ** 1.5 * max(0.0, 1 - ((sa - 0.12) / 0.78) ** 2)
+    if flank <= 0:
+        return 0.0
+    slant = 0.07 * (0.6 - sa)                  # the lower the point, the further back its rib
+    k = 0.0
+    for c in RIB_S:
+        k += bump(s + slant, c, 0.045)
+    return flank * (0.13 * k - 0.04)
+
+
 def chest_shape(a, s):
     kx, ky = torso_shape(a, s)
     sa = math.sin(a)
     # pectoral and serratus masses low on the sides, a sunken belly line underneath
     lat = 0.06 * max(0.0, -sa) ** 0.5 * max(0.0, abs(math.cos(a))) ** 2 * bump(s, 0.45, 0.3)
-    return kx * (1 + lat), ky * (1 - 0.05 * max(0.0, -sa) ** 6)
+    rib = rib_relief(a, s) * SP.get("rib_relief", 1.0)
+    return kx * (1 + lat + rib), ky * (1 - 0.05 * max(0.0, -sa) ** 6 + 0.6 * rib)
 
 
 def wedge_shape(a, s):
@@ -431,7 +482,7 @@ HEAD = [((0, 16.0, -18.6), 3.0, 3.4), ((0, 15.8, -21.4), 3.15, 3.75), ((0, 14.4,
         ((0, 12.9, -26.9), 1.65, 2.2), ((0, 12.2, -28.5), 0.75, 1.05)]
 loft("hips", "skin", HIPS, sides=16, shape=torso_shape, cap1=False, sub=3)
 loft("spine", "skin", SPINE, sides=16, shape=torso_shape, cap0=False, cap1=False, sub=3)
-loft("chest", "skin", CHEST, sides=16, shape=chest_shape, cap0=False, sub=3)
+loft("chest", "skin", CHEST, sides=24, shape=chest_shape, cap0=False, sub=10)   # dense enough for the rib relief
 # --- neck: thick and tense, ringed with folds of skin
 loft("neck", "skin", NECK, sides=14, cap0=False, cap1=False, sub=4,
      shape=muscle((0.3, 0.3, 0.06, BACK, 0.7), folds=0.06, folds_n=5))
@@ -453,16 +504,7 @@ for _part, _bone, _ss in ((HIPS, "hips", (0.15, 0.35, 0.55, 0.75, 0.92)), (SPINE
         _tip = _top + np.array([0.0, _h, 0.55 * _h])     # swept back
         spike(_bone, "bone", _base, _tip, 0.7 if _part is not NECK else 0.5)
 
-# --- ribs: bands standing out under the skin of the flanks, slanting back and down
-for _s in (0.16, 0.3, 0.44, 0.58, 0.72):
-    for sx in (1, -1):
-        _pts = []
-        for _a in np.linspace(math.radians(62), math.radians(-38), 7):
-            a = _a if sx > 0 else math.pi - _a
-            p = path_point(CHEST, _s, a, chest_shape, out=0.98)
-            p = p + np.array([0.0, 0.0, 1.6 * (math.radians(62) - _a) / math.radians(100)])
-            _pts.append((p, 0.38, 0.38))
-        loft("chest", "skin", _pts, sides=6, sub=2)
+# --- ribs: part of the chest skin (rib_relief in chest_shape)
 
 # --- head detail: a heavy brow ridge, rows of sunken sockets where eyes would be, nostril slits, teeth
 for sx in (1, -1):
@@ -506,17 +548,17 @@ for s, sx in (("l", 1), ("r", -1)):
         return sx * x
     LAT = 0.0 if sx > 0 else math.pi   # lateral side of this limb
     # scapula: a plate pushing up under the skin of the shoulders, its spine a hard ridge
-    loft(f"shoulder_{s}", "skin", [((X(5.0), 24.1, -11.2), 1.0, 0.6), ((X(5.9), 24.7, -8.6), 2.4, 1.35),
-                                   ((X(5.2), 24.0, -5.6), 1.1, 0.7)], sides=10, sub=2)
-    loft(f"shoulder_{s}", "bone", [((X(4.6), 24.7, -10.6), 0.35, 0.3), ((X(6.0), 25.55, -8.4), 0.42, 0.36),
-                                   ((X(6.9), 25.2, -6.6), 0.3, 0.26)], sides=6, sub=2)
+    loft(f"shoulder_{s}", "skin", [((X(5.0), 23.8, -11.2), 0.9, 0.5), ((X(5.8), 24.3, -8.6), 2.2, 0.85),
+                                   ((X(5.2), 23.7, -5.6), 1.0, 0.5)], sides=12, sub=3)
+    loft(f"shoulder_{s}", "bone", [((X(4.6), 24.4, -10.6), 0.3, 0.26), ((X(6.0), 25.05, -8.4), 0.38, 0.32),
+                                   ((X(6.9), 24.8, -6.6), 0.26, 0.22)], sides=6, sub=2)
     # upper arm: it grows out of the chest (its first rings sit inside the ribcage and are carried by the
     # chest, handing over to the arm across the deltoid), deltoid cap, biceps in front, triceps behind
-    loft(f"arm_{s}", "skin", [((X(4.4), 21.8, -8.7), 2.8, 3.4), ((X(6.5), 20.9, -9.0), 3.5, 3.9),
+    loft(f"arm_{s}", "skin", [((X(2.6), 22.2, -8.6), 1.2, 1.5), ((X(4.4), 21.8, -8.7), 2.8, 3.4), ((X(6.5), 20.9, -9.0), 3.5, 3.9),
                               ((X(7.4), 17.8, -9.8), 2.9, 2.95), ((X(7.8), 15.0, -10.4), 2.6, 2.45),
                               ((X(8.4), 11.2, -11.4), 2.2, 2.2), ((X(8.5), 9.5, -12.3), 2.0, 2.1)], sides=12, sub=3,
-         shape=muscle((0.24, 0.15, 0.12, LAT, 0.6), (0.56, 0.16, 0.10, FRONT, 0.8), (0.52, 0.2, 0.12, BACK, 0.8)),
-         blend=("shoulder_" + s, 0.0, 0.55))
+         shape=muscle((0.34, 0.13, 0.12, LAT, 0.6), (0.62, 0.14, 0.10, FRONT, 0.8), (0.59, 0.17, 0.12, BACK, 0.8)),
+         blend=("shoulder_" + s, 0.0, 0.62))
     # connective masses between the ribcage and the arm: pectoral in front, latissimus behind; each is
     # carried by the chest at one end and by the arm at the other, so it stretches like muscle
     loft(f"arm_{s}", "skin", [((X(1.2), 16.6, -11.6), 1.8, 0.8), ((X(4.4), 16.9, -11.0), 2.0, 1.0),
@@ -547,17 +589,17 @@ for s, sx in (("l", 1), ("r", -1)):
     loft(f"hand_{s}", "nail", [((X(thumb_x - 0.45), 0.55, -25.0), 0.32, 0.3), ((X(thumb_x - 0.6), 0.1, -25.8), 0.04, 0.04)], sides=7)
     # thigh: it grows out of the pelvis (first rings inside the hips, carried by them, handing over to the
     # thigh across the hip joint); glutes behind, quadriceps in front, hamstrings behind
-    loft(f"thigh_{s}", "skin", [((X(2.2), 18.0, 15.2), 2.6, 3.4), ((X(4.3), 17.3, 14.7), 3.8, 4.2),
+    loft(f"thigh_{s}", "skin", [((X(0.8), 18.3, 15.4), 1.2, 1.6), ((X(2.2), 18.0, 15.2), 2.6, 3.4), ((X(4.3), 17.3, 14.7), 3.8, 4.2),
                                 ((X(5.1), 14.9, 13.2), 3.3, 3.5), ((X(5.4), 12.4, 11.7), 2.8, 2.9),
                                 ((X(5.8), 9.0, 9.8), 2.3, 2.3), ((X(5.8), 8.0, 9.9), 2.1, 2.1)], sides=12, sub=3,
-         shape=muscle((0.24, 0.14, 0.10, BACK, 0.6), (0.48, 0.2, 0.10, FRONT, 0.7), (0.44, 0.2, 0.12, BACK, 0.7),
-                      (0.32, 0.16, 0.06, LAT, 0.6)),
-         blend=("hips", 0.08, 0.42))
+         shape=muscle((0.36, 0.12, 0.10, BACK, 0.6), (0.57, 0.17, 0.10, FRONT, 0.7), (0.54, 0.17, 0.12, BACK, 0.7),
+                      (0.44, 0.14, 0.06, LAT, 0.6)),
+         blend=("hips", 0.2, 0.5))
     # groin and gluteal masses bridging the pelvis and the thigh
     loft(f"thigh_{s}", "skin", [((X(1.8), 14.6, 14.0), 1.6, 0.8), ((X(3.6), 14.2, 13.4), 1.7, 0.9),
                                 ((X(5.0), 13.6, 12.6), 1.3, 0.8)], sides=10, sub=2, blend=("hips", 0.0, 0.9))
-    loft(f"thigh_{s}", "skin", [((X(2.0), 18.9, 17.6), 2.0, 1.2), ((X(4.0), 18.0, 16.6), 2.4, 1.5),
-                                ((X(5.2), 15.8, 15.0), 1.8, 1.2)], sides=10, sub=2, blend=("hips", 0.0, 0.8))
+    loft(f"thigh_{s}", "skin", [((X(2.0), 18.7, 17.4), 1.6, 0.9), ((X(4.0), 17.9, 16.4), 1.9, 1.1),
+                                ((X(5.2), 15.8, 15.0), 1.4, 0.9)], sides=12, sub=3, blend=("hips", 0.0, 0.8))
     # knee cap
     loft(f"shin_{s}", "skin", [((X(5.8), 9.6, 8.6), 0.7, 0.6), ((X(5.8), 9.1, 7.9), 1.0, 0.9), ((X(5.8), 8.4, 7.7), 0.6, 0.5)], sides=8)
     # lower leg back to the raised hock: a lean calf, a hard tendon behind
@@ -1136,9 +1178,11 @@ def add(pose, b, rot=(0, 0, 0), pos=(0, 0, 0)):
     e["pos"] = tuple(a + c for a, c in zip(e.get("pos", (0, 0, 0)), pos))
 
 
-def solve_contacts(pose, targets, flatten=True, lateral=False):
+def solve_contacts(pose, targets, flatten=True, lateral=False, peel=None):
     """targets: limb -> (dx, dy, dz) offsets of the contact from its rest position (body space).
-    lateral: also solve x (the first joint gets an abduction degree of freedom), for turning."""
+    lateral: also solve x (the first joint gets an abduction degree of freedom), so a planted contact does not
+    drift sideways when the body sways or turns. peel: limb -> degrees added to the flattened end segment
+    (hand: the wrist rises off the ground; toes: they trail), solved with the rest of the limb."""
     from scipy.optimize import minimize
     for limb, off in targets.items():
         b, rest, joints = CONTACT[limb]
@@ -1159,7 +1203,7 @@ def solve_contacts(pose, targets, flatten=True, lateral=False):
                 p[joints[0]]["rot"] = (r[0], r[1], r[2] + v[3])
             if flatten:   # palm / toes kept flat on the contact surface, inside the solve
                 tot = sum(p.get(c, {}).get("rot", (0, 0, 0))[0] for c in chain)
-                p.setdefault(end, {})["rot"] = (-tot, end_rot[1], end_rot[2])
+                p.setdefault(end, {})["rot"] = (-tot + (peel or {}).get(limb, 0.0), end_rot[1], end_rot[2])
             return p
 
         def cost(v):
@@ -1177,13 +1221,29 @@ def solve_contacts(pose, targets, flatten=True, lateral=False):
     return pose
 
 
-def gait_offset(phase, stance, stride, lift):
-    """Contact offset along z (body moves -z): planted contact slides +z linearly; swing returns with lift."""
+def gait_offset(phase, stance, stride, lift, reach=0.0):
+    """Contact offset along z (body moves -z): planted contact slides +z linearly; swing returns with lift.
+    The lift peaks early (the limb clears the ground at once, then glides); reach carries it a little past
+    the plant point before it settles onto it (zero at both ends of the swing, so the contacts are unchanged)."""
     if phase < stance:
         return 0.0, -stride / 2 + stride * phase / stance
     q = (phase - stance) / (1 - stance)
-    e = q * q * (3 - 2 * q)
-    return lift * math.sin(math.pi * q), stride / 2 - stride * e
+    e = q * q * (3 - 2 * q) + reach * math.sin(math.pi * q) * q * q
+    return lift * math.sin(math.pi * q ** 0.75), stride / 2 - stride * e
+
+
+def soft_stance(ph, stance, band=0.07):
+    """How much weight a limb carries: builds after touch-down, fades before lift-off, 0 in the swing."""
+    if ph >= stance:
+        return 0.0
+    a = min(1.0, ph / band)
+    b = min(1.0, (stance - ph) / band)
+    return (a * a * (3 - 2 * a)) * (b * b * (3 - 2 * b))
+
+
+def chain_angles(pose):
+    return sum((np.array(pose.get(b, {}).get("rot", (0, 0, 0)), float) for b in ("hips", "spine", "chest", "neck")),
+               np.zeros(3))
 
 
 ANIMS = []
@@ -1200,24 +1260,57 @@ def S(x):
     return math.sin(x)
 
 
-def locomotion(t, stance, stride, lifts, offsets, body, wall=False, centers=None, wall_spread=(24, 18)):
+def locomotion(t, stance, stride, lifts, offsets, body, wall=False, centers=None, wall_spread=(24, 18),
+               stab=0.0, reach=0.0, peel=0.0, sway=(0.0, 0.0), bounce=0.0):
     pose = {}
     p = TAU * t
     body(pose, t, p)
-    targets = {}
+    if bounce:
+        # the pelvis and the shoulders sink while their pair of limbs carries the weight and rise when it is off
+        # the ground (the flight phases of the run)
+        load = {k: sum(soft_stance((t + offsets[l]) % 1.0, stance) for l in ls)
+                for k, ls in (("hips", ("leg_l", "leg_r")), ("chest", ("arm_l", "arm_r")))}
+        add(pose, "hips", pos=(0, bounce * SC * (0.55 - min(1.0, load["hips"])), 0))
+        add(pose, "chest", pos=(0, bounce * SC * (0.55 - min(1.0, load["chest"])), 0))
+    # weight shift: the pelvis drifts and rolls over the side whose limbs carry the weight
+    sup = {"l": 0.0, "r": 0.0}
+    for limb, off in offsets.items():
+        sup[limb[-1]] += soft_stance((t + off) % 1.0, stance)
+    shift = (sup["l"] - sup["r"]) / 2
+    if sway[0] or sway[1]:
+        add(pose, "hips", rot=(0, 0, -sway[1] * shift), pos=(sway[0] * shift * SC, 0, 0))
+    # the head holds its line: it cancels part of the oscillation the body passes up the spine
+    if stab:
+        def chain_at(tt):
+            q_ = {}
+            body(q_, tt, TAU * tt)
+            return chain_angles(q_)
+        mean = np.mean([chain_at(tt) for tt in np.linspace(0, 1, 16, endpoint=False)], axis=0)
+        d = chain_angles(pose) - mean
+        add(pose, "head", rot=(-stab * d[0], -stab * d[1], -0.7 * stab * d[2]))
+    targets, peels = {}, {}
     for limb, off in offsets.items():
         ph = (t + off) % 1.0
-        lift, dz = gait_offset(ph, stance, stride, lifts[limb])
+        lift, dz = gait_offset(ph, stance, stride, lifts[limb], reach)
         targets[limb] = (0.0, lift, dz + (centers or {}).get(limb, 0.0))
+        s = limb[-1]
+        q = (ph - stance) / (1 - stance) if ph >= stance else -1.0
         if limb.startswith("arm"):
-            s = limb[-1]
-            spread = 1.0 if ph >= stance else 0.0
-            add(pose, f"fingers_{s}", rot=(-14 * spread * math.sin(math.pi * (ph - stance) / (1 - stance)) if spread else 0, 0, 0))
+            if q >= 0:
+                add(pose, f"fingers_{s}", rot=(-14 * math.sin(math.pi * q), 0, 0))
+            elif peel:
+                # the wrist rises before lift-off while the fingers stay on the ground
+                k = min(1.0, max(0.0, (ph - 0.72 * stance) / (0.28 * stance)))
+                k = k * k * (3 - 2 * k)
+                peels[limb] = -peel * k
+                add(pose, f"fingers_{s}", rot=(0.9 * peel * k, 0, 0))
+        elif peel and 0 <= q < 0.7:
+            peels[limb] = -0.8 * peel * math.sin(math.pi * q / 0.7)   # the toes trail after lift-off
     if wall:
         for s, sx in (("l", 1), ("r", -1)):
             add(pose, f"arm_{s}", rot=(0, 0, sx * wall_spread[0]))
             add(pose, f"thigh_{s}", rot=(0, 0, sx * wall_spread[1]))
-    return solve_contacts(pose, targets)
+    return solve_contacts(pose, targets, lateral=not wall, peel=peels)
 
 
 @animation("walk", cfg("walk")["length"], "loop", 41, stride=cfg("walk")["stride"], stance=cfg("walk")["stance"],
@@ -1239,7 +1332,9 @@ def walk(t):
         head_k = 0.2 if c.get("steady_head") else 1.0
         add(pose, "neck", rot=(-1.5 * a * S(p * 2 + 1.4), 2.0 * a * S(p) * head_k, 0))
         add(pose, "head", rot=(1.2 * a * S(p * 2 + 1.8) * head_k, -1.5 * a * S(p) * head_k - (2.0 * a * S(p) * (1 - head_k)), 0))
-    return locomotion(t, c["stance"], c["stride"], lifts_of(c), c["offsets"], body, centers=centers_of(c))
+    return locomotion(t, c["stance"], c["stride"], lifts_of(c), c["offsets"], body, centers=centers_of(c),
+                      stab=1.0 if c.get("steady_head") else c["stab"], reach=c["reach"], peel=c["peel"], sway=c["sway"],
+                      bounce=c.get("bounce", 0.0) * (1.0 + 0.6 * c.get("heavy", 0.0)))
 
 
 @animation("run", cfg("run")["length"], "loop", 41, stride=cfg("run")["stride"], stance=cfg("run")["stance"],
@@ -1260,7 +1355,9 @@ def run(t):
         head_k = 0.3 if c.get("steady_head") else 1.0
         add(pose, "neck", rot=(6 + 3 * a * S(p + 1.8) * head_k, 0, 0))
         add(pose, "head", rot=(-4 * a * S(p + 2.2) * head_k, 0, 0))
-    return locomotion(t, c["stance"], c["stride"], lifts_of(c), c["offsets"], body, centers=centers_of(c))
+    return locomotion(t, c["stance"], c["stride"], lifts_of(c), c["offsets"], body, centers=centers_of(c),
+                      stab=1.0 if c.get("steady_head") else c["stab"], reach=c["reach"], peel=c["peel"], sway=c["sway"],
+                      bounce=c.get("bounce", 0.0) * (1.0 + 0.6 * c.get("heavy", 0.0)))
 
 
 @animation("climb", cfg("climb")["length"], "loop", 33, stride=cfg("climb")["stride"], stance=cfg("climb")["stance"],
@@ -1274,7 +1371,88 @@ def climb(t):
         add(pose, "chest", pos=(0, -2.4 * SC, 0), rot=(0, -4 * S(p), -4 * S(p)))
         add(pose, "neck", rot=(10, 3 * S(p), 0))
         add(pose, "head", rot=(6, -2 * S(p), 0))
-    return locomotion(t, c["stance"], c["stride"], lifts_of(c), c["offsets"], body, wall=True, wall_spread=sp)
+    return locomotion(t, c["stance"], c["stride"], lifts_of(c), c["offsets"], body, wall=True, wall_spread=sp,
+                      stab=c["stab"], reach=c["reach"], peel=c["peel"], sway=c["sway"])
+
+
+CRAWL_TOP = 14.5   # px: the back must pass under a one-block ceiling (16 px), a little margin
+_body_skin = [m for m in MESHES if m.material == "skin" and m.bone in ("hips", "spine", "chest")]
+_top = max(float(v[1]) for m in _body_skin for v in m.verts)
+_bottom = min(float(v[1]) for m in _body_skin if m.bone == "hips" for v in m.verts)
+CRAWL_DROP = max(0.0, min(_top - CRAWL_TOP, _bottom - 0.4))   # never through the floor
+
+
+@animation("crawl", cfg("crawl")["length"], "loop", 33, stride=cfg("crawl")["stride"], stance=cfg("crawl")["stance"],
+           offsets=cfg("crawl")["offsets"])
+def crawl(t):
+    c = cfg("crawl")
+    w = c["weave"]
+
+    def body(pose, t, p):
+        add(pose, "hips", pos=(0, -CRAWL_DROP, 0), rot=(0, 6 * w * S(p), 2.5 * S(p)))
+        add(pose, "spine", rot=(-2, -4 * w * S(p + 0.5), 0))
+        add(pose, "chest", rot=(-3, -7 * w * S(p + 1.0), -2.5 * S(p)))
+        add(pose, "neck", rot=(c["neck"], 4 * w * S(p + 1.6), 0))
+        add(pose, "head", rot=(c["head"], -3 * w * S(p + 2.0), 0))
+    return locomotion(t, c["stance"], c["stride"], lifts_of(c), c["offsets"], body, wall=True, wall_spread=c["spread"],
+                      stab=0.35, reach=0.05, peel=8.0)
+
+
+# v8 postures (2026-11-05): lower gaits to pass under a 3-block ceiling (stoop) and a 2-block one (crouch); the
+# one-block gap stays the crawl. The body drops just enough for the back and the head (neck bowed, face kept
+# forward) to clear the ceiling with a margin; a creature that already fits keeps its walk height. The server
+# picks the posture from the clearance it meets (AdherentEntity.updatePosture), the client the clip.
+STOOP_TOP, CROUCH_TOP = 45.0, 29.5   # px: under 48 and 32 with a margin
+POSTURES = {"stoop": dict(top=STOOP_TOP, neck=-14.0, head=10.0, stride=0.85, length=1.12, lift=0.85),
+            "crouch": dict(top=CROUCH_TOP, neck=-26.0, head=19.0, stride=0.7, length=1.25, lift=0.7)}
+# everything on the trunk counts (spines and spurs included), not the limbs nor the hanging moss
+_TRUNK = [m for m in MESHES if not m.bone.startswith(("arm", "fore", "hand", "fingers", "thigh", "shin", "foot", "toes", "moss"))]
+
+
+def _posture_top(drop, neck, head):
+    pose = {}
+    add(pose, "hips", pos=(0, -drop, 0))
+    add(pose, "neck", rot=(neck, 0, 0))
+    add(pose, "head", rot=(head, 0, 0))
+    G = globals_(pose)
+    return max(point(G, m.bone, v)[1] for m in _TRUNK for v in m.verts[::3])
+
+
+def _posture_drop(p):
+    top0 = _posture_top(0.0, p["neck"], p["head"])
+    return max(0.0, min(top0 - p["top"], _bottom - 0.4))
+
+
+POSTURE_DROP = {k: _posture_drop(v) for k, v in POSTURES.items()}
+
+
+def _low_walk(t, name):
+    c = cfg("walk")
+    p = POSTURES[name]
+    drop = POSTURE_DROP[name]
+
+    def body(pose, t, ph):
+        a = c["amp"] * 0.7
+        add(pose, "hips", rot=(0, 2.0 * a * S(ph), 1.5 * a * S(ph)), pos=(0, -drop - 0.25 * a * abs(S(ph * 2)) * SC, 0))
+        add(pose, "chest", rot=(1.0 * a * S(ph * 2 + 1.0), -2.5 * a * S(ph), -2.0 * a * S(ph)),
+            pos=(0, -0.3 * a * max(0, S(ph * 2 + 0.6)) * SC, 0))
+        add(pose, "neck", rot=(p["neck"] - 1.0 * a * S(ph * 2 + 1.4), 1.5 * a * S(ph), 0))
+        add(pose, "head", rot=(p["head"], -1.2 * a * S(ph), 0))
+    lifts = {k: v * p["lift"] for k, v in lifts_of(c).items()}
+    return locomotion(t, c["stance"], c["stride"] * p["stride"], lifts, c["offsets"], body, centers=centers_of(c),
+                      stab=c["stab"], reach=c["reach"] * 0.5, peel=c["peel"], sway=c["sway"], bounce=0.0)
+
+
+@animation("stoop", cfg("walk")["length"] * POSTURES["stoop"]["length"], "loop", 41,
+           stride=cfg("walk")["stride"] * POSTURES["stoop"]["stride"], stance=cfg("walk")["stance"], offsets=cfg("walk")["offsets"])
+def stoop(t):
+    return _low_walk(t, "stoop")
+
+
+@animation("crouch", cfg("walk")["length"] * POSTURES["crouch"]["length"], "loop", 41,
+           stride=cfg("walk")["stride"] * POSTURES["crouch"]["stride"], stance=cfg("walk")["stance"], offsets=cfg("walk")["offsets"])
+def crouch(t):
+    return _low_walk(t, "crouch")
 
 
 @animation("cling", 6.0, "loop", 25)
@@ -1333,37 +1511,59 @@ def search(t):
     return solve_contacts(pose, {l: (0, 0, 0) for l in CONTACT})
 
 
-@animation("rear", 1.6, "hold", 25)
+def _smooth01(x):
+    x = min(1.0, max(0.0, x))
+    return x * x * (3 - 2 * x)
+
+
+@animation("rear", 1.6, "hold", 33)
 def rear(t):
-    # seconds: hind feet anchored, pelvis over the support, chest rising, arms stop carrying weight
+    # seconds: a short crouch gathers the body (hands still planted), the chest rises over the anchored hind feet
+    # with a slight overshoot and settles; the arms lift late, claws opening; the head keeps its eyes forward
     c = cfg("rear")
-    k = min(1.0, t / 0.75)
-    k = k * k * (3 - 2 * k)
     q = c["hips"] / 71.0
+    crouch = math.sin(math.pi * t / 0.3) if t < 0.3 else 0.0
+    k = _smooth01((t - 0.14) / 0.66)
+    k += 0.06 * math.sin(math.pi * min(1.0, max(0.0, (t - 0.62) / 0.7)))      # overshoot, then settle
+    ka = _smooth01((t - 0.24) / 0.62)                                         # the arms follow late
     pose = {}
-    add(pose, "hips", rot=(c["hips"] * k, 0, 0), pos=(0, 1.5 * k * SC, 5.0 * k * q * SC))
-    add(pose, "spine", rot=(9 * k * q, 0, 0))
-    add(pose, "chest", rot=(3 * k, 0, 0))
-    add(pose, "neck", rot=(-22 * k * q, 0, 0))
-    add(pose, "head", rot=(-26 * k * q, 0, 0))
+    add(pose, "hips", rot=(c["hips"] * k - 4 * crouch, 0, 0), pos=(0, (1.5 * k - 1.3 * crouch) * SC, 5.0 * k * q * SC))
+    add(pose, "spine", rot=(9 * k * q + 5 * crouch, 0, 0))
+    add(pose, "chest", rot=(3 * k + 3 * crouch, 0, 0), pos=(0, -1.2 * crouch * SC, 0))
+    add(pose, "neck", rot=(-22 * k * q + 7 * crouch, 0, 0))
+    add(pose, "head", rot=(-26 * k * q - 9 * crouch, 0, 0))
+    free = {b: dict(v) for b, v in pose.items()}
     for s, sx in (("l", 1), ("r", -1)):
-        add(pose, f"arm_{s}", rot=(-66 * k * q, 0, sx * 6 * k))
-        add(pose, f"fore_{s}", rot=(-14 * k, 0, 0))
-        add(pose, f"hand_{s}", rot=(-30 * k, 0, 0))
-        add(pose, f"fingers_{s}", rot=(-25 * k, 0, 0))
-    return solve_contacts(pose, {"leg_l": (0, 0, 0), "leg_r": (0, 0, 0)})
+        add(free, f"arm_{s}", rot=(-66 * ka * q, 0, sx * 7 * ka))
+        add(free, f"fore_{s}", rot=(-14 * ka, 0, 0))
+        add(free, f"hand_{s}", rot=(-30 * ka, 0, 0))
+        add(free, f"fingers_{s}", rot=(-25 * ka - 32 * ka * (1 - ka), 0, 0))   # the claws flare as the arms rise
+    legs = {"leg_l": (0, 0, 0), "leg_r": (0, 0, 0)}
+    free = solve_contacts(free, legs)
+    if ka >= 1.0:
+        return free
+    planted = solve_contacts({b: dict(v) for b, v in pose.items()}, dict(legs, arm_l=(0, 0, 0), arm_r=(0, 0, 0)))
+    for s in "lr":   # hand over from the planted arms to the lifted ones
+        for b in (f"shoulder_{s}", f"arm_{s}", f"fore_{s}", f"hand_{s}", f"fingers_{s}"):
+            a_ = np.array(planted.get(b, {}).get("rot", (0, 0, 0)), float)
+            f_ = np.array(free.get(b, {}).get("rot", (0, 0, 0)), float)
+            free.setdefault(b, {})["rot"] = tuple(a_ + (f_ - a_) * ka)
+    return free
 
 
-@animation("threat", 1.8, "hold", 19)
+@animation("threat", 1.8, "hold", 37)
 def threat(t):
-    # seconds: the neck tenses and the mouth opens progressively
+    # seconds: the head draws back (anticipation), then thrusts forward and down while the jaw opens late and
+    # wide; a fine tension tremor runs through the neck once it is set
     c = cfg("threat")
-    k = min(1.0, t / 1.2)
-    k = k * k * (3 - 2 * k)
+    back = math.sin(math.pi * t / 0.4) if t < 0.4 else 0.0
+    k = _smooth01((t - 0.2) / 0.9)
+    kj = _smooth01((t - 0.35) / 1.0)
+    trem = 0.7 * k * math.sin(TAU * 3.5 * t) * (0.6 + 0.4 * math.sin(TAU * 0.9 * t))
     pose = {}
-    add(pose, "neck", rot=(8 * k, 0, 0))
-    add(pose, "head", rot=(10 * k, 0, 0))
-    add(pose, "jaw", rot=(c["jaw"] * k, 0, 0))
+    add(pose, "neck", rot=(8 * k - 9 * back + trem, 0.6 * trem, 0))
+    add(pose, "head", rot=(10 * k - 7 * back - 0.6 * trem, 0, 0.5 * trem))
+    add(pose, "jaw", rot=(c["jaw"] * kj + 2.5 * back, 0, 0))
     return pose
 
 
@@ -1488,7 +1688,12 @@ def sample_channel(times, values, t, loop, length):
 
 report = []
 BAKED = []
+# INTERSTICE_ONLY=stoop,crouch: compute only these clips and merge them into the existing .bbmodel (minutes
+# instead of the full regeneration); everything else in the file is kept as it is.
+ONLY = [s for s in os.environ.get("INTERSTICE_ONLY", "").split(",") if s]
 for a in ANIMS:
+    if ONLY and a["name"] not in ONLY:
+        continue
     times = [a["length"] * i / (a["keys"] - 1) for i in range(a["keys"])]
     poses = []
     for i, tm in enumerate(times):
@@ -1533,9 +1738,9 @@ for a in ANIMS:
         report.append(f"turn     planted contact error <= {worst_y:.3f} px height, {worst_xz:.3f} px on the ground "
                       f"({c['sweep'] / c['stance']:.1f} deg per cycle, interpolated, 240 Hz) ["
                       + " ".join(f"{k} {v:.2f}" for k, v in wl.items()) + "]")
-    if a["name"] in ("walk", "run", "climb", "idle", "cling", "rear", "observe", "search"):
+    if a["name"] in ("walk", "run", "climb", "crawl", "stoop", "crouch", "idle", "cling", "rear", "observe", "search"):
         loop = a["loop"] == "loop"
-        worst_y = worst_slip = 0.0
+        worst_y = worst_slip = worst_x = 0.0
         wl = {}
         limbs = list(CONTACT) if a["name"] != "rear" else ["leg_l", "leg_r"]
         prev = {}
@@ -1554,6 +1759,7 @@ for a in ANIMS:
                     ph = (tm / a["length"] + a["offsets"][limb]) % 1
                     if ph < a["stance"] * 0.97:
                         worst_y = max(worst_y, abs(w[1] - GOAL[limb][1]))   # height only; z checked as slip
+                        worst_x = max(worst_x, abs(w[0] - GOAL[limb][0]))
                         wl[limb] = max(wl.get(limb, 0.0), abs(w[1] - GOAL[limb][1]))
                         if limb in prev and prev[limb][0] < a["stance"] * 0.97 and ph > prev[limb][0]:
                             expected = a["stride"] / a["stance"] * (a["length"] / steps) / a["length"]
@@ -1563,11 +1769,13 @@ for a in ANIMS:
                         prev.pop(limb, None)
                 else:
                     worst_y = max(worst_y, abs(w[1] - GOAL[limb][1]))
+                    worst_x = max(worst_x, abs(w[0] - GOAL[limb][0]))
                     wl[limb] = max(wl.get(limb, 0.0), abs(w[1] - GOAL[limb][1]))
                     if limb in prev:
                         worst_slip = max(worst_slip, abs(w[2] - prev[limb]))
                     prev[limb] = w[2]
-        report.append(f"{a['name']:8s} contact height error <= {worst_y:.3f} px, slip per 1/240 s <= {worst_slip:.4f} px "
+        report.append(f"{a['name']:8s} contact height error <= {worst_y:.3f} px, sideways <= {worst_x:.3f} px, "
+                      f"slip per 1/240 s <= {worst_slip:.4f} px "
                       f"(interpolated, sampled at 240 Hz) [" + " ".join(f"{k} {v:.2f}" for k, v in wl.items()) + "]")
 
 # ============================================================================ write the .bbmodel
@@ -1610,6 +1818,18 @@ def group(b):
 
 
 outliner = [group(b) for b in ORDER if BONES[b][0] is None]
+if ONLY:
+    # merge mode: animators are keyed by the bone groups of the file being updated
+    with open(OUT, encoding="utf-8") as fh:
+        _existing = json.load(fh)
+
+    def _uuids(g):
+        group_uuid[g["name"]] = g["uuid"]
+        for ch in g.get("children", []):
+            if isinstance(ch, dict):
+                _uuids(ch)
+    for _g in _existing["outliner"]:
+        _uuids(_g)
 
 animations = []
 for a, times, channels in BAKED:
@@ -1628,6 +1848,23 @@ for a, times, channels in BAKED:
     animations.append({"uuid": str(uuid.uuid4()), "name": a["name"], "loop": a["loop"], "override": False, "length": a["length"],
                        "snapping": 24, "selected": False, "anim_time_update": "", "blend_weight": "", "start_delay": "",
                        "loop_delay": "", "animators": animators, "interstice": meta})
+
+if ONLY:
+    _existing["animations"] = [x for x in _existing["animations"] if x["name"] not in ONLY] + animations
+    with open(OUT, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(_existing, fh, indent=1)
+    _val = os.path.join(ROOT, "models", f"{NAME}_validation.txt")
+    _old = open(_val, encoding="utf-8").read().splitlines() if os.path.exists(_val) else []
+    _old = [ln for ln in _old if not any(ln.startswith(n + " ") or ln.startswith(n + ":") for n in ONLY)]
+    for _n in ONLY:
+        if _n in POSTURE_DROP:
+            _p = POSTURES[_n]
+            report.append(f"{_n}: body dropped {POSTURE_DROP[_n] / 16:.2f} blocks, back and head top "
+                          f"{_posture_top(POSTURE_DROP[_n], _p['neck'], _p['head']) / 16:.2f} blocks (ceiling {(_p['top'] + 3) / 16:.0f})")
+    with open(_val, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write("\n".join(_old + report) + "\n")
+    print("\n".join(report))
+    sys.exit(0)
 
 buf = io.BytesIO()
 skin_png.save(buf, "PNG")
@@ -1666,32 +1903,36 @@ lines = [f"{NAME}.bbmodel ({SP['title']}): {len(BONES)} bones, {len(MESHES)} mes
 Gr = globals_(rear(1.0))
 reared = max(point(Gr, m.bone, v)[1] for m in MESHES for v in m.verts[::3]) / 16
 lines.append(f"reared height (blocks): {reared:.2f}")
-# deformation of the skin where limbs join the torso, with the game's skinning (linear blend, same weights
-# as the exporter: own bone, 50/50 joint blends within 3 px, plus the gradient hand-over above)
+_crawl_tops = []
+for _ph in (0.0, 0.25, 0.5, 0.75):
+    _Gc = globals_(crawl(_ph))
+    _crawl_tops.append(max(point(_Gc, m.bone, v)[1] for m in MESHES if m.material in ("skin", "head")
+                           and not m.bone.startswith(("arm", "fore", "hand", "fingers", "thigh", "shin", "foot", "toes", "moss"))
+                           for v in m.verts[::2]) / 16)
+lines.append(f"crawl: body dropped {CRAWL_DROP / 16:.2f} blocks, back and head top at most {max(_crawl_tops):.2f} blocks "
+             f"(limbs splayed outside)")
+# deformation of the skin where limbs join the torso, with the exporter's weights (skinning.py: plane hand-over
+# along the main chain, radial at side branches, plus the gradient hand-over above); linear blend here, the game
+# uses dual quaternions on LOD0 (tools/creature/joint_report.py compares both on the written file)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from skinning import Rig as _Rig, mix_weights as _mix  # noqa: E402
+_RIG = _Rig(ORDER, [ORDER.index(BONES[b][0]) if BONES[b][0] else None for b in ORDER], [BONES[b][1] for b in ORDER],
+            {ORDER.index(b) for b in DANGLE})
+
+
 def _skin_weights(m):
-    par = {b: BONES[b][0] for b in ORDER}
-    kids = {b: [c for c in ORDER if BONES[c][0] == b and (c.startswith("moss") == b.startswith("moss") or m.bone.startswith("moss"))] for b in ORDER}
+    bi = ORDER.index(m.bone)
     out = []
     for k, v in enumerate(m.verts):
-        js, ws = {m.bone: 1.0}, []
-        b = m.bone
-        if par[b] is not None:
-            w = 0.5 * max(0.0, 1 - np.linalg.norm(v - BONES[b][1]) / 3.0)
-            if w > 0:
-                js[par[b]] = js.get(par[b], 0) + w
-        best = min(kids[b], key=lambda c: np.linalg.norm(v - BONES[c][1]), default=None)
-        if best is not None and not best.startswith("moss"):
-            w = 0.5 * max(0.0, 1 - np.linalg.norm(v - BONES[best][1]) / 3.0)
-            if w > 0:
-                js[best] = js.get(best, 0) + w
-        js[m.bone] = 1.0 - sum(w for c, w in js.items() if c != m.bone)
+        js, ws = _RIG.weights(np.array(v, float), bi, "legacy" if bi in _RIG.hanging else "plane")
         if getattr(m, "blend", None):
             ob, s0, s1 = m.blend
             q = min(1.0, max(0.0, (m.params[k][1] - s0) / max(1e-6, s1 - s0)))
-            wo = 1.0 - q * q * (3 - 2 * q)
-            js = {c: w * (1 - wo) for c, w in js.items()}
-            js[ob] = js.get(ob, 0) + wo
-        out.append(js)
+            js, ws = _mix(js, ws, ORDER.index(ob), 1.0 - q * q * (3 - 2 * q))
+        acc = {}
+        for j, w in zip(js, ws):
+            acc[ORDER[j]] = acc.get(ORDER[j], 0.0) + w
+        out.append(acc)
     return out
 
 

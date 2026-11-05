@@ -34,6 +34,14 @@ public final class ServerConfig {
     public float creatureAttackDamage = 7f;
     public boolean voiceEnabled = true;
 
+    // ---- survival (health points: 2 = one heart; durations in ticks)
+    public float bandageHeal = 4f;
+    public int bandageUseTicks = 50;
+    public float medkitHeal = 14f;
+    public int medkitUseTicks = 110;
+    public float injectorHeal = 8f;
+    public int injectorUseTicks = 12;
+
     // ---- creature family (species ids: adherent, crawler, strider, burden, clinger, hollow, watcher, fractured)
     /** Stampede composition before per-event variation (relative weights). */
     public java.util.Map<String, Float> stampedeSpeciesWeights = weights(65, 12, 8, 5, 3, 3, 2, 2);

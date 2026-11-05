@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/hopper",
+  "textures": {
+    "particle": "interstice:block/rusted_iron",
+    "top": "interstice:block/rusted_funnel_top",
+    "side": "interstice:block/rusted_iron",
+    "inside": "interstice:block/rusted_iron_dark"
+  }
+}

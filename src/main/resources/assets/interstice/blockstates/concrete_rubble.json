@@ -1,7 +1,18 @@
 {
   "variants": {
-    "": {
-      "model": "interstice:block/concrete_rubble"
-    }
+    "": [
+      {
+        "model": "interstice:block/concrete_rubble"
+      },
+      {
+        "model": "interstice:block/concrete_rubble_1"
+      },
+      {
+        "model": "interstice:block/concrete_rubble_2"
+      },
+      {
+        "model": "interstice:block/concrete_rubble_3"
+      }
+    ]
   }
 }

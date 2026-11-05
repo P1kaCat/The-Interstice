@@ -1,0 +1,137 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "interstice:block/ward_emitter_side",
+    "side": "interstice:block/ward_emitter_side",
+    "top": "interstice:block/ward_emitter_top"
+  },
+  "elements": [
+    {
+      "from": [
+        4,
+        0,
+        4
+      ],
+      "to": [
+        12,
+        10,
+        12
+      ],
+      "faces": {
+        "north": {
+          "texture": "#side",
+          "uv": [
+            4,
+            6,
+            12,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#side",
+          "uv": [
+            4,
+            6,
+            12,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#side",
+          "uv": [
+            4,
+            6,
+            12,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#side",
+          "uv": [
+            4,
+            6,
+            12,
+            16
+          ]
+        },
+        "up": {
+          "texture": "#top",
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ]
+        },
+        "down": {
+          "texture": "#top",
+          "uv": [
+            4,
+            4,
+            12,
+            12
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        7.5,
+        10,
+        7.5
+      ],
+      "to": [
+        8.5,
+        14,
+        8.5
+      ],
+      "faces": {
+        "north": {
+          "texture": "#top",
+          "uv": [
+            7,
+            7,
+            8,
+            8
+          ]
+        },
+        "south": {
+          "texture": "#top",
+          "uv": [
+            7,
+            7,
+            8,
+            8
+          ]
+        },
+        "east": {
+          "texture": "#top",
+          "uv": [
+            7,
+            7,
+            8,
+            8
+          ]
+        },
+        "west": {
+          "texture": "#top",
+          "uv": [
+            7,
+            7,
+            8,
+            8
+          ]
+        },
+        "up": {
+          "texture": "#top",
+          "uv": [
+            7,
+            7,
+            8,
+            8
+          ]
+        }
+      }
+    }
+  ]
+}

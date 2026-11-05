@@ -1,7 +1,18 @@
 {
   "variants": {
-    "": {
-      "model": "interstice:block/rusted_plate"
-    }
+    "": [
+      {
+        "model": "interstice:block/rusted_plate"
+      },
+      {
+        "model": "interstice:block/rusted_plate_1"
+      },
+      {
+        "model": "interstice:block/rusted_plate_2"
+      },
+      {
+        "model": "interstice:block/rusted_plate_3"
+      }
+    ]
   }
 }

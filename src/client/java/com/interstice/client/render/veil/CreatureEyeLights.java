@@ -78,9 +78,9 @@ public final class CreatureEyeLights {
             }
             PointLightData p = h.getLightData();
             p.setPosition(o.x, o.y, o.z);
-            p.setRadius(2.6f);
+            p.setRadius(3.0f);
             p.setColor(1f, 0.05f, 0.03f);
-            p.setBrightness(0.3f * Math.min(1.6f, o.k));
+            p.setBrightness(0.42f * Math.min(1.6f, o.k));
             p.setInscatteringStrength(0f);
             h.markDirty();
             keep.put(o.id, h);

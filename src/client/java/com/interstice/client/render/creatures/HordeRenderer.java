@@ -164,7 +164,8 @@ public final class HordeRenderer {
             if (Math.abs(z - cam.z) > 430) continue;
             simulated++;
             double y = lane + Math.sin(t * 0.3 + i) * 0.6;
-            double x = L.faceX(side, z) - side * 0.35;
+            // on the wall surface itself: out over buttresses and ledges, into recessed panels (never through them)
+            double x = L.faceX(side, z) - side * (0.35 + L.relief(side, (int) Math.floor(y), (int) Math.floor(z)));
             double fallOut = 0;
             if (falling && Hash.unit(h, 5) < 0.025 * sp.t.fallMul) {
                 double tf = 300 + Hash.unit(h, 6) * 480;
@@ -231,7 +232,7 @@ public final class HordeRenderer {
                 double ang = t * speed + Hash.unit(h, 5) * 6.28;
                 double z = baseZ + Math.sin(ang) * 14;
                 double y = baseY + Math.sin(ang * 0.7) * 9 + scatter * 40 * Hash.unit(h, 6);
-                double x = L.faceX(side, z) - side * 0.35;
+                double x = L.faceX(side, z) - side * (0.35 + L.relief(side, (int) Math.floor(y), (int) Math.floor(z)));
                 double dx = x - cam.x, dy = y - cam.y, dz = z - cam.z;
                 double d2 = dx * dx + dy * dy + dz * dz;
                 if (d2 < 55 * 55 || d2 > 320 * 320) continue;

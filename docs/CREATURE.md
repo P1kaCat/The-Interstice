@@ -74,7 +74,8 @@ python -I tools/creature/export_adherent.py
 - `SkinnedMeshAsset` loads the JSON (reloaded with resource packs).
 - `SkinnedMeshPose` adds the weighted clips (additive offsets from the rest pose, Catmull-Rom sampling
   identical to the generator's validation), computes bone matrices (`G = G_parent · T(pivot − parentPivot + pos) · Rz · Ry · Rx`),
-  skins every vertex on the CPU (linear blend skinning, up to 3 bones), converts Blockbench space to
+  skins every vertex on the CPU (up to 3 bones; dual quaternion skinning on LOD0, so bent joints keep their
+  volume; linear blend on the horde's LOD1), converts Blockbench space to
   Minecraft model space and emits triangles through the vanilla vertex consumer. Vanilla lighting, the
   red hurt overlay and Veil's deferred lights apply as for any entity.
 - `AdherentMeshModel` plugs this into the vanilla `MobRenderer`; `AdherentRenderer` orients the body on
@@ -90,10 +91,23 @@ python -I tools/creature/export_adherent.py
 
 ## Skinning at joints
 
-In Blockbench each mesh follows one bone. The exporter blends vertices near a joint 50/50 between the
-two bones at the pivot, fading out over 3 px, so overlapping segments move together at the joint
-instead of separating. There are no painted weights: this is automatic, reproducible, and coarse
-compared with hand-painted skinning.
+In Blockbench each mesh follows one bone. The exporter computes the weights (`tools/creature/skinning.py`,
+shared with the generator's report and the review tools). Since v6, along the main chain (hips-spine-chest-
+neck-head, shoulder-arm-forearm-hand-fingers, thigh-shin-foot-toes) a vertex hands over from one bone to the
+next across the joint's bisecting plane, over a width proportional to the limb's thickness there, so every
+side of a limb changes bone at the same place and a thick joint blends over a longer stretch than a thin one.
+Side branches (chest to shoulder, hips to thigh, head to jaw) keep the v5 radial blend (50/50 at the pivot,
+fading out over 3 px); the generator's gradient hand-overs (limbs growing out of the torso, connective
+masses, moss roots) are mixed on top. There are still no painted weights.
+
+Review tools (no game needed):
+- `python -I tools/creature/joint_report.py <species|all>`: skin stretch per clip, v5 vs v6 weights, linear vs
+  dual quaternion. The edge-length ratio penalises a real crease (the inner side of a bent elbow must
+  compress) and flatters the v5 rigid overlap, so read it with the renders.
+- `python -I tools/creature/pose_preview.py <species> out.png walk:0.25,rear:1.6 --bone=arm_l --zoom=2.5 --nomoss`:
+  z-buffered, smooth-shaded render of poses, side by side per variant (`--variants=legacy/lbs,plane/dqs`),
+  close-up on a joint (`--bone`), meshes picked out in red (`--highlight=shoulder_l_skin`), or an animated
+  clip (`--gif=24`).
 
 ## Visual proofs (`docs/creature/`)
 

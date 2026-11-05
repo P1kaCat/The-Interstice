@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/orientable_with_bottom",
+  "textures": {
+    "front": "interstice:block/supply_locker_front_open",
+    "side": "interstice:block/supply_locker_side",
+    "top": "interstice:block/supply_locker_top",
+    "bottom": "interstice:block/supply_locker_top"
+  }
+}

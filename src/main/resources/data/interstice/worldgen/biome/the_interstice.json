@@ -6,8 +6,7 @@
     "fog_color": 724754,
     "sky_color": 0,
     "water_color": 1713700,
-    "water_fog_color": 395018,
-    "particle": { "options": { "type": "minecraft:white_ash" }, "probability": 0.0035 }
+    "water_fog_color": 395018
   },
   "spawners": {},
   "spawn_costs": {},

@@ -29,7 +29,8 @@ public final class AdherentAnimator {
     private static final float REAR_BEAT = 1.5f;     // seconds of rearing/threat before a hunt run
 
     public enum Layer {
-        IDLE("idle", true), TURN("turn", true), WALK("walk", true), RUN("run", true), CLING("cling", true), CLIMB("climb", true),
+        IDLE("idle", true), TURN("turn", true), WALK("walk", true), RUN("run", true), STOOP("stoop", true), CROUCH("crouch", true),
+        CRAWL("crawl", true), CLING("cling", true), CLIMB("climb", true),
         REAR("rear", true), FALL("fall", true), RECOVER("recover", true), STUNNED("recover", true),
         OBSERVE("observe", false), THREAT("threat", false), SEARCH("search", false);
 
@@ -49,7 +50,7 @@ public final class AdherentAnimator {
         double time, lastTime = Double.NaN;
         double lastX = Double.NaN, lastY, lastZ;
         double stride;
-        float speed;
+        public float speed;
         /** World velocity and smoothed acceleration (blocks per tick, per tick^2), for the moss dynamics. */
         double vx, vy, vz;
         public final Vector3f accelWorld = new Vector3f();
@@ -62,6 +63,12 @@ public final class AdherentAnimator {
         public float heading;
         float lookYaw;
         double huntStart = -1;
+        /** 0..1: how far the body is squeezed sideways (crawling through a one-block gap). */
+        public float squeeze;
+        /** 0 on the ground .. 1 on the wall, eased: the body turns between the two instead of snapping. */
+        public float wallBlend = Float.NaN;
+        /** 0..1: going up a facade on the ground (rising while barely moving across): the body turns upright. */
+        public float climbTilt;
         Behavior lastBehavior;
         boolean initialised;
         public SkinnedMeshPose pose;
@@ -136,8 +143,15 @@ public final class AdherentAnimator {
             }
             s.lastBehavior = b;
         }
-        targets(s, b, mode);
+        targets(s, b, mode, SkinnedMeshAsset.of(e.species()), e.posture());
         float k = s.initialised ? (float) (1 - Math.exp(-dt * 0.22)) : 1f;
+        s.squeeze += ((e.isSqueezing() ? 1f : 0f) - s.squeeze) * (float) Math.min(1, dt * 0.18);
+        float hs = (float) Math.sqrt(s.vx * s.vx + s.vz * s.vz);
+        boolean climbing = mode == Mode.GROUND && s.vy > 0.06 && hs < Math.max(0.08, s.vy * 1.5);
+        s.climbTilt += ((climbing ? 1f : 0f) - s.climbTilt) * (float) Math.min(1, dt * (climbing ? 0.25 : 0.12));
+        float wallTarget = mode == Mode.WALL ? 1f : 0f;
+        if (Float.isNaN(s.wallBlend) || mode == Mode.FALLING) s.wallBlend = wallTarget;
+        else s.wallBlend += (wallTarget - s.wallBlend) * (float) Math.min(1, dt * 0.16);
         for (int i = 0; i < s.weight.length; i++) s.weight[i] += (s.target[i] - s.weight[i]) * k;
         // the head turns late and slowly towards what the creature is looking at
         float wantYaw = 0f;
@@ -179,10 +193,42 @@ public final class AdherentAnimator {
         return k * speciesGlow(e);
     }
 
-    private static void targets(State s, Behavior b, Mode mode) {
+    /**
+     * The walk is fine up to WALK_MAX_HZ cycles a second; the run needs at least RUN_MIN_HZ of its own (much longer)
+     * cycles a second, or it is a slow-motion bounding run with flight phases: hopping. Between the two speeds the
+     * gaits blend; the AI keeps its intermediate speeds out of that band (AdherentGroundGoal.pace).
+     */
+    private static final float WALK_MAX_HZ = 2.4f, RUN_MIN_HZ = 1.35f;
+
+    /**
+     * 0..1: how much of the run the current speed calls for. The walk clip is played by distance travelled, so a
+     * fast creature on the walk clip would move its legs frantically (the v6 "hop"); past about one and a quarter
+     * walk cycles a second it runs instead.
+     */
+    private static float runMix(State s, SkinnedMeshAsset asset) {
+        SkinnedMeshAsset.Clip walk = asset == null ? null : asset.clip("walk");
+        SkinnedMeshAsset.Clip run = asset == null ? null : asset.clip("run");
+        if (walk == null || walk.cycleBlocks <= 0) return s.speed > 0.15f ? 1f : 0f;
+        float bps = s.speed * 20f;
+        float walkMax = walk.cycleBlocks * WALK_MAX_HZ;
+        float runMin = run != null && run.cycleBlocks > 0 ? run.cycleBlocks * RUN_MIN_HZ : walkMax * 1.3f;
+        if (runMin <= walkMax) runMin = walkMax * 1.15f;
+        float x = Mth.clamp((bps - walkMax) / (runMin - walkMax), 0f, 1f);
+        return x * x * (3 - 2 * x);
+    }
+
+    private static void gait(float[] t, float moving, float run) {
+        t[Layer.WALK.ordinal()] += moving * (1f - run);
+        t[Layer.RUN.ordinal()] += moving * run;
+        t[Layer.IDLE.ordinal()] += 1f - moving;
+    }
+
+    private static void targets(State s, Behavior b, Mode mode, SkinnedMeshAsset asset, AdherentEntity.Posture posture) {
+        boolean squeezing = posture == AdherentEntity.Posture.CRAWL;
         float[] t = s.target;
         Arrays.fill(t, 0f);
         float moving = Mth.clamp(s.speed / 0.03f, 0f, 1f);
+        float run = runMix(s, asset);
         if (mode == Mode.WALL) {
             switch (b) {
                 case FALL -> t[Layer.FALL.ordinal()] = 1f;
@@ -194,20 +240,42 @@ public final class AdherentAnimator {
             }
             return;
         }
+        if (squeezing && b != Behavior.FALL && b != Behavior.STUNNED && b != Behavior.RECOVER) {
+            // flattened in a one-block gap: the crawl, whatever it is doing
+            t[Layer.CRAWL.ordinal()] = 1f;
+            if (b == Behavior.HUNT) t[Layer.THREAT.ordinal()] = 0.3f;
+            return;
+        }
+        if ((posture == AdherentEntity.Posture.STOOP || posture == AdherentEntity.Posture.CROUCH)
+                && b != Behavior.FALL && b != Behavior.STUNNED && b != Behavior.RECOVER) {
+            // under a low ceiling: the bowed or crouched gait (held still at its pose when it stops)
+            t[(posture == AdherentEntity.Posture.STOOP ? Layer.STOOP : Layer.CROUCH).ordinal()] = 1f;
+            if (b == Behavior.HUNT) t[Layer.THREAT.ordinal()] = 0.35f;
+            else if (b == Behavior.SEARCH) t[Layer.SEARCH.ordinal()] = 0.5f;
+            return;
+        }
+        if (s.climbTilt > 0.4f) {   // going up a facade: the climbing gait
+            t[Layer.CLIMB.ordinal()] = 1f;
+            return;
+        }
+        if (b == Behavior.CLIMB) {   // on the ground at the foot of the wall, about to go up: it rears against it
+            t[Layer.REAR.ordinal()] = 1f;
+            return;
+        }
         switch (b) {
             case HUNT -> {
                 boolean beat = s.huntStart >= 0 && (s.time - s.huntStart) / 20.0 < REAR_BEAT;
-                t[(beat ? Layer.REAR : Layer.RUN).ordinal()] = 1f;
+                if (beat) t[Layer.REAR.ordinal()] = 1f;
+                else gait(t, moving, Math.max(run, 0.7f));
                 t[Layer.THREAT.ordinal()] = beat ? 1f : 0.45f;
             }
-            case RUN, FLEE -> t[Layer.RUN.ordinal()] = 1f;
+            case RUN, FLEE -> gait(t, moving, Math.max(run, 0.7f));
             case FALL -> t[Layer.FALL.ordinal()] = 1f;
             case RECOVER -> t[Layer.RECOVER.ordinal()] = 1f;
             case STUNNED -> t[Layer.STUNNED.ordinal()] = 1f;          // lying where it landed
             case HIDE -> t[Layer.CLING.ordinal()] = 1f;               // pressed low and flat, still
             case SEARCH -> {
-                t[Layer.WALK.ordinal()] = moving;
-                t[Layer.IDLE.ordinal()] = 1f - moving;
+                gait(t, moving, run);
                 t[Layer.SEARCH.ordinal()] = 1f - 0.5f * moving;       // head low, sweeping
             }
             case STARE -> {
@@ -215,8 +283,7 @@ public final class AdherentAnimator {
                 t[Layer.OBSERVE.ordinal()] = 1f;
             }
             default -> {
-                t[Layer.WALK.ordinal()] = moving;
-                t[Layer.IDLE.ordinal()] = 1f - moving;
+                gait(t, moving, run);
                 if (b == Behavior.INVESTIGATE && moving < 0.5f) t[Layer.OBSERVE.ordinal()] = 1f;
             }
         }
@@ -237,6 +304,8 @@ public final class AdherentAnimator {
             float w = s.weight[l.ordinal()];
             if (w <= 0.002f) continue;
             SkinnedMeshAsset.Clip clip = asset.clip(l.clip);
+            if (clip == null && l == Layer.CRAWL) clip = asset.clip("climb");   // models exported before the crawl clip
+            if (clip == null && (l == Layer.STOOP || l == Layer.CROUCH)) clip = asset.clip(l == Layer.CROUCH ? "crawl" : "walk");
             if (clip == null) continue;
             float seconds;
             if (clip.cycleBlocks > 0) seconds = (float) (s.stride / clip.cycleBlocks * clip.length);

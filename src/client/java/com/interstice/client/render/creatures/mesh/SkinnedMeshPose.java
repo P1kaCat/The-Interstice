@@ -28,6 +28,11 @@ public final class SkinnedMeshPose {
     private final float[] rot, pos;
     private final Matrix4f[] global, skin;
     private final float[] sm;          // skin matrices flattened, 12 floats per bone (3x4)
+    private final float[] dq;          // the same transforms as unit dual quaternions, 8 floats per bone
+    private final float[] dqOut = new float[6];
+    private final Quaternionf dqTmp = new Quaternionf();
+    /** LOD0 is skinned with dual quaternions (volume kept at bent joints); false = linear blend everywhere. */
+    public static boolean DUAL_QUATERNION = true;
     private float[] skinned = new float[0], skinnedN = new float[0];
     private int lodSkinned = -1;
 
@@ -54,6 +59,7 @@ public final class SkinnedMeshPose {
             skin[i] = new Matrix4f();
         }
         sm = new float[n * 12];
+        dq = new float[n * 8];
         dDir = new float[n * 3];
         dVel = new float[n * 3];
     }
@@ -141,7 +147,54 @@ public final class SkinnedMeshPose {
             sm[o] = s.m00(); sm[o + 1] = s.m10(); sm[o + 2] = s.m20(); sm[o + 3] = s.m30();
             sm[o + 4] = s.m01(); sm[o + 5] = s.m11(); sm[o + 6] = s.m21(); sm[o + 7] = s.m31();
             sm[o + 8] = s.m02(); sm[o + 9] = s.m12(); sm[o + 10] = s.m22(); sm[o + 11] = s.m32();
+            // the same rigid transform as a unit dual quaternion (real x y z w, dual x y z w)
+            s.getNormalizedRotation(dqTmp);
+            int d = b * 8;
+            float qx = dqTmp.x, qy = dqTmp.y, qz = dqTmp.z, qw = dqTmp.w;
+            float tx2 = s.m30() * 0.5f, ty2 = s.m31() * 0.5f, tz2 = s.m32() * 0.5f;
+            dq[d] = qx; dq[d + 1] = qy; dq[d + 2] = qz; dq[d + 3] = qw;
+            // dual = 0.5 * (t, 0) * real
+            dq[d + 4] = tx2 * qw + ty2 * qz - tz2 * qy;
+            dq[d + 5] = -tx2 * qz + ty2 * qw + tz2 * qx;
+            dq[d + 6] = tx2 * qy - ty2 * qx + tz2 * qw;
+            dq[d + 7] = -tx2 * qx - ty2 * qy - tz2 * qz;
         }
+    }
+
+    /**
+     * Dual quaternion skinning of one vertex (Kavan et al.): the bone transforms are blended as rigid motions,
+     * so a bent or twisted joint keeps its volume instead of collapsing like a linear blend. Writes the
+     * Blockbench-space position and (unnormalised) normal into {@code out[0..5]}.
+     */
+    private void dqs(int[] J, float[] W, int v, float px, float py, float pz, float nx, float ny, float nz, float[] out) {
+        int j0 = J[v * 3] * 8;
+        float rx = 0, ry = 0, rz = 0, rw = 0, ex = 0, ey = 0, ez = 0, ew = 0;
+        for (int k = 0; k < 3; k++) {
+            float w = W[v * 3 + k];
+            if (w <= 0f) continue;
+            int d = J[v * 3 + k] * 8;
+            // shortest path: flip a quaternion pointing away from the first bone's
+            if (dq[d] * dq[j0] + dq[d + 1] * dq[j0 + 1] + dq[d + 2] * dq[j0 + 2] + dq[d + 3] * dq[j0 + 3] < 0f) w = -w;
+            rx += w * dq[d]; ry += w * dq[d + 1]; rz += w * dq[d + 2]; rw += w * dq[d + 3];
+            ex += w * dq[d + 4]; ey += w * dq[d + 5]; ez += w * dq[d + 6]; ew += w * dq[d + 7];
+        }
+        float len = (float) Math.sqrt(rx * rx + ry * ry + rz * rz + rw * rw);
+        if (len < 1e-6f) len = 1f;
+        float inv = 1f / len;
+        rx *= inv; ry *= inv; rz *= inv; rw *= inv;
+        ex *= inv; ey *= inv; ez *= inv; ew *= inv;
+        // rotate: p + 2 r x (r x p + w p)
+        float cx = ry * pz - rz * py + rw * px, cy = rz * px - rx * pz + rw * py, cz = rx * py - ry * px + rw * pz;
+        float ox = px + 2 * (ry * cz - rz * cy), oy = py + 2 * (rz * cx - rx * cz), oz = pz + 2 * (rx * cy - ry * cx);
+        // translate: 2 (w e - ew r + r x e)
+        ox += 2 * (rw * ex - ew * rx + ry * ez - rz * ey);
+        oy += 2 * (rw * ey - ew * ry + rz * ex - rx * ez);
+        oz += 2 * (rw * ez - ew * rz + rx * ey - ry * ex);
+        float dx = ry * nz - rz * ny + rw * nx, dy = rz * nx - rx * nz + rw * ny, dz = rx * ny - ry * nx + rw * nz;
+        out[0] = ox; out[1] = oy; out[2] = oz;
+        out[3] = nx + 2 * (ry * dz - rz * dy);
+        out[4] = ny + 2 * (rz * dx - rx * dz);
+        out[5] = nz + 2 * (rx * dy - ry * dx);
     }
 
     /** A moss strand: spring its direction towards gravity, then rotate the bone from its rest direction to it. */
@@ -190,9 +243,22 @@ public final class SkinnedMeshPose {
         float[] P = lod.positions, N = lod.normals, W = lod.weights;
         int[] J = lod.joints;
         if (asset.dangleBones.length > 0) dInit = true;
+        boolean dual = DUAL_QUATERNION && lodIndex == 0;   // the horde's reduced LOD stays linear (cheaper)
         for (int v = 0; v < n; v++) {
             float px = P[v * 3], py = P[v * 3 + 1], pz = P[v * 3 + 2];
             float nx = N[v * 3], ny = N[v * 3 + 1], nz = N[v * 3 + 2];
+            if (dual) {
+                dqs(J, W, v, px, py, pz, nx, ny, nz, dqOut);
+                skinned[v * 3] = -dqOut[0];
+                skinned[v * 3 + 1] = 24f - dqOut[1];
+                skinned[v * 3 + 2] = dqOut[2];
+                float len = (float) Math.sqrt(dqOut[3] * dqOut[3] + dqOut[4] * dqOut[4] + dqOut[5] * dqOut[5]);
+                if (len < 1e-6f) len = 1f;
+                skinnedN[v * 3] = -dqOut[3] / len;
+                skinnedN[v * 3 + 1] = -dqOut[4] / len;
+                skinnedN[v * 3 + 2] = dqOut[5] / len;
+                continue;
+            }
             float ox = 0, oy = 0, oz = 0, qx = 0, qy = 0, qz = 0;
             for (int k = 0; k < 3; k++) {
                 float w = W[v * 3 + k];

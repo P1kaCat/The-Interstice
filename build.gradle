@@ -91,3 +91,9 @@ jar {
         rename { "${it}_${project.base.archivesName.get()}" }
     }
 }
+
+// GameTests always run on a freshly generated Interstice dimension (the test world itself is kept between runs,
+// and chunks left over from an older generation would mix with the current one).
+tasks.matching { it.name == "runGametest" }.configureEach {
+    doFirst { delete "build/gametest/world/dimensions/interstice" }
+}

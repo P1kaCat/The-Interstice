@@ -33,8 +33,8 @@ public final class StructurePass {
     static final BlockState SODIUM = ModBlocks.SODIUM_LAMP.defaultBlockState();
     static final BlockState EMERGENCY = ModBlocks.EMERGENCY_LAMP.defaultBlockState();
     static final BlockState AIR = Blocks.AIR.defaultBlockState();
-    static final BlockState BARS_X = Blocks.IRON_BARS.defaultBlockState().setValue(IronBarsBlock.EAST, true).setValue(IronBarsBlock.WEST, true);
-    static final BlockState BARS_Z = Blocks.IRON_BARS.defaultBlockState().setValue(IronBarsBlock.NORTH, true).setValue(IronBarsBlock.SOUTH, true);
+    static final BlockState BARS_X = ModBlocks.RUSTED_BARS.defaultBlockState().setValue(IronBarsBlock.EAST, true).setValue(IronBarsBlock.WEST, true);
+    static final BlockState BARS_Z = ModBlocks.RUSTED_BARS.defaultBlockState().setValue(IronBarsBlock.NORTH, true).setValue(IronBarsBlock.SOUTH, true);
 
     static BlockState flood(Direction dir) {
         return ModBlocks.FLOOD_LAMP.defaultBlockState().setValue(DirectionalBlock.FACING, dir);
@@ -47,12 +47,15 @@ public final class StructurePass {
             platforms(w, side);
             pipes(w, side);
             wallLamps(w, side);
+            wallUplights(w, side);
+            highFloods(w, side);
             passageDetails(w, side);
             vents(w, side);
         }
-        bunkers(w);
+        if (w.layout.plan() == null) bunkers(w);   // version 2: shelters are part of the settlements
         lampPosts(w);
         Landmarks.run(w);
+        Settlements.run(w);
     }
 
     // -------------------------------------------------------------- lamp posts
@@ -65,9 +68,22 @@ public final class StructurePass {
             int z = c * 34 + (int) (Hash.unit(h, 0) * 34);
             if (z < w.minZ || z > w.maxZ) continue;
             int side = (c & 1) == 0 ? -1 : 1;
-            int x = (int) Math.floor(L.centerX(z + 0.5) + side * (6 + Hash.unit(h, 1) * 12));
+            // version 2: street lights stand on the pavement edges of the (wandering) main street
+            int x = L.plan() != null ? (int) Math.floor(Settlements.streetCenter(L, z + 0.5) + side * (Settlements.STREET_HALF + 1 + Hash.unit(h, 1) * 2))
+                    : (int) Math.floor(L.centerX(z + 0.5) + side * (6 + Hash.unit(h, 1) * 12));
             if (x < w.minX || x > w.maxX) continue;
             if (L.pitAt(x, z) != null || bunkerAt(L, x, z) != null || L.nearLandmark(z, 75)) continue;
+            if (L.plan() != null) {
+                // version 2: street lights in the District, a few in the Ironworks and the Ward, almost none in the Expanse
+                if (!L.plan().inside(z) || Settlements.lotAt(L, x, z, 2) != null) continue;
+                double keep = switch (L.plan().regionAt(z)) {
+                    case FORGOTTEN_DISTRICT -> 1.0;
+                    case IRONWORKS -> 0.6;
+                    case CONTAMINATED_WARD -> 0.5;
+                    case DEAD_EXPANSE -> 0.18;
+                };
+                if (Hash.unit(h, 7) > keep) continue;
+            }
             int fy = L.floorY(x, z);
             int height = 4 + (int) (Hash.unit(h, 2) * 3);
             for (int y = fy; y < fy + height; y++) w.set(x, y, z, DARK);
@@ -181,7 +197,7 @@ public final class StructurePass {
                 }
                 w.set(w.xAt(side, -1, z), y - 1, z, RUST);
             }
-            w.setIfAir(w.xAt(side, -1, z0 + len / 2), y + 3, z0 + len / 2, Hash.unit(h, 5) < 0.3 ? SODIUM : LAMP);
+            w.setIfAir(w.xAt(side, -1, z0 + len / 2), y + 3, z0 + len / 2, com.interstice.block.LampBlock.facing(Hash.unit(h, 5) < 0.3 ? SODIUM : LAMP, side < 0 ? Direction.EAST : Direction.WEST));
             if (y < IntersticeLayout.FLOOR_Y + 44 && Hash.unit(h, 6) < 0.7) {
                 int zl = z0 + 1;
                 int xp = w.xAt(side, -prot - 1, zl);
@@ -237,16 +253,83 @@ public final class StructurePass {
             long h = Hash.of(L.sub(506), side, c);
             int z = c * 22 + (int) (Hash.unit(h, 0) * 22);
             if (z < w.minZ || z > w.maxZ) continue;
-            for (int k = 0; k < 9; k++) {
-                if (k > 0 && Hash.unit(h, k, 1) > 0.45 * (1.0 - k / 10.0)) continue;
-                int y = IntersticeLayout.FLOOR_Y + 6 + k * 28 + (k > 0 ? (int) (Hash.unit(h, k, 2) * 10) : 0);
+            // version 2: strings of lights climbing the walls and fading into the dark above, so the eye measures
+            // the height (denser and higher than the legacy layout)
+            boolean v2 = L.plan() != null;
+            int levels = v2 ? 11 : 9;
+            for (int k = 0; k < levels; k++) {
+                double keep = v2 ? 0.85 - k * 0.05 : 0.45 * (1.0 - k / 10.0);
+                if (k > 0 && Hash.unit(h, k, 1) > keep) continue;
+                int y = IntersticeLayout.FLOOR_Y + 6 + k * (v2 ? 18 : 28) + (k > 0 ? (int) (Hash.unit(h, k, 2) * (v2 ? 6 : 10)) : 0);
                 int relief = L.relief(side, y, z);
                 int x = w.xAt(side, -relief - 1, z);
                 double roll = Hash.unit(h, k, 3);
                 BlockState lamp = roll < 0.12 ? EMERGENCY : roll < 0.32 ? SODIUM : LAMP;
-                if (k >= 4 && roll < 0.2) lamp = flood(side < 0 ? Direction.EAST : Direction.WEST);
+                lamp = com.interstice.block.LampBlock.facing(lamp, side < 0 ? Direction.EAST : Direction.WEST);
+                if (k >= 4 && roll < 0.2) {
+                    // flood lamps are set into the wall, lens flush with the face
+                    int wx = wallBlockX(w, side, x, y, z);
+                    if (wx != Integer.MIN_VALUE) w.set(wx, y, z, flood(side < 0 ? Direction.EAST : Direction.WEST));
+                    continue;
+                }
                 w.setIfAir(x, y, z, lamp);
             }
+        }
+    }
+
+    /**
+     * Version 2: flood lamps set into the floor at the very foot of the walls, aimed straight up, every 12 blocks or
+     * so (some missing): their beams graze the walls and climb until the black fog takes them, so the walls read as
+     * immensely tall. The lamp replaces the floor block (its lens flush with the floor), on a dark metal footing.
+     */
+    private static void wallUplights(ChunkWriter w, int side) {
+        IntersticeLayout L = w.layout;
+        if (L.plan() == null) return;
+        for (int c = Math.floorDiv(w.minZ, 12); c <= Math.floorDiv(w.maxZ, 12); c++) {
+            long h = Hash.of(L.sub(508), side, c);
+            if (Hash.unit(h, 0) > 0.85) continue;
+            int z = c * 12 + (int) (Hash.unit(h, 1) * 12);
+            if (z < w.minZ || z > w.maxZ || !L.plan().inside(z)) continue;
+            int fy = L.floorY(w.xAt(side, -3, z), z);
+            int x = w.xAt(side, -L.relief(side, fy, z) - 1, z);   // the first floor column in front of the wall
+            if (L.pitAt(x, z) != null || Settlements.lotAt(L, x, z, 1) != null) continue;
+            if (w.get(x, fy - 1, z).isAir() || !w.get(x, fy, z).isAir()) continue;   // a floor here, and nothing on it
+            w.set(x, fy - 2, z, DARK);
+            w.set(x, fy - 1, z, flood(Direction.UP));
+        }
+    }
+
+    /** The first solid block of the wall behind an air column at x (stepping outwards), or Integer.MIN_VALUE. */
+    private static int wallBlockX(ChunkWriter w, int side, int x, int y, int z) {
+        for (int i = 0; i <= 3; i++) {
+            int xx = x + side * i;
+            if (!w.get(xx, y, z).isAir()) return xx;
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    /** Height of the high flood lamps above the corridor floor (see {@link #highFloods}). */
+    public static final int HIGH_FLOOD_Y = IntersticeLayout.FLOOR_Y + 30;
+
+    /**
+     * Version 2: searchlights set into the walls 30 blocks above the floor, every 40 blocks on each side (the two
+     * sides staggered), aimed straight across: they light the upper part of the opposite wall and the chains
+     * hanging and stretched in between, dimly (long-throw spot lights in {@code LampLightManager}).
+     */
+    private static void highFloods(ChunkWriter w, int side) {
+        IntersticeLayout L = w.layout;
+        if (L.plan() == null) return;
+        int y = HIGH_FLOOD_Y;   // ChunkWriter.setIfAir ignores anything outside the chunk
+        int offset = side < 0 ? 0 : 20;
+        for (int c = Math.floorDiv(w.minZ - offset, 40); c <= Math.floorDiv(w.maxZ - offset, 40); c++) {
+            long h = Hash.of(L.sub(509), side, c);
+            int z = c * 40 + offset + (int) (Hash.unit(h, 0) * 6) - 3;
+            if (z < w.minZ || z > w.maxZ || !L.plan().inside(z)) continue;
+            int relief = L.relief(side, y, z);
+            // set into the wall: the searchlight replaces the wall block, its lens flush with the face
+            int x = wallBlockX(w, side, w.xAt(side, -relief - 1, z), y, z);
+            if (x == Integer.MIN_VALUE) continue;
+            w.set(x, y, z, ModBlocks.WALL_SPOTLIGHT.defaultBlockState().setValue(DirectionalBlock.FACING, side < 0 ? Direction.EAST : Direction.WEST));
         }
     }
 
@@ -257,7 +340,7 @@ public final class StructurePass {
             if (Math.floorMod(z, 10) == 0 && !TerrainPass.isCollapsed(L, side, z)) {
                 int x = w.xAt(side, 7.5, z);
                 if (w.get(x, py + TerrainPass.PASSAGE_HEIGHT - 1, z).isAir()) {
-                    w.set(x, py + TerrainPass.PASSAGE_HEIGHT - 1, z, Hash.unit(L.sub(507), side, z) < 0.2 ? EMERGENCY : LAMP);
+                    w.set(x, py + TerrainPass.PASSAGE_HEIGHT - 1, z, com.interstice.block.LampBlock.facing(Hash.unit(L.sub(507), side, z) < 0.2 ? EMERGENCY : LAMP, Direction.DOWN));
                 }
             }
             if (TerrainPass.isCollapsed(L, side, z)) {
@@ -273,7 +356,7 @@ public final class StructurePass {
             if (dz == Integer.MIN_VALUE) continue;
             // red fixture above each maintenance doorway
             int relief = L.relief(side, py + 3, dz);
-            w.setIfAir(w.xAt(side, -relief - 1, dz), py + 3, dz, EMERGENCY);
+            w.setIfAir(w.xAt(side, -relief - 1, dz), py + 3, dz, com.interstice.block.LampBlock.facing(EMERGENCY, side < 0 ? Direction.EAST : Direction.WEST));
         }
     }
 
@@ -362,6 +445,6 @@ public final class StructurePass {
                 if (door != Direction.SOUTH) w.set(x, fy + 1, z1, BARS_X);
             }
         }
-        w.set(mx, roof - 1, mz, EMERGENCY);
+        w.set(mx, roof - 1, mz, com.interstice.block.LampBlock.facing(EMERGENCY, Direction.DOWN));
     }
 }

@@ -1,7 +1,25 @@
 {
   "variants": {
-    "": {
-      "model": "interstice:block/emergency_lamp"
+    "facing=up": {
+      "model": "interstice:block/emergency_lamp_floor"
+    },
+    "facing=down": {
+      "model": "interstice:block/emergency_lamp_ceiling"
+    },
+    "facing=south": {
+      "model": "interstice:block/emergency_lamp_wall"
+    },
+    "facing=west": {
+      "model": "interstice:block/emergency_lamp_wall",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "interstice:block/emergency_lamp_wall",
+      "y": 180
+    },
+    "facing=east": {
+      "model": "interstice:block/emergency_lamp_wall",
+      "y": 270
     }
   }
 }

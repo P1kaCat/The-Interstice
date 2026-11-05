@@ -19,10 +19,10 @@ public final class ModNetwork {
     private ModNetwork() {}
 
     /** Layout seed of the dimension so the client can reconstruct walls, chains and lanes. */
-    public record LayoutSync(long seed) implements CustomPacketPayload {
+    public record LayoutSync(long seed, int version) implements CustomPacketPayload {
         public static final Type<LayoutSync> TYPE = new Type<>(Interstice.id("layout_sync"));
         public static final StreamCodec<FriendlyByteBuf, LayoutSync> CODEC = CustomPacketPayload.codec(
-                (p, b) -> b.writeLong(p.seed), b -> new LayoutSync(b.readLong()));
+                (p, b) -> { b.writeLong(p.seed); b.writeVarInt(p.version); }, b -> new LayoutSync(b.readLong(), b.readVarInt()));
 
         @Override
         public Type<? extends CustomPacketPayload> type() { return TYPE; }
@@ -30,7 +30,7 @@ public final class ModNetwork {
 
     /** Short environmental event (earthquake, chain shudder, light failure, silence, distant impact, stare cue). */
     public record EnvEvent(int kind, long startTick, int duration, float intensity, long seed, double x, double y, double z) implements CustomPacketPayload {
-        public static final int QUAKE = 0, CHAIN_SHUDDER = 1, LIGHT_FAILURE = 2, SILENCE = 3, DISTANT_IMPACT = 4, STARE = 5, FLEE = 6;
+        public static final int QUAKE = 0, CHAIN_SHUDDER = 1, LIGHT_FAILURE = 2, SILENCE = 3, DISTANT_IMPACT = 4, STARE = 5, FLEE = 6, FLASH = 7, HORDE_SCREAM = 8;
         public static final Type<EnvEvent> TYPE = new Type<>(Interstice.id("env_event"));
         public static final StreamCodec<FriendlyByteBuf, EnvEvent> CODEC = CustomPacketPayload.codec((p, b) -> {
             b.writeVarInt(p.kind);

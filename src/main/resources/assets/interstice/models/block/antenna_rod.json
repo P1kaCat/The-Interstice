@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/lightning_rod",
+  "textures": {
+    "texture": "interstice:block/antenna_rod",
+    "particle": "interstice:block/antenna_rod"
+  }
+}

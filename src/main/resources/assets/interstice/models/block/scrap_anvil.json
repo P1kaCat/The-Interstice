@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/template_anvil",
+  "textures": {
+    "top": "interstice:block/scrap_anvil_top",
+    "body": "interstice:block/rusted_iron",
+    "particle": "interstice:block/rusted_iron"
+  }
+}

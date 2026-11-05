@@ -1,0 +1,3 @@
+# wall searchlight (StructurePass.highFloods)
+wall_spotlight_front 38b0558f-7f9e-4976-bf60-a5bc63fdf121 tile
+# wall_spotlight_side (unused: came out as a barrel on sand; the model uses flood_lamp_side)

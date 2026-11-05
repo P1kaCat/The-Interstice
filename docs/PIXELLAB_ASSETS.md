@@ -118,3 +118,101 @@ Destination: `src/client/resources/assets/interstice/textures/particle/`. The ga
 All sounds are original placeholders synthesised by `tools/gen_audio.py` (mono 32 kHz Ogg Vorbis). The voice
 lines in `assets/interstice/sounds/voice/` are whisper-vocoded from a local Windows text-to-speech render and
 must be replaced by a real whispered recording (same filenames, **mono**). See `README.md` → *Audio assets*.
+
+---
+
+## Batch "Corridor rework" — survival items, devices, threshold (2026-11-05)
+
+The files below are **temporary development textures** drawn by `tools/assets/gen_survival_textures.py` (each PNG
+carries a "temporary" text marker). Same rules as above: save the PixelLab output with exactly the same filename
+at exactly the same path.
+
+Items: **16×16 px**, transparent background, single object centred, slight 3/4 view like vanilla items, dark
+1-px outline, no text. Destination: `src/main/resources/assets/interstice/textures/item/`. Item models already
+exist (`item/generated`, or `item/handheld` for the flashlight, injector and spike).
+
+| # | Output filename | PixelLab prompt | Usage |
+|---|---|---|---|
+| R1 | `canned_ration.png` | "16x16 pixel art item icon, dented steel food can with a faded brown paper label, no text, grimy, transparent background" | Food (hunger only) |
+| R2 | `dry_biscuits.png` | "16x16 pixel art item icon, three dry square hardtack biscuits stacked, pale tan, transparent background" | Food |
+| R3 | `nutrient_paste.png` | "16x16 pixel art item icon, squeezable grey-green paste tube with a black cap, clinical, transparent background" | Food |
+| R4 | `bandage.png` | "16x16 pixel art item icon, rolled off-white gauze bandage with a loose end and a small dried blood spot, transparent background" | Healing (small) |
+| R5 | `medical_kit.png` | "16x16 pixel art item icon, battered pale grey medical case with a dark red cross and a black handle, transparent background" | Healing (large) |
+| R6 | `emergency_injector.png` | "16x16 pixel art item icon, diagonal auto-injector pen, white body with an amber band and a short needle, transparent background" | Healing (fast) |
+| R7 | `flashlight.png` | "16x16 pixel art item icon, diagonal black metal flashlight with a pale warm lens at the top and a small red switch, transparent background" | Light |
+| R8 | `battery.png` | "16x16 pixel art item icon, single upright dark battery cell with a yellow top band and a white plus sign, transparent background" | Recharges the flashlight |
+| R9 | `flash_flare.png` | "16x16 pixel art item icon, red cardboard magnesium flare stick with a white cap and a yellow band, transparent background" | Protective device |
+| R10 | `rattle_lure.png` | "16x16 pixel art item icon, small rusty tin box with a clockwork winding key on top, bolts visible inside, transparent background" | Protective device (thrown) |
+| R11 | `resonance_spike.png` | "16x16 pixel art item icon, diagonal steel spike with three thin glowing cyan tuning grooves and a dark leather grip, transparent background" | Rare lethal device |
+| R12 | `torn_note.png` | "16x16 pixel art item icon, torn yellowed paper scrap with a few dark handwritten lines (illegible), transparent background" | Lore note |
+
+Blocks: **16×16 px**, opaque, flat face. Destination: `src/main/resources/assets/interstice/textures/block/`.
+
+| # | Output filename | PixelLab prompt | Usage |
+|---|---|---|---|
+| R13 | `ward_emitter_side.png` | "16x16 pixel art texture, side of a small grey metal device with a horizontal speaker grille and a thin glowing pale-blue indicator strip, flat lighting" | Ward emitter (sides; the model shows the lower 10 px) |
+| R14 | `ward_emitter_top.png` | "16x16 pixel art texture, top of a grey metal device with a dark square port and a small pale-blue light in the centre, flat lighting" | Ward emitter (top) |
+| R15 | `exit_threshold.png` | "16x16 pixel art texture, almost pure black surface with very faint dark-grey grain, like looking into deep darkness, seamless" | The exit at the far end of the Corridor |
+
+Procedural on purpose (no PixelLab needed): `textures/entity/eye_halo.png` (a radial falloff), the graded
+`<species>_eyes.png` atlases (generated from the models).
+
+---
+
+## Batch "Corridor materials" — building blocks of the regions (2026-11-05)
+
+Temporary textures by `tools/assets/gen_corridor_materials.py`. All **16×16 px**, opaque (except where noted),
+**seamless on all edges**, flat lighting, same grime as the concrete family. Destination: `textures/block/`.
+
+| # | Output filename | PixelLab prompt |
+|---|---|---|
+| M1 | `grimy_brick.png` | "Seamless 16x16 pixel art texture of old soot-blackened red-brown brick wall, dark mortar, water runs, desaturated, flat lighting" |
+| M2 | `plaster_wall.png` | "Seamless 16x16 pixel art texture of stained grey-beige plaster wall, water marks, grime towards the bottom, flat lighting" |
+| M3 | `plaster_cracked.png` | "Seamless 16x16 pixel art texture of cracked grey plaster with a fallen patch showing dark brick, flat lighting" |
+| M4 | `asphalt.png` | "Seamless 16x16 pixel art texture of old dark asphalt road with fine grey aggregate specks, top-down, flat lighting" |
+| M5 | `asphalt_line.png` | "Seamless 16x16 pixel art texture of dark asphalt with a worn, chipped yellow painted line running vertically through the middle, top-down" |
+| M6 | `sidewalk.png` | "Seamless 16x16 pixel art texture of dark grey concrete sidewalk pavers, 2x2 slabs with dark joints, dusty, top-down" |
+| M7 | `floorboards.png` | "Seamless 16x16 pixel art texture of dark rotten wooden floorboards, four horizontal boards with gaps, grimy" |
+| M8 | `tar_roof.png` | "Seamless 16x16 pixel art texture of a black tar roof with scattered grey gravel, top-down" |
+| M9 | `grimy_glass_pane.png` (+ `grimy_glass_pane_top.png`, 16x16 dark edge) | "16x16 pixel art window glass, translucent dirty grey-green glass with a dark frame and dirt along the bottom, semi-transparent" (keep alpha) |
+| M10 | `corrugated_metal.png` | "Seamless 16x16 pixel art texture of grey corrugated steel sheet with vertical ridges and rust streaks running down" |
+| M11 | `steel_beam.png` / `steel_beam_top.png` | "16x16 pixel art texture of a dark steel I-beam side with rivets" / "top view of a dark steel I-beam cross-section" |
+| M12 | `oxidized_plate.png` | "Seamless 16x16 pixel art texture of weathered dark grey-green steel plate with oxidation blotches and four corner rivets" |
+| M13 | `hazard_stripe.png` | "Seamless 16x16 pixel art texture of worn yellow and black diagonal hazard stripes, paint chipped to grey metal" |
+| M14 | `container_red.png` / `container_teal.png` | "Seamless 16x16 pixel art texture of a dull red (resp. faded teal) corrugated shipping container panel with rust runs" |
+| M15 | `clinic_tile.png` | "Seamless 16x16 pixel art texture of small off-white ceramic wall tiles with dark grout, grimy, flat lighting" |
+| M16 | `stained_tile.png` | "Same off-white tiles heavily stained with yellow-brown seepage" |
+| M17 | `clinic_floor.png` | "Seamless 16x16 pixel art texture of worn grey-green hospital linoleum floor with scuffs, top-down" |
+| M18 | `flesh_growth.png` | "Seamless 16x16 pixel art texture of a dark red-brown organic growth mass with darker veins and a few wet highlights, unsettling, flat lighting" |
+| M19 | `growth_veins.png` | "16x16 pixel art, thin dark red organic veins spreading on a transparent background (carpet overlay)" (keep alpha) |
+
+---
+
+## Status (2026-11-05): batches "Corridor rework" and "Corridor materials" generated
+
+All 36 textures of the two batches above (items, ward emitter, threshold, region materials) were generated with
+PixelLab (pixflux, 32x32, through the project's MCP server, `.mcp.json`) and graded towards the Corridor palette
+(slightly desaturated and darkened; the glass pane made translucent with an opaque frame). They are kept at 32x32
+(Minecraft scales them per block; at 16x16 the brick mortar and tile grout turned to mush). Each PNG carries an
+"interstice: PixelLab generation" text chunk; the procedural generators skip any file that has it.
+Still procedural: `grimy_glass_pane_top.png` (edge strip), the eye halo, the chain link texture.
+
+## Batch "Corridor copies" (2026-11-05, night, Tier 1) — generated
+
+48 pixflux generations (32x32, doors and beds 32x64 then split), job list in
+`tools/assets/pixellab_jobs/corridor_copies.txt`, raw images in `tools/assets/pixellab_raw/corridor_copies/`,
+built by `tools/assets/make_corridor_copies.py` (grading, splitting, door icons, procedural chain/antenna/glass
+edge, animated water). Prompt pattern: "Minecraft block texture filling the entire canvas, <subject>, rust, grime,
+desaturated, flat lighting" (`view` side or high top-down, `outline` lineless, `shading` basic); sprites (ladder,
+lab stand, web, roots, chain icon, spawn eggs) with `no_background`. Regenerated once: locker front and open
+front (white margins), basin side and iron (wrong subject), deep rock (came out as bricks). Covers: the 4 doors,
+ladder, locker, drum, 2 beds, bookshelf, basin, stove, furnace, lab stand, anvil top, press, funnel, web, roots,
+flesh node, abyssal rock, water swatch, chain icon, the 5 lamp textures (were 16x16) and 7 spawn eggs.
+
+## Batch "Connected textures" (2026-11-05, night) — generated
+
+9 inpaintings (10 generations each): the 4 rusted plate variants as 2x2 mosaics with the seams and rivets
+masked ("plain continuous rusty orange-brown steel plate surface... no seams, no border lines, no rivets"; the
+centre 32x32 crop wraps exactly), and a 3-4 px frame ring on the red and teal containers, corrugated sheet,
+oxidized plate (unused: came out white, replaced by a procedural frame) and hazard plating. Jobs in
+`tools/assets/pixellab_jobs/connected.txt`, raws in `tools/assets/pixellab_raw/connected/`.

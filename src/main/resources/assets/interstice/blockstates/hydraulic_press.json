@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "interstice:block/hydraulic_press",
+      "x": 180
+    },
+    "facing=east": {
+      "model": "interstice:block/hydraulic_press",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north": {
+      "model": "interstice:block/hydraulic_press",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "interstice:block/hydraulic_press",
+      "x": 90,
+      "y": 180
+    },
+    "facing=up": {
+      "model": "interstice:block/hydraulic_press"
+    },
+    "facing=west": {
+      "model": "interstice:block/hydraulic_press",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

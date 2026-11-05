@@ -103,6 +103,77 @@ Still to do:
   (`docs/creature/family/`); the "after" ones are the current files.
 - Make the clinger test wait until all 24 creatures are visible instead of a fixed delay.
 
+## Joints, animation and anatomy pass (v6, 2026-11-05)
+
+- Joints: plane-based skin weights along the main chain and dual quaternion skinning on LOD0 (details in
+  [CREATURE.md](CREATURE.md#skinning-at-joints)). Ran in game for about an hour without errors; not measured
+  for cost yet (`model bench`).
+- Locomotion (walk, run, climb), parameters per clip in `DEFAULT_ANIM`, overridable per species:
+  `sway` (the pelvis shifts and rolls over the limbs carrying the weight), `stab` (the head cancels part of
+  the body's oscillation: the gaze holds its line; the Watcher's `steady_head` = 1), `peel` (the wrist rises
+  before a hand lifts off, fingers still down; the toes trail after lift-off), `reach` (a swinging hand or foot
+  goes a little past its plant point, then settles). The swing lifts early. On the ground the IK also holds
+  the planted contacts sideways (the report's new "sideways" column, 0.02-0.3 px); on the wall it does not,
+  the spread is intentional (large "sideways" values for climb and cling are that spread, not a slip).
+- Rear: a short crouch first (the hands stay planted, then hand over to the lifted arms), the rise, a slight
+  overshoot and a settle; the claws flare as the arms come up. Threat: the head draws back, then thrusts
+  forward while the jaw opens late; a tension tremor runs through the neck.
+- Anatomy: the ribs are relief of the chest skin (`rib_relief`, strongest on the Hollow, faint on the Burden)
+  instead of separate tubes lying on it; the upper arm and the thigh grow out of a thin ring inside the
+  ribcage / pelvis instead of a flat cap whose rim showed at the shoulder; flatter scapulae; smaller gluteal
+  masses.
+- Known: the Fractured's short right arm floats or sinks up to 1.16 px during the walk (0.85 px before), the
+  Strider's arms 0.72 px (0.65 before); not in-game captured yet with the final models.
+
+## Gait, squeezing and the hunt (v7, 2026-11-05)
+
+Feedback after v6 in game: the walk "hopped", there was no visible run, no way through small gaps, and the
+creatures did not really look for you.
+
+- Gait. The walk is played by distance travelled, and its stride was far too short for the speeds the server
+  moves the creatures at (an Adherent searching at about 3 blocks/s cycled its legs 5-6 times a second). v7:
+  strides x1.9 (walk) and x1.45 (run) for every species (`GAIT` in the generator), a shorter run stance with
+  moments in the air and a `bounce` (pelvis and shoulders sink while their limbs carry the weight). In game the
+  animator picks walk or run from the actual speed (`AdherentAnimator.runMix`: past 1.25 walk cycles a second it
+  turns into a run, fully at 2.1), not only from the behaviour; hunting and fleeing creatures can slow and stop.
+  Searching creatures prowl slower (speed modifier 0.35, was 0.55).
+- Squeezing. Every species but the Burden can flatten itself through a one-block gap: paths are planned for a
+  one-block body (`SqueezeNodeEvaluator`); when the full-size body would not fit where it is or where its path
+  goes in the next 3 blocks, the creature squeezes (`AdherentEntity.updateSqueeze`: synced flag, hitbox 0.6 x 0.8,
+  half speed, held at least a second) and stands up again when there is room. The client plays the new `crawl`
+  clip (body dropped until the back passes under one block, limbs splayed, spine weaving) and narrows the body.
+  Tested: an Adherent gets into a closed room through a floor-level one-block hole and stands up inside. It is
+  slow in the hole (about 25 s for 5 blocks in the test): to tune.
+- Senses per species (`Species.Traits.senses`, used by `Perception`): field of view and periphery around a gaze
+  that can be turned (the Fractured's is turned 35 deg to its left: blind on the right), sight range (Hollow 12,
+  Watcher 64), dark vision (Watcher 0.7, Hollow 0), motion-only vision (Clinger 0.85: a still player all but
+  disappears), hearing (Hollow 1.9, Burden 1.5, Watcher 0.6), smell range (Crawler 18, Hollow 14, Adherent 12),
+  persistence before giving up (Clinger 6 min, Watcher 5 min, Hollow/Crawler 2 min).
+- Smell (`ScentTrail`): players leave a mark every half block on the ground, lasting 2 minutes (faint when
+  sneaking, none while standing still). A creature follows the freshest mark it can smell (range shrinking with
+  age), so it runs the trail forwards. Smell only leads; it never reveals a player by itself.
+- The search (`AdherentGroundGoal`). Having lost a player: it calls the others, goes to where they were last
+  seen, then on to where they were heading (their velocity when last seen, up to 12 blocks ahead); or it waits
+  in ambush, pressed low and facing that spot (Clinger 60 %, Watcher 40 %, Hollow/Burden 25 %, others 12 %). Then
+  it follows the scent if it has the nose for it, then sweeps the hiding places nearby (dark, enclosed, under a low
+  ceiling; scored from 28 samples within 14 blocks), each once (it remembers the last 24 places searched). A
+  creature that spots a player calls too; the others within 32 blocks come and investigate.
+- Tested (30 GameTests): species see differently (Watcher sees a lit player at 18 blocks, the Hollow does not;
+  the Clinger sees a still player 15 times less than a moving one; the Fractured's field is lopsided), a Crawler
+  follows a scent trail to the player, a hunter's call brings another one that could not see the player, the
+  squeeze above. Two older tests were adapted: the fleer test uses a Crawler (the Hollow is now nearly blind),
+  the investigator test lets the player make a few footsteps (the Watcher's gaze is narrow).
+- Speeds (after playing v7). A ground mob's speed grows with the square of its movement attribute (about 44 * s^2
+  blocks per second on stone), so the old navigation multipliers left a hunting Adherent at about 3 blocks/s (slower
+  than a walking player) and a prowling one almost still. Each species now has a chase speed in blocks per second
+  (`Traits.chase`: Crawler 6.2, Strider 5.8, Adherent 5.0, Hollow 4.8, Fractured 4.6, Clinger 4.4, Watcher 4.0,
+  Burden 3.6; a player walks at 4.3 and sprints at 5.6), and every ground move is a fraction of it
+  (`AdherentGroundGoal.pace`: prowl 0.22, sweep 0.3, investigate 0.35/0.6, track 0.55, pursue 0.75, hunt 1, flee
+  1.05). Squeezing costs 30 % of the attribute (was 50 %). Measured in a GameTest: a hunting Adherent runs 4.9 blocks/s.
+- Faster alarm: sight raises awareness by 0.26-0.61 x visibility per check (every 4 ticks), more when close; a player
+  half-seen makes the creature turn its head towards them and freeze while it makes them out. A lit player 20 blocks
+  ahead is hunted after about 4.5 s, one 5 blocks away in about a second.
+
 ## Wall locomotion (server)
 
 Constrained wall movement as before (2D (y, z) plane, X re-solved against the real blocks each tick,

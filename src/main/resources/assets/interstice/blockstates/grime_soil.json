@@ -1,0 +1,21 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "interstice:block/grime_soil"
+      },
+      {
+        "model": "interstice:block/grime_soil",
+        "y": 90
+      },
+      {
+        "model": "interstice:block/grime_soil",
+        "y": 180
+      },
+      {
+        "model": "interstice:block/grime_soil",
+        "y": 270
+      }
+    ]
+  }
+}

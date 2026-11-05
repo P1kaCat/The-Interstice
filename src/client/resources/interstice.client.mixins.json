@@ -4,7 +4,9 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "ChannelMixin",
-    "FogRendererMixin"
+    "FogRendererMixin",
+    "LightTextureMixin",
+    "MusicManagerMixin"
   ],
   "injectors": { "defaultRequire": 1 }
 }

@@ -16,10 +16,10 @@ public final class ChainMesh {
     public final int quads;
 
     private static final ChainMesh[] LODS = {
-            new ChainMesh(8, 3),
-            new ChainMesh(12, 4),
-            new ChainMesh(18, 6),
-            new ChainMesh(26, 8)
+            new ChainMesh(10, 4),
+            new ChainMesh(16, 6),
+            new ChainMesh(24, 9),
+            new ChainMesh(34, 12)
     };
 
     public static ChainMesh lod(int i) {

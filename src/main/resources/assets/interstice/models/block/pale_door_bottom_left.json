@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/door_bottom_left",
+  "textures": {
+    "bottom": "interstice:block/pale_door_bottom",
+    "top": "interstice:block/pale_door_top"
+  }
+}

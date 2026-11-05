@@ -1,0 +1,50 @@
+{
+  "variants": {
+    "facing=north,open=false": {
+      "model": "interstice:block/supply_locker",
+      "y": 0
+    },
+    "facing=east,open=false": {
+      "model": "interstice:block/supply_locker",
+      "y": 90
+    },
+    "facing=south,open=false": {
+      "model": "interstice:block/supply_locker",
+      "y": 180
+    },
+    "facing=west,open=false": {
+      "model": "interstice:block/supply_locker",
+      "y": 270
+    },
+    "facing=up,open=false": {
+      "model": "interstice:block/supply_locker_vertical"
+    },
+    "facing=down,open=false": {
+      "model": "interstice:block/supply_locker_vertical",
+      "x": 180
+    },
+    "facing=north,open=true": {
+      "model": "interstice:block/supply_locker_open",
+      "y": 0
+    },
+    "facing=east,open=true": {
+      "model": "interstice:block/supply_locker_open",
+      "y": 90
+    },
+    "facing=south,open=true": {
+      "model": "interstice:block/supply_locker_open",
+      "y": 180
+    },
+    "facing=west,open=true": {
+      "model": "interstice:block/supply_locker_open",
+      "y": 270
+    },
+    "facing=up,open=true": {
+      "model": "interstice:block/supply_locker_vertical_open"
+    },
+    "facing=down,open=true": {
+      "model": "interstice:block/supply_locker_vertical_open",
+      "x": 180
+    }
+  }
+}

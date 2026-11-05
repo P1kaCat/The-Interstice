@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column_horizontal",
+  "textures": {
+    "side": "interstice:block/steel_beam",
+    "end": "interstice:block/steel_beam_top"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "interstice:block/ward_emitter",
+  "textures": {
+    "top": "interstice:block/ward_emitter_side"
+  }
+}

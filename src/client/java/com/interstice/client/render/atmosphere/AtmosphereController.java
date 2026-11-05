@@ -16,8 +16,12 @@ public final class AtmosphereController {
     private AtmosphereController() {}
 
     public static float fogStart = 4f, fogEnd = 120f;
-    public static float fogR = 0.085f, fogG = 0.092f, fogB = 0.105f;
-    public static float exposure = 1.3f;
+    public static float fogR = 0.010f, fogG = 0.011f, fogB = 0.013f;
+    /** Render distance in blocks: the fog is fully closed before it (no visible chunk edge). */
+    public static float renderEdge = 128f;
+    /** Height above the camera where the vertical black fog starts and where it is complete. */
+    public static float vertStart = 45f, vertEnd = 150f;
+    public static float exposure = 1.05f;
     public static float density = 1f;
     public static float emergency;
     public static float vignette = 0.35f;
@@ -38,19 +42,24 @@ public final class AtmosphereController {
 
         float q = ClientState.quake, prem = ClientState.premonition, emer = ClientState.emergency;
         float dens = cfg.fogDensity * (1f + q * 0.15f + prem * 0.1f + ClientState.hordeActive * 0.1f);
-        float tEnd = Math.min(renderDist, 170f) / Math.max(0.3f, dens);
+        renderEdge = Math.max(32f, renderDist);
+        float tEnd = Math.min(renderDist * 0.8f, 150f * cfg.fogDistance) / Math.max(0.3f, dens);
+        float vk = Math.max(0.25f, cfg.verticalFog);
+        vertStart = 45f / vk;
+        vertEnd = 150f / vk;
         float tStart = 2f + 6f * (1f - Math.min(1f, dens));
 
-        float tr = 0.085f, tg = 0.092f, tb = 0.105f;
-        tr = Mth.lerp(emer * 0.4f, tr, 0.13f);
-        tg = Mth.lerp(emer * 0.4f, tg, 0.045f);
-        tb = Mth.lerp(emer * 0.4f, tb, 0.04f);
+        // black fog (Corridor rework): a breath of blue-grey near the floor, red in an emergency, warm dust in a quake
+        float tr = 0.010f, tg = 0.011f, tb = 0.013f;
+        tr = Mth.lerp(emer * 0.4f, tr, 0.05f);
+        tg = Mth.lerp(emer * 0.4f, tg, 0.008f);
+        tb = Mth.lerp(emer * 0.4f, tb, 0.006f);
         float dark = 1f - ClientState.lightFailure * 0.35f;
         tr *= dark; tg *= dark; tb *= dark;
         // dust haze during quakes is warmer and lighter
-        tr = Mth.lerp(q * 0.25f, tr, 0.12f);
-        tg = Mth.lerp(q * 0.25f, tg, 0.11f);
-        tb = Mth.lerp(q * 0.25f, tb, 0.095f);
+        tr = Mth.lerp(q * 0.25f, tr, 0.035f);
+        tg = Mth.lerp(q * 0.25f, tg, 0.032f);
+        tb = Mth.lerp(q * 0.25f, tb, 0.028f);
 
         float k = 1f - (float) Math.exp(-dt * 1.6f);
         fogEnd = Mth.lerp(k, fogEnd, tEnd);
@@ -61,7 +70,7 @@ public final class AtmosphereController {
         density = Mth.lerp(k, density, dens);
         emergency = Mth.lerp(k, emergency, emer);
 
-        float tExposure = 1.3f - ClientState.lightFailure * 0.25f - ClientState.searchTension * 0.08f;
+        float tExposure = 1.05f - ClientState.lightFailure * 0.2f - ClientState.searchTension * 0.06f;
         exposure = Mth.lerp(k * 0.5f, exposure, tExposure);
         vignette = Mth.lerp(k, vignette, 0.32f + ClientState.searchTension * 0.25f + q * 0.15f + ClientState.silence * 0.1f);
         desaturation = Mth.lerp(k, desaturation, 0.28f + ClientState.silence * 0.25f);

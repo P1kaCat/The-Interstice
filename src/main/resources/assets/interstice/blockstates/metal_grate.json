@@ -1,7 +1,18 @@
 {
   "variants": {
-    "": {
-      "model": "interstice:block/metal_grate"
-    }
+    "": [
+      {
+        "model": "interstice:block/metal_grate"
+      },
+      {
+        "model": "interstice:block/metal_grate_1"
+      },
+      {
+        "model": "interstice:block/metal_grate_2"
+      },
+      {
+        "model": "interstice:block/metal_grate_3"
+      }
+    ]
   }
 }

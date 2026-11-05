@@ -34,7 +34,7 @@ public final class ModSounds {
     public static final SoundEvent CREATURE_LAND = reg("creature.land");
     public static final SoundEvent CREATURE_SNIFF = reg("creature.sniff");
 
-    public static final String[] VOICE_LINES = {"hide", "dont_move", "not_yet", "go", "they_hear", "look_up", "closer", "stay"};
+    public static final String[] VOICE_LINES = {"hide", "dont_move", "not_yet", "go", "they_hear", "look_up", "closer", "stay", "find_a_way"};
 
     static {
         for (String line : VOICE_LINES) reg("voice." + line);

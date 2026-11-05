@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=true": {
+      "model": "interstice:block/ward_emitter"
+    },
+    "lit=false": {
+      "model": "interstice:block/ward_emitter_spent"
+    }
+  }
+}

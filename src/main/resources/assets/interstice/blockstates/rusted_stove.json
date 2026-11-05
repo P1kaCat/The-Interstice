@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "interstice:block/rusted_stove",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "interstice:block/rusted_stove",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "interstice:block/rusted_stove",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "interstice:block/rusted_stove",
+      "y": 270
+    }
+  }
+}

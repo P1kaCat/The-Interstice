@@ -39,7 +39,8 @@ public abstract class FogRendererMixin {
         if (!ClientState.inInterstice || camera.getFluidInCamera() != FogType.NONE) return;
         if (mode == FogRenderer.FogMode.FOG_TERRAIN) {
             RenderSystem.setShaderFogStart(AtmosphereController.fogStart);
-            RenderSystem.setShaderFogEnd(Math.min(renderDistance, AtmosphereController.fogEnd * 1.6f));
+            // closed (black) before the last chunks, so no edge shows even without the post pipeline
+            RenderSystem.setShaderFogEnd(Math.min(renderDistance * 0.9f, AtmosphereController.fogEnd * 1.6f));
             RenderSystem.setShaderFogShape(FogShape.SPHERE);
         }
     }

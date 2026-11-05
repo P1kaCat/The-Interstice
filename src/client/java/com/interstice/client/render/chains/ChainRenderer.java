@@ -42,6 +42,10 @@ public final class ChainRenderer {
     private static ChainField field;
     private static final List<ChainField.ChainDef> visible = new ArrayList<>();
     private static double lastTime = Double.NaN;
+    /** The giant chains are heavy: everything they do happens at half the speed the motion model was tuned at. */
+    private static final float SWING_SPEED = 0.5f;
+    /** Rusted iron in the dark: the links are drawn at 62% of their texture's brightness. */
+    private static final int TINT = 158;
     private static final RandomSource rng = RandomSource.create();
 
     // stats
@@ -88,7 +92,7 @@ public final class ChainRenderer {
         for (ChainField.ChainDef c : visible) {
             float target = excitation * 0.65f;
             c.vibration += (float) ((target - c.vibration) * Math.min(1, dt * (target > c.vibration ? 3 : 0.6)));
-            float w = c.omega * 2.2f;
+            float w = c.omega * 2.2f * SWING_SPEED;
             float damp = 0.18f + freeze * 3f;
             c.impulseVel += (float) ((-w * w * c.impulse - 2 * damp * w * c.impulseVel) * dt);
             c.impulse += (float) (c.impulseVel * dt);
@@ -97,6 +101,66 @@ public final class ChainRenderer {
             if (quake > 0.05f) {
                 c.impulseVel += (float) (rng.nextGaussian() * quake * 1.4 * dt);
                 c.sideVel += (float) (rng.nextGaussian() * quake * 1.0 * dt);
+            }
+        }
+    }
+
+    private static final List<ChainField.ChainDef> nearPlayer = new ArrayList<>();
+    private static long lastClank;
+
+    /**
+     * Solid chains: the local player cannot walk through a giant chain. Every client tick the chains near the player
+     * are evaluated (same curve as drawn, swing included) at the player's height and the player is pushed out of
+     * any link it overlaps, losing the speed it had towards the chain; bumping into one rings it.
+     */
+    public static void collide(net.minecraft.client.player.LocalPlayer p) {
+        ChainField f = field();
+        if (f == null || p == null || p.isSpectator()) return;
+        nearPlayer.clear();
+        f.collect(p.getZ(), 24, nearPlayer);
+        double t = ClientState.time / 20.0;
+        double y0 = p.getY(), y1 = p.getY() + p.getBbHeight();
+        double half = p.getBbWidth() / 2;
+        for (ChainField.ChainDef c : nearPlayer) {
+            double r = ChainMesh.LINK_WIDTH * 0.5 * c.scale * 0.85 + half;
+            boolean vertical = c.kind != ChainField.Kind.SPAN;
+            if (vertical) {
+                double len = c.ay - c.by;
+                if (y1 < c.by - 2 || y0 > c.ay || len <= 0) continue;
+                if (Math.abs(c.ax - p.getX()) > 12 || Math.abs(c.az - p.getZ()) > 12) continue;
+                for (double y = y0; y <= y1 + 1e-3; y += 0.6) {
+                    double s = Mth.clamp((c.ay - y) / len, 0, 1);
+                    eval(c, s, t);
+                    if (oy - 1.8 * c.scale > y1 || oy + 1.8 * c.scale < y0) continue;
+                    pushOut(p, ox, oz, r);
+                }
+            } else {
+                if (Math.min(c.ay, c.by) - c.sag - 4 > y1) continue;
+                for (int i = 0; i <= 96; i++) {
+                    eval(c, i / 96.0, t);
+                    if (oy - 1.0 * c.scale > y1 || oy + 1.0 * c.scale < y0) continue;
+                    pushOut(p, ox, oz, r);
+                }
+            }
+        }
+    }
+
+    private static void pushOut(net.minecraft.client.player.LocalPlayer p, double cx, double cz, double r) {
+        double dx = p.getX() - cx, dz = p.getZ() - cz;
+        double d = Math.sqrt(dx * dx + dz * dz);
+        if (d >= r) return;
+        if (d < 1e-4) { dx = 1; dz = 0; d = 1; }
+        double nx = dx / d, nz = dz / d;
+        p.setPos(cx + nx * r, p.getY(), cz + nz * r);
+        Vec3 v = p.getDeltaMovement();
+        double into = v.x * nx + v.z * nz;
+        if (into < 0) {
+            p.setDeltaMovement(v.x - nx * into, v.y, v.z - nz * into);
+            long now = System.currentTimeMillis();
+            if (-into > 0.08 && now - lastClank > 600) {
+                lastClank = now;
+                p.level().playLocalSound(cx, p.getY() + 1, cz, com.interstice.registry.SpeciesSounds.METAL_CONTACT,
+                        net.minecraft.sounds.SoundSource.BLOCKS, 0.8f, 0.5f, false);
             }
         }
     }
@@ -112,24 +176,26 @@ public final class ChainRenderer {
                 double nl = Math.sqrt(nx * nx + nz * nz);
                 nx /= nl;
                 nz /= nl;
-                double theta = (c.swingAmp * Math.sin(c.omega * t + c.phase) + c.impulse * 0.25) * freeze;
+                double theta = (c.swingAmp * Math.sin(c.omega * SWING_SPEED * t + c.phase) + c.impulse * 0.25) * freeze;
                 double sag = c.sag * 4 * s * (1 - s) * (1 - 0.06 * c.vibration);
-                double vib = c.vibration * 1.1 * Math.sin(Math.PI * s) * Math.sin(15 * t + s * 11);
+                double vib = c.vibration * 1.1 * Math.sin(Math.PI * s) * Math.sin(6 * t + s * 11);
                 double cos = Math.cos(theta), sin = Math.sin(theta);
                 ox = c.ax + dx * s + nx * (sin * sag + vib);
                 oy = c.ay + dy * s - cos * sag;
                 oz = c.az + dz * s + nz * (sin * sag + vib);
             }
-            case HANG, ANCHOR -> {
+            case HANG, ANCHOR, BROKEN -> {
                 double len = c.ay - c.by;
-                double f = c.kind == ChainField.Kind.HANG ? Math.pow(s, 1.4) : 0;
-                double ddx = (c.swingAmp * Math.sin(c.omega * t + c.phase) + c.impulse * 2.2) * freeze;
-                double ddz = (c.swingAmp * 0.6 * Math.cos(c.omega * 0.71 * t + c.phase * 1.3) + c.sideImpulse * 2.2) * freeze;
+                double f = c.kind == ChainField.Kind.ANCHOR ? 0 : Math.pow(s, c.kind == ChainField.Kind.BROKEN ? 1.15 : 1.4);
+                // the Stampede swings the hanging chains much harder
+                double amp = c.swingAmp * (1 + 2.2 * ClientState.hordeActive + 0.8 * ClientState.quake);
+                double ddx = (amp * Math.sin(c.omega * SWING_SPEED * t + c.phase) + c.impulse * 2.2) * freeze;
+                double ddz = (amp * 0.6 * Math.cos(c.omega * SWING_SPEED * 0.71 * t + c.phase * 1.3) + c.sideImpulse * 2.2) * freeze;
                 double fv = Math.sin(Math.PI * Math.min(1, s * 1.05));
                 double vibAmp = c.vibration * (c.kind == ChainField.Kind.ANCHOR ? 0.9 : 0.6);
-                ox = c.ax + ddx * f + Math.sin(21 * t + s * 37) * vibAmp * fv;
+                ox = c.ax + ddx * f + Math.sin(8 * t + s * 37) * vibAmp * fv;
                 oy = c.ay - len * s;
-                oz = c.az + ddz * f + Math.cos(17 * t + s * 29) * vibAmp * fv;
+                oz = c.az + ddz * f + Math.cos(6.5 * t + s * 29) * vibAmp * fv;
             }
         }
     }
@@ -206,7 +272,7 @@ public final class ChainRenderer {
                 int lod = dist < 45 ? baseLod : dist < 120 ? Math.max(0, baseLod - 1) : 0;
                 lp.set(px, py, pz);
                 int block = LightTexture.block(LevelRenderer.getLightColor(level, lp));
-                int light = LightTexture.pack(Math.max(7, block), 0);
+                int light = LightTexture.pack(Math.max(1, block), 0);
                 drawLink(vc, ChainMesh.lod(lod), px - cam.x, py - cam.y, pz - cam.z, tx, ty, tz, (li & 1) == 1, li * 0.37f + c.id, scale, light);
                 linksDrawn++;
             }
@@ -214,7 +280,7 @@ public final class ChainRenderer {
                 double px = sx[samples - 1], py = sy[samples - 1], pz = sz[samples - 1];
                 if (Math.abs(py - cam.y) < range && (cull == null || cull.testSphere(px, py - 2, pz, 3f))) {
                     lp.set(px, py - 2, pz);
-                    int light = LightTexture.pack(Math.max(7, LightTexture.block(LevelRenderer.getLightColor(level, lp))), 0);
+                    int light = LightTexture.pack(Math.max(1, LightTexture.block(LevelRenderer.getLightColor(level, lp))), 0);
                     drawBox(vc, px - cam.x, py - 2.4 * scale - cam.y, pz - cam.z, 1.5 * scale, 2.2 * scale, 1.5 * scale, light);
                 }
             }
@@ -246,7 +312,7 @@ public final class ChainRenderer {
             float nx = (float) (tx * d[i + 3] + Yx * d[i + 4] + Zx * d[i + 5]);
             float ny = (float) (ty * d[i + 3] + Yy * d[i + 4] + Zy * d[i + 5]);
             float nz = (float) (tz * d[i + 3] + Yz * d[i + 4] + Zz * d[i + 5]);
-            vc.addVertex(x, y, z).setColor(255, 255, 255, 255).setUv(d[i + 6], d[i + 7]).setOverlay(ov).setLight(light).setNormal(nx, ny, nz);
+            vc.addVertex(x, y, z).setColor(TINT, TINT, TINT, 255).setUv(d[i + 6], d[i + 7]).setOverlay(ov).setLight(light).setNormal(nx, ny, nz);
         }
     }
 

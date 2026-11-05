@@ -68,12 +68,15 @@ public final class IntersticeTeleport {
 
     /** Searches along the corridor centre for solid floor with two blocks of headroom, away from shafts and shelters. */
     public static Vec3 findSafeSpot(ServerLevel level, IntersticeLayout L, int startZ) {
+        // the finite Corridor: stay inside it (and out of the buildings: the street is the safe arrival)
+        if (L.plan() != null) startZ = Math.max(L.plan().startZ + 24, Math.min(L.plan().endZ - 24, startZ));
         for (int i = 0; i < 64; i++) {
             int z = startZ + (i % 2 == 0 ? i / 2 : -(i / 2 + 1)) * 4;
             int x = (int) Math.floor(L.centerX(z + 0.5));
             for (int dx = 0; dx <= 12; dx += 3) {
                 int xx = x + ((dx / 3) % 2 == 0 ? dx : -dx);
                 if (L.pitAt(xx, z) != null || StructurePass.bunkerAt(L, xx, z) != null) continue;
+                if (com.interstice.world.structures.Settlements.lotAt(L, xx, z, 1) != null) continue;
                 level.getChunk(xx >> 4, z >> 4); // generate synchronously (command context)
                 int fy = L.floorY(xx, z);
                 for (int y = fy; y < fy + 6; y++) {

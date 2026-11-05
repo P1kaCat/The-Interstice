@@ -20,6 +20,12 @@ public final class ClientConfig {
     public GraphicsPreset preset = GraphicsPreset.HIGH;
     /** 0.4 .. 1.6: multiplies fog density. */
     public float fogDensity = 1.0f;
+    /** Black fog: visibility distance multiplier (the fog still always closes before the render distance). */
+    public float fogDistance = 1.0f;
+    /** Black fog: how fast the walls disappear upwards (0.5 = higher, 2 = sooner). */
+    public float verticalFog = 1.0f;
+    /** The pre-rework rendered wall continuation above y=300 (off: the walls vanish into the black fog instead). */
+    public boolean legacyWallContinuation = false;
     public boolean dynamicLighting = true;
     public boolean volumetricLight = true;
     public boolean postProcessing = true;

@@ -60,6 +60,13 @@ public final class TerrainPass {
                     relief = reliefCache[lz];
                 }
                 IntersticeLayout.Pit pit = d < -8 ? L.pitAt(x, z) : null;
+                // the finite Corridor (version 2): beyond either end everything is bulkhead, with the exit at the far end
+                com.interstice.world.CorridorPlan plan = L.plan();
+                double beyond = plan == null ? 0 : plan.beyond(z + 0.5);
+                if (beyond > 0) {
+                    bulkhead(w, L, plan, matSeed, x, z, d, beyond);
+                    continue;
+                }
                 int floorY = L.floorY(x, z);
                 boolean doorway = nearWall && isDoorway(L, side, z);
                 boolean passageCol = nearWall && d >= PASSAGE_D0 && d < PASSAGE_D1 && !isCollapsed(L, side, z);
@@ -88,7 +95,7 @@ public final class TerrainPass {
                             s = ModBlocks.DARK_METAL.defaultBlockState(); // rim
                         } else if (y == floorY - 1) {
                             if (d > -3.0 && d < -1.0) s = ModBlocks.METAL_GRATE.defaultBlockState();
-                            else s = floorMaterial(matSeed, x, z);
+                            else s = floorMaterial(L, matSeed, x, z, d);
                         } else if (y == floorY - 2 && d > -3.0 && d < -1.0) {
                             s = AIR; // drainage channel under the grate
                         } else {
@@ -106,6 +113,70 @@ public final class TerrainPass {
                     for (int y = IntersticeLayout.PIT_BOTTOM + 1; y < floorY; y++) w.set(x, y, z, ladder);
                 }
             }
+        }
+    }
+
+    /** Corridor floor, by region in a version-2 world (asphalt and pavements, plate and grates, tiles, bare rubble). */
+    static BlockState floorMaterial(IntersticeLayout L, long seed, int x, int z, double d) {
+        com.interstice.world.CorridorPlan plan = L.plan();
+        if (plan == null) return floorMaterial(seed, x, z);
+        double off = Math.abs(x + 0.5 - com.interstice.world.structures.Settlements.streetCenter(L, z + 0.5));
+        double n = Noise.value2(seed, x / 5.0, z / 5.0);
+        com.interstice.world.structures.Settlements.Cross cross = com.interstice.world.structures.Settlements.crossing(L, z, z);
+        return switch (plan.regionForColumn(x, z)) {
+            case FORGOTTEN_DISTRICT -> {
+                if (cross != null && d < -5) {
+                    if (cross.plaza()) yield n > 0.6 ? ModBlocks.CRACKED_CONCRETE.defaultBlockState() : ModBlocks.SIDEWALK.defaultBlockState();
+                    // zebra crossing where the cross street meets the main road
+                    if (off < com.interstice.world.structures.Settlements.STREET_HALF + 3 && off > com.interstice.world.structures.Settlements.STREET_HALF - 2
+                            && Math.floorMod(z, 2) == 0) yield ModBlocks.CONCRETE_PANEL.defaultBlockState();
+                    yield n > 0.62 ? ModBlocks.CONCRETE_RUBBLE.defaultBlockState() : ModBlocks.ASPHALT.defaultBlockState();
+                }
+                if (off < com.interstice.world.structures.Settlements.STREET_HALF - 1) {
+                    // the centre line: exactly one column (the one holding the street's centre), dashed
+                    if (x == (int) Math.floor(com.interstice.world.structures.Settlements.streetCenter(L, z + 0.5)) && Math.floorMod(z, 6) < 3)
+                        yield ModBlocks.ASPHALT_LINE.defaultBlockState();
+                    yield n > 0.6 ? ModBlocks.CONCRETE_RUBBLE.defaultBlockState() : ModBlocks.ASPHALT.defaultBlockState();
+                }
+                yield n > 0.62 ? ModBlocks.CRACKED_CONCRETE.defaultBlockState() : n < -0.55 ? ModBlocks.CONCRETE_FLOOR.defaultBlockState() : ModBlocks.SIDEWALK.defaultBlockState();
+            }
+            case IRONWORKS -> n > 0.62 ? ModBlocks.RUSTED_PLATE.defaultBlockState() : n > 0.4 ? ModBlocks.OXIDIZED_PLATE.defaultBlockState()
+                    : n < -0.6 ? ModBlocks.DARK_METAL.defaultBlockState() : floorMaterial(seed, x, z);
+            case CONTAMINATED_WARD -> {
+                double inf = plan.progress(com.interstice.world.CorridorPlan.Region.CONTAMINATED_WARD, z);
+                if (n > 0.9 - inf * 0.7) yield ModBlocks.FLESH_GROWTH.defaultBlockState();
+                yield n < -0.5 ? ModBlocks.STAINED_TILE.defaultBlockState() : ModBlocks.CLINIC_FLOOR.defaultBlockState();
+            }
+            case DEAD_EXPANSE -> n > 0.35 ? ModBlocks.CONCRETE_RUBBLE.defaultBlockState() : n < -0.3 ? ModBlocks.CRACKED_CONCRETE.defaultBlockState() : floorMaterial(seed, x, z);
+        };
+    }
+
+    /**
+     * Columns beyond either end of a version-2 Corridor: a solid bulkhead up to the wall top, its face panelled.
+     * In the far bulkhead, a doorway (the exit) leads to the threshold block that takes the player out.
+     */
+    private static void bulkhead(ChunkWriter w, IntersticeLayout L, com.interstice.world.CorridorPlan plan, long matSeed, int x, int z, double d, double beyond) {
+        int minY = IntersticeLayout.MIN_Y;
+        double off = x + 0.5 - L.centerX(z + 0.5);
+        boolean far = z > plan.endZ;
+        int depthIn = far ? z - plan.endZ : plan.startZ - z;
+        boolean doorway = far && Math.abs(off) <= com.interstice.world.CorridorPlan.EXIT_HALF_WIDTH && depthIn <= com.interstice.world.CorridorPlan.EXIT_DEPTH;
+        for (int y = minY; y <= IntersticeLayout.WALL_TOP - 1; y++) {
+            BlockState s;
+            if (y == minY) s = BEDROCK;
+            else if (y < IntersticeLayout.FLOOR_Y - 1) s = ModBlocks.WEATHERED_CONCRETE.defaultBlockState();
+            else if (doorway && y >= IntersticeLayout.FLOOR_Y && y < IntersticeLayout.FLOOR_Y + com.interstice.world.CorridorPlan.EXIT_HEIGHT) {
+                if (depthIn == com.interstice.world.CorridorPlan.EXIT_DEPTH) s = ModBlocks.EXIT_THRESHOLD.defaultBlockState();
+                else s = AIR;
+            } else if (doorway && y == IntersticeLayout.FLOOR_Y - 1) s = ModBlocks.DARK_METAL.defaultBlockState();
+            else if (depthIn <= 1 || (far && Math.abs(off) <= com.interstice.world.CorridorPlan.EXIT_HALF_WIDTH + 1 && depthIn <= com.interstice.world.CorridorPlan.EXIT_DEPTH)) {
+                // the face: panels, a band of dark metal every 12 blocks, the exit framed in metal
+                int ly = y - IntersticeLayout.FLOOR_Y;
+                if (far && Math.abs(off) <= com.interstice.world.CorridorPlan.EXIT_HALF_WIDTH + 1) s = ModBlocks.DARK_METAL.defaultBlockState();
+                else if (Math.floorMod(ly, 12) == 0) s = ModBlocks.DARK_METAL.defaultBlockState();
+                else s = Math.floorMod(x, 6) == 0 ? ModBlocks.CONCRETE_PANEL.defaultBlockState() : wallMaterial(L, matSeed, 1, x, y, z, 1, 0);
+            } else s = ModBlocks.WEATHERED_CONCRETE.defaultBlockState();
+            w.set(x, y, z, s);
         }
     }
 

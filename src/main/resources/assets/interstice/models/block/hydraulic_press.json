@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "interstice:block/hydraulic_press_front",
+    "side": "interstice:block/hydraulic_press_side",
+    "bottom": "interstice:block/rusted_iron"
+  }
+}

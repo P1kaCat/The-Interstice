@@ -2,6 +2,11 @@
   "required": true,
   "package": "com.interstice.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [],
+  "mixins": [
+    "BlockEntityTypeMixin",
+    "FoodDataMixin",
+    "LivingEntityMixin",
+    "PlayerMixin"
+  ],
   "injectors": { "defaultRequire": 1 }
 }

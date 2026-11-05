@@ -36,10 +36,16 @@ public final class NoiseMap {
 
     /** Noises emitted after {@code since} that could reach {@code listener} (before occlusion). */
     public List<Noise> audibleFrom(Vec3 listener, long since) {
+        return audibleFrom(listener, since, 1f);
+    }
+
+    /** Same, for ears that pick sounds up from {@code hearing} times farther (species hearing). */
+    public List<Noise> audibleFrom(Vec3 listener, long since, float hearing) {
         List<Noise> out = new ArrayList<>(2);
         for (Noise n : noises) {
             if (n.tick <= since) continue;
-            if (n.pos.distanceToSqr(listener) <= n.radius * n.radius) out.add(n);
+            float r = n.radius * hearing;
+            if (n.pos.distanceToSqr(listener) <= r * r) out.add(n);
         }
         return out;
     }

@@ -10,6 +10,8 @@ import com.interstice.entity.species.Species.WallStyle;
 import com.interstice.registry.ModEntities;
 import com.interstice.registry.ModSounds;
 import com.interstice.world.IntersticeLayout;
+import com.interstice.Interstice;
+import com.interstice.entity.navigation.SqueezeNodeEvaluator;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -20,7 +22,18 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.navigation.GroundPathNavigation;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
+import net.minecraft.world.level.pathfinder.Node;
+import net.minecraft.world.level.pathfinder.Path;
+import net.minecraft.world.level.pathfinder.PathFinder;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -62,6 +75,12 @@ public class AdherentEntity extends Monster {
     private static final EntityDataAccessor<Byte> DATA_BEHAVIOR = SynchedEntityData.defineId(AdherentEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Byte> DATA_SIDE = SynchedEntityData.defineId(AdherentEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Vector3f> DATA_LOOK = SynchedEntityData.defineId(AdherentEntity.class, EntityDataSerializers.VECTOR3);
+    /** Flattened to pass through a one-block gap (crawl clip, small hitbox). */
+    private static final EntityDataAccessor<Integer> DATA_POSTURE = SynchedEntityData.defineId(AdherentEntity.class, EntityDataSerializers.INT);
+    private static final net.minecraft.resources.ResourceLocation CRAWL_SLOW = Interstice.id("crawl_slow");
+    /** Hitbox while squeezing (blocks): fits a one-block gap with room to spare. */
+    public static final float SQUEEZE_WIDTH = 0.6f, SQUEEZE_HEIGHT = 0.8f;
+    private int squeezeHold;
 
     // ---- server state
     public Role role = Role.AMBIENT;
@@ -85,6 +104,9 @@ public class AdherentEntity extends Monster {
     private double velY, velZ;
     private int stutter;
     private boolean pausing, watchingPlayer;
+
+    /** The ground brain (server side; calls between creatures go through it). */
+    @Nullable public AdherentGroundGoal groundGoal;
 
     /** Opaque per-entity client animation state (owned by the client renderer). */
     public Object clientState;
@@ -124,12 +146,199 @@ public class AdherentEntity extends Monster {
         builder.define(DATA_BEHAVIOR, (byte) Behavior.IDLE.ordinal());
         builder.define(DATA_SIDE, (byte) -1);
         builder.define(DATA_LOOK, new Vector3f());
+        builder.define(DATA_POSTURE, 0);
+    }
+
+    // ------------------------------------------------------------- squeezing
+
+    // ------------------------------------------------------------- postures
+
+    /**
+     * How low the body goes to get through: STAND (full height), STOOP (under a 3-block ceiling: back bowed, about
+     * 2.8 blocks at most), CROUCH (under 2 blocks: legs folded, about 1.85 blocks, narrower so a door is enough),
+     * CRAWL (a one-block gap: flattened, 0.6 x 0.8). Each has its own clip on the client (stoop, crouch, crawl) and
+     * slows the creature a little more. Only the squeezing species crawl (not the Burden); the Burden does not narrow.
+     */
+    public enum Posture { STAND, STOOP, CROUCH, CRAWL }
+
+    public static final float STOOP_HEIGHT = 2.8f, CROUCH_HEIGHT = 1.85f, CROUCH_WIDTH = 0.9f;
+
+    /**
+     * Fastest speed (blocks/s) that still looks like a walk: 2.4 walk cycles a second (the walk clip's cycle length
+     * per species). The AI keeps its walking paces under it; above, the client blends into the run.
+     */
+    public float walkMaxSpeed() {
+        return switch (species) {
+            case ADHERENT -> 2.3f;
+            case CRAWLER -> 2.05f;
+            case STRIDER -> 4.9f;
+            case BURDEN -> 2.6f;
+            case CLINGER -> 1.5f;
+            case HOLLOW -> 2.05f;
+            case WATCHER -> 2.25f;
+            case FRACTURED -> 2.4f;
+        };
+    }
+
+    /** Height of the model walking (blocks, models/<species>_validation.txt "rest pose size"). */
+    public float modelHeight() {
+        return switch (species) {
+            case ADHERENT -> 1.84f;
+            case CRAWLER -> 1.20f;
+            case STRIDER -> 2.73f;
+            case BURDEN -> 2.49f;
+            case CLINGER -> 1.53f;
+            case HOLLOW -> 1.92f;
+            case WATCHER -> 2.32f;
+            case FRACTURED -> 2.08f;
+        };
+    }
+    private static final double[] POSTURE_SLOW = {0, -0.1, -0.2, -0.3};
+
+    public Posture posture() {
+        return entityData == null ? Posture.STAND : Posture.values()[Math.max(0, Math.min(3, entityData.get(DATA_POSTURE)))];   // null while constructed
+    }
+
+    public boolean isSqueezing() { return posture() == Posture.CRAWL; }
+
+    public void setSqueezing(boolean on) {
+        setPosture(on ? Posture.CRAWL : Posture.STAND);
+    }
+
+    public void setPosture(Posture p) {
+        if (p == posture()) return;
+        entityData.set(DATA_POSTURE, p.ordinal());
+        refreshDimensions();
+        AttributeInstance speed = getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speed != null) {
+            speed.removeModifier(CRAWL_SLOW);
+            if (p != Posture.STAND) speed.addTransientModifier(new AttributeModifier(CRAWL_SLOW, POSTURE_SLOW[p.ordinal()], AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        }
+    }
+
+    @Override
+    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
+        super.onSyncedDataUpdated(key);
+        if (DATA_POSTURE.equals(key) || DATA_MODE.equals(key)) refreshDimensions();
+    }
+
+    @Override
+    public EntityDimensions getDefaultDimensions(Pose pose) {
+        EntityDimensions full = super.getDefaultDimensions(pose);
+        if (entityData == null || species == null) return full;   // during construction
+        if (mode() == Mode.WALL) {
+            // on the wall the body lies flat against it: a thin box (thickness 1) as tall as most of the body is long
+            float h = modelLength() * 0.72f;
+            return EntityDimensions.scalable(Math.min(1.0f, full.width()), h).withEyeHeight(h * 0.6f);
+        }
+        return dimensionsFor(posture(), full);
+    }
+
+    /** Length of the model, nose to tail (blocks, the validation reports). */
+    public float modelLength() {
+        return switch (species) {
+            case ADHERENT -> 3.32f;
+            case CRAWLER -> 2.15f;
+            case STRIDER -> 4.59f;
+            case BURDEN -> 4.09f;
+            case CLINGER -> 3.72f;
+            case HOLLOW -> 3.52f;
+            case WATCHER -> 3.44f;
+            case FRACTURED -> 3.93f;
+        };
+    }
+
+    private EntityDimensions dimensionsFor(Posture p, EntityDimensions full) {
+        // standing on the ground the box widens to cover more of the body's length (the head and the haunches
+        // stuck out of the square), within reason for the streets
+        float w = Math.max(full.width(), Math.min(2.4f, modelLength() * 0.5f)), h = full.height();
+        switch (p) {
+            case STAND -> { return EntityDimensions.scalable(w, h).withEyeHeight(full.eyeHeight()); }
+            case STOOP -> h = Math.min(h, STOOP_HEIGHT);
+            case CROUCH -> {
+                h = Math.min(h, CROUCH_HEIGHT);
+                if (species.t.squeeze) w = Math.min(w, CROUCH_WIDTH);
+            }
+            case CRAWL -> {
+                // narrower than the gap with room to spare: vanilla path following does not centre a mob precisely
+                w = Math.min(SQUEEZE_WIDTH, w);
+                h = Math.min(SQUEEZE_HEIGHT, h);
+            }
+        }
+        return EntityDimensions.scalable(w, h).withEyeHeight(Math.min(full.eyeHeight(), h * 0.85f));
+    }
+
+    /** Whether the body in this posture fits somewhere within the cell around this point (it need not be centred). */
+    private boolean fits(Posture p, Vec3 at) {
+        EntityDimensions d = dimensionsFor(p, super.getDefaultDimensions(getPose()));
+        // standing needs head room above the model itself (taller than the hitbox for some), not just the hitbox:
+        // under a tight ceiling the creature bows its head instead of brushing it
+        if (p == Posture.STAND) d = EntityDimensions.scalable(d.width(), Math.max(d.height(), modelHeight() + 0.4f));
+        AABB box = d.makeBoundingBox(at).deflate(1.0E-3);
+        double[][] offsets = {{0, 0}, {0.35, 0}, {-0.35, 0}, {0, 0.35}, {0, -0.35}};
+        for (double[] o : offsets) {
+            if (level().noCollision(this, box.move(o[0], 0, o[1]))) return true;
+        }
+        return false;
+    }
+
+    /** The tallest posture that fits here and on the next few nodes of the path (within 3 blocks). */
+    private Posture needed() {
+        Posture[] order = species.t.squeeze ? Posture.values() : new Posture[]{Posture.STAND, Posture.STOOP, Posture.CROUCH};
+        Path path = getNavigation().getPath();
+        for (Posture p : order) {
+            if (!fits(p, position())) continue;
+            boolean ok = true;
+            if (path != null && !path.isDone()) {
+                for (int i = path.getNextNodeIndex(); i < Math.min(path.getNodeCount(), path.getNextNodeIndex() + 3) && ok; i++) {
+                    Node n = path.getNode(i);
+                    Vec3 c = new Vec3(n.x + 0.5, n.y, n.z + 0.5);
+                    if (c.distanceToSqr(position()) < 9 && !fits(p, c)) ok = false;
+                }
+            }
+            if (ok) return p;
+        }
+        return order[order.length - 1];
+    }
+
+    /**
+     * Ground mode: take the tallest posture the space allows here and just ahead; go lower at once, come back up
+     * only after a second with room (so it does not flicker at an edge).
+     */
+    public void updateSqueeze() {
+        if (mode() != Mode.GROUND) {
+            if (posture() != Posture.STAND) setPosture(Posture.STAND);
+            return;
+        }
+        Posture want = needed();
+        Posture now = posture();
+        if (want.ordinal() > now.ordinal()) {
+            squeezeHold = 20;
+            setPosture(want);
+        } else if (want.ordinal() < now.ordinal() && --squeezeHold <= 0) {
+            setPosture(want);
+        } else if (want == now) {
+            squeezeHold = Math.max(squeezeHold, 0);
+        }
+    }
+
+    @Override
+    protected PathNavigation createNavigation(Level level) {
+        return new GroundPathNavigation(this, level) {
+            @Override
+            protected PathFinder createPathFinder(int maxVisitedNodes) {
+                this.nodeEvaluator = new SqueezeNodeEvaluator();
+                this.nodeEvaluator.setCanPassDoors(true);
+                return new PathFinder(this.nodeEvaluator, maxVisitedNodes);
+            }
+        };
     }
 
     @Override
     protected void registerGoals() {
         goalSelector.addGoal(0, new FloatGoal(this));
-        goalSelector.addGoal(1, new AdherentGroundGoal(this));
+        groundGoal = new AdherentGroundGoal(this);
+        goalSelector.addGoal(1, groundGoal);
     }
 
     // ------------------------------------------------------------- accessors
@@ -147,6 +356,7 @@ public class AdherentEntity extends Monster {
         boolean wall = m == Mode.WALL;
         this.noPhysics = wall;
         this.setNoGravity(wall);
+        refreshDimensions();   // the hitbox follows the body: flat against the wall, long on the ground
     }
 
     public void setBehavior(Behavior b) { entityData.set(DATA_BEHAVIOR, (byte) b.ordinal()); }
@@ -210,6 +420,38 @@ public class AdherentEntity extends Monster {
         behaviorTimer = 1200;
     }
 
+    /** Set while an ambient wall creature climbs down to search the floor (see {@link #wallStep}). */
+    private boolean descending;
+
+    /** Climbs down the wall to the floor, where it steps off and starts searching on foot. */
+    public void beginDescend() {
+        if (mode() != Mode.WALL) return;
+        setBehavior(Behavior.CRAWL);
+        targetY = IntersticeLayout.FLOOR_Y + 0.6;
+        targetZ = getZ() + random.nextGaussian() * 3;
+        moveSpeed = 0.18 + random.nextDouble() * 0.06;
+        behaviorTimer = 900;
+        descending = true;
+    }
+
+    /** At the foot of the wall: turn off it onto the floor (the client turns the body from the wall to the ground). */
+    private void stepOffWall() {
+        descending = false;
+        IntersticeServer s = IntersticeServer.get();
+        double x = getX() - side() * 1.2;
+        int fy = s != null && s.layout() != null ? s.layout().floorY((int) Math.floor(x), (int) Math.floor(getZ())) : IntersticeLayout.FLOOR_Y;
+        setMode(Mode.GROUND);
+        setPos(x, fy, getZ());
+        setYRot(side() < 0 ? 270f : 90f);   // facing away from the wall
+        yBodyRot = getYRot();
+        setYHeadRot(getYRot());
+        role = Role.SEARCHER;
+        disposition = species.rollDisposition(random.nextFloat());
+        if (disposition == GroundDisposition.STUNNED) disposition = GroundDisposition.HUNTER;
+        setBehavior(Behavior.RECOVER);
+        behaviorTimer = 15;
+    }
+
     public void beginClimbAway() {
         if (mode() != Mode.WALL) return;
         setBehavior(Behavior.CLIMB);
@@ -247,9 +489,9 @@ public class AdherentEntity extends Monster {
         switch (mode()) {
             case WALL -> wallStep(s);
             case FALLING -> fallStep(s);
-            case GROUND -> {
-            }
+            case GROUND -> updateSqueeze();
         }
+        if (mode() != Mode.GROUND && isSqueezing()) setSqueezing(false);
     }
 
     private void wallStep(IntersticeServer s) {
@@ -265,6 +507,17 @@ public class AdherentEntity extends Monster {
             social();
             b = behavior();
         }
+        // now and then a creature low on the wall comes down to look for whoever is walking the floor
+        if (role == Role.AMBIENT && b == Behavior.IDLE && !descending && (tickCount + getId()) % 100 == 0
+                && species != Species.CLINGER && species != Species.WATCHER && getY() < IntersticeLayout.FLOOR_Y + 30
+                && random.nextFloat() < 0.08f && level() instanceof ServerLevel sl) {
+            ServerPlayer p = (ServerPlayer) level().getNearestPlayer(this, 26.0);
+            if (p != null && !p.isSpectator() && !p.isCreative()
+                    && sl.getEntitiesOfClass(AdherentEntity.class, p.getBoundingBox().inflate(40), e -> e.mode() == Mode.GROUND).size() < 3) {
+                beginDescend();
+                b = behavior();
+            }
+        }
         double y = getY(), z = getZ();
         switch (b) {
             case IDLE -> {
@@ -278,8 +531,13 @@ public class AdherentEntity extends Monster {
                 double dy = targetY - y, dz = targetZ - z;
                 double dist = Math.sqrt(dy * dy + dz * dz);
                 boolean timeout = b != Behavior.CLIMB && --behaviorTimer <= 0;
+                if (descending && y <= IntersticeLayout.FLOOR_Y + 1.3) {
+                    stepOffWall();
+                    return;
+                }
                 if (dist < 0.4 || timeout) {
                     if (b == Behavior.CLIMB) { discard(); return; }
+                    descending = false;
                     setBehavior(Behavior.IDLE);
                     behaviorTimer = t.idleMin + random.nextInt(Math.max(1, t.idleMax - t.idleMin));
                 } else {
@@ -336,11 +594,7 @@ public class AdherentEntity extends Monster {
         }
         double x = WallMovement.approach(getX(), tx);
         setPos(x, y, z);
-        if (b == Behavior.RUN || b == Behavior.FLEE) {
-            int every = species == Species.BURDEN ? 10 : species == Species.CRAWLER ? 4 : 6;
-            if (tickCount % every == 0) playSound(ModSounds.CREATURE_STEP, (b == Behavior.RUN ? 0.6f : 0.35f) * t.volume,
-                    (0.8f + random.nextFloat() * 0.4f) * t.pitch);
-        }
+        // wall contacts are heard on the client, in step with the climbing animation (CreatureFootsteps)
     }
 
     /** Slows the wall-plane velocity when not travelling (heavy species glide to a stop). */
@@ -388,7 +642,7 @@ public class AdherentEntity extends Monster {
     private void vibrate(IntersticeServer s) {
         double v = Math.sqrt(velY * velY + velZ * velZ) + (behavior() == Behavior.RUN ? runSpeed : 0);
         if (v < 0.01 || (tickCount + getId()) % 22 != 0) return;
-        playSound(ModSounds.CREATURE_STEP, 2.6f, 0.42f + random.nextFloat() * 0.08f);
+        playSound(com.interstice.registry.SpeciesSounds.of(species).click, 2.2f, 0.8f + random.nextFloat() * 0.2f);   // the body creaking under its weight
         s.noise.emit(position(), 16, level().getGameTime(), this);
         if (level() instanceof ServerLevel sl) {
             sl.sendParticles(ModEntities.FALLING_DUST, getX() + side() * 0.4, getY() - 0.5, getZ(), 5, 0.8, 0.6, 0.8, 0.0);
@@ -503,14 +757,14 @@ public class AdherentEntity extends Monster {
         if (onGround() || isInWater()) {
             double height = fallStartY - getY();
             s.noise.emit(position(), 22, level().getGameTime(), this);
-            playSound(ModSounds.CREATURE_LAND, 3.0f, 0.7f + random.nextFloat() * 0.2f);
+            playSound(com.interstice.registry.SpeciesSounds.of(species).land, 3.0f, 0.9f + random.nextFloat() * 0.2f);
             // crush anyone underneath
             for (ServerPlayer p : ((ServerLevel) level()).getPlayers(p -> p.distanceToSqr(this) < 2.5 && !p.isSpectator())) {
                 p.hurt(damageSources().fallingBlock(this), 6f);
             }
             if (species == Species.BURDEN) {   // the impact is felt
                 s.noise.emit(position(), 40, level().getGameTime(), this);
-                playSound(ModSounds.CREATURE_LAND, 5.0f, 0.45f);
+                playSound(com.interstice.registry.SpeciesSounds.of(species).land, 5.0f, 0.6f);
                 if (level() instanceof ServerLevel sl) sl.sendParticles(ModEntities.FALLING_DUST, getX(), getY() + 0.5, getZ(), 40, 2.0, 0.8, 2.0, 0.02);
             }
             float deathChance = (height > 40 ? 0.6f : height > 18 ? 0.35f : 0.1f) * species.t.deathMul;
@@ -539,6 +793,32 @@ public class AdherentEntity extends Monster {
 
     public int behaviorTimer() { return behaviorTimer; }
 
+    /** Set when a stun comes from a device (flash): the creature resumes its own behaviour afterwards. */
+    public boolean resumeAfterStun;
+
+    /** A creature on the wall startled by a flash: it may let go, or it scurries off. */
+    public void flinch() {
+        if (mode() != Mode.WALL) return;
+        if (random.nextFloat() < 0.6f * (1 - species.t.holdOnChance)) startFalling(); else beginFlee(80);
+    }
+
+    /** Ends a stun at once (a failed spike, a loud noise next to it). */
+    public void wake() {
+        if (behavior() == Behavior.STUNNED) {
+            behaviorTimer = 0;
+            resumeAfterStun = true;
+        }
+    }
+
+    /** Dazzled by a flash (or similar): lies still for {@code ticks}, then carries on as before. Ground mode only. */
+    public void deviceStun(int ticks) {
+        if (mode() != Mode.GROUND || ticks <= 0) return;
+        getNavigation().stop();
+        setBehavior(Behavior.STUNNED);
+        behaviorTimer = Math.max(behaviorTimer, ticks);
+        resumeAfterStun = true;
+    }
+
     public int decrementBehaviorTimer() { return --behaviorTimer; }
 
     // --------------------------------------------------------------- combat
@@ -557,8 +837,23 @@ public class AdherentEntity extends Monster {
         return false; // falls are resolved explicitly in fallStep
     }
 
+    /**
+     * Ordinary combat cannot kill a Corridor creature ({@link com.interstice.survival.SurvivalRules#canHarmCreature}):
+     * a sword, an arrow or a fire is felt (a flinch, a sound, it knows exactly where you are) but does no damage.
+     */
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        if (!level().isClientSide && !com.interstice.survival.SurvivalRules.canHarmCreature(source)) {
+            if (isAlive() && !isInvulnerableTo(source) && invulnerableTime <= 10) {
+                invulnerableTime = 20;
+                playSound(getHurtSound(source), 0.7f, 0.8f + random.nextFloat() * 0.3f);
+                IntersticeServer s = IntersticeServer.get();
+                Entity by = source.getEntity();
+                if (s != null && by != null) s.noise.emit(by.position(), 18, level().getGameTime(), by);
+                if (mode() == Mode.WALL && random.nextFloat() < 0.35f * (1 - species.t.holdOnChance)) beginFlee(60);
+            }
+            return false;
+        }
         boolean r = super.hurt(source, amount);
         if (r && !level().isClientSide && mode() == Mode.WALL && isAlive()) {
             if (random.nextFloat() < 0.5f * (1 - species.t.holdOnChance)) startFalling(); else beginFlee(80);
@@ -588,14 +883,25 @@ public class AdherentEntity extends Monster {
         if (mode() != Mode.WALL) super.doPush(entity);
     }
 
+    /** Set by the ground brain when it wants to go up a facade (its prey is above it on a roof or a ledge). */
+    public boolean wantsToClimb;
+    /** Ticks it stays committed to a climb it has started (the prey out of sight behind the edge). */
+    public int wantsToClimbCommit;
+
+    /**
+     * On the ground, a creature pressed against a vertical surface while it wants to climb goes up it like a spider
+     * (vanilla climbing: it rises while it collides horizontally) and over the edge. The Burden is too heavy.
+     */
     @Override
     public boolean onClimbable() {
-        return false;
+        return mode() == Mode.GROUND && wantsToClimb && horizontalCollision && species != Species.BURDEN && !isSqueezing();
     }
 
     @Override
     protected SoundEvent getAmbientSound() {
-        return ModSounds.CREATURE_IDLE;
+        // breathing (the Clinger: tiny finger clicks; it does not breathe where you can hear it)
+        if (behavior() == Behavior.STUNNED) return null;
+        return random.nextFloat() < 0.25f ? com.interstice.registry.SpeciesSounds.of(species).click : com.interstice.registry.SpeciesSounds.of(species).breath;
     }
 
     @Override
@@ -610,17 +916,17 @@ public class AdherentEntity extends Monster {
 
     @Override
     protected SoundEvent getHurtSound(DamageSource source) {
-        return ModSounds.CREATURE_HURT;
+        return com.interstice.registry.SpeciesSounds.of(species).hurt;
     }
 
     @Override
     protected SoundEvent getDeathSound() {
-        return ModSounds.CREATURE_DEATH;
+        return com.interstice.registry.SpeciesSounds.of(species).hurt;
     }
 
     @Override
     protected void playStepSound(BlockPos pos, BlockState state) {
-        playSound(ModSounds.CREATURE_STEP, 0.35f * species.t.volume, (0.9f + random.nextFloat() * 0.3f) * species.t.pitch);
+        // footsteps are played by each client when the animation puts a limb down (CreatureFootsteps), not on a timer
     }
 
     @Override

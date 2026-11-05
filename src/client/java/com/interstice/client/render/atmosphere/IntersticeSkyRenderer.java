@@ -36,7 +36,12 @@ public final class IntersticeSkyRenderer implements DimensionRenderingRegistry.S
     @Override
     public void render(WorldRenderContext ctx) {
         IntersticeLayout L = ClientState.layout;
-        if (L == null) return;
+        // Corridor rework: no fake walls above y=300 any more; the walls disappear into the black fog. The sky
+        // itself stays the black clear colour. The old continuation is kept behind a setting for comparison.
+        if (L == null || !com.interstice.client.config.ClientConfig.INSTANCE.legacyWallContinuation) {
+            quadsDrawn = 0;
+            return;
+        }
         Vec3 cam = ctx.camera().getPosition();
         float far = Math.min(ctx.gameRenderer().getDepthFar() * 0.98f, 1400f);
 

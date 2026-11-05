@@ -54,8 +54,9 @@ public class IntersticeChunkGenerator extends ChunkGenerator {
     public static IntersticeLayout layout(RandomState randomState) {
         long seed = layoutSeed(randomState);
         IntersticeLayout l = cached;
-        if (l == null || l.seed() != seed) {
-            l = new IntersticeLayout(seed);
+        int version = com.interstice.world.GenerationVersion.get();
+        if (l == null || l.seed() != seed || l.version() != version) {
+            l = new IntersticeLayout(seed, version);
             cached = l;
         }
         return l;
@@ -72,6 +73,7 @@ public class IntersticeChunkGenerator extends ChunkGenerator {
         TerrainPass.run(w);
         StructurePass.run(w);
         AnomalyPass.run(w);
+        LampMounts.run(w);
         Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
                 Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Heightmap.Types.WORLD_SURFACE, Heightmap.Types.OCEAN_FLOOR));
         return CompletableFuture.completedFuture(chunk);

@@ -45,9 +45,61 @@ public final class AudioDirector {
 
     private AudioDirector() {}
 
+    /** Region beds (Corridor rework): District, Ironworks, Ward, Expanse; mixed by the region weights at the camera. */
+    private static final LoopSound[] regionBeds = new LoopSound[4];
+    private static final float[] regionGain = {0.75f, 0.6f, 0.7f, 0.85f};
+
     public static void stopAll() {
         for (LoopSound l : new LoopSound[]{drone, air, hum, premonition, horde}) if (l != null) l.finish();
         drone = air = hum = premonition = horde = null;
+        for (int i = 0; i < regionBeds.length; i++) {
+            if (regionBeds[i] != null) regionBeds[i].finish();
+            regionBeds[i] = null;
+        }
+    }
+
+    /** Weight of region i at the camera (0 in a legacy world), eased over the transition zones by CorridorPlan. */
+    private static double regionWeight(int i) {
+        if (ClientState.layout == null || ClientState.layout.plan() == null) return 0;
+        Minecraft mc = Minecraft.getInstance();
+        double z = mc.gameRenderer.getMainCamera().getPosition().z;
+        return ClientState.layout.plan().weights(z)[i];
+    }
+
+    /** Indoors the region bed (wind, street) is muffled; the EFX occlusion does the rest. */
+    private static double outdoors() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return 1;
+        net.minecraft.core.BlockPos p = mc.player.blockPosition().above(2);
+        for (int i = 0; i < 5; i++) if (!mc.level.getBlockState(p.above(i)).isAir()) return 0.45;
+        return 1;
+    }
+
+    private static long nextRattle;
+
+    /**
+     * The buildings answer the Stampede and the quakes: indoors, loose glass and metal rattle and dust trickles
+     * from the ceiling; outdoors in the Ironworks the chains groan under tension. Rate-limited, quiet when calm.
+     */
+    private static void structureReactions(Minecraft mc, Vec3 cam, long now) {
+        float shake = Math.max(ClientState.quake, ClientState.hordeActive * 0.8f);
+        if (shake < 0.15f || now < nextRattle) return;
+        nextRattle = now + 20 + rng.nextInt((int) (60 / Math.max(0.3f, shake)));
+        boolean indoors = outdoors() < 1;
+        if (indoors) {
+            play(com.interstice.registry.SpeciesSounds.BUILDING_RATTLE, cam.x + rng.nextGaussian() * 4, cam.y + 2, cam.z + rng.nextGaussian() * 4,
+                    0.3f + 0.6f * shake, 0.85f + rng.nextFloat() * 0.3f, false);
+            if (rng.nextFloat() < shake) {
+                play(com.interstice.registry.SpeciesSounds.DUST_FALL, cam.x, cam.y + 2.5, cam.z, 0.35f * shake, 1f, false);
+                int n = (int) (10 * shake * ClientConfig.INSTANCE.particles);
+                for (int i = 0; i < n; i++) mc.level.addParticle(com.interstice.registry.ModEntities.FALLING_DUST,
+                        cam.x + rng.nextGaussian() * 3, cam.y + 2.4, cam.z + rng.nextGaussian() * 3, 0, -0.03, 0);
+            }
+        } else if (com.interstice.client.render.chains.ChainRenderer.nearDist < 60) {
+            play(com.interstice.registry.SpeciesSounds.CHAIN_TENSION, com.interstice.client.render.chains.ChainRenderer.nearX,
+                    com.interstice.client.render.chains.ChainRenderer.nearY, com.interstice.client.render.chains.ChainRenderer.nearZ,
+                    1.5f + 2.5f * shake, 0.8f + rng.nextFloat() * 0.3f, false);
+        }
     }
 
     private static float amb() {
@@ -69,6 +121,7 @@ public final class AudioDirector {
         }
         long now = mc.level.getGameTime();
         Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
+        structureReactions(mc, cam, now);
 
         // director-owned silence windows
         if (now > nextSilenceRoll) {
@@ -115,6 +168,13 @@ public final class AudioDirector {
             case ModNetwork.EnvEvent.STARE -> play(ModSounds.ENV_UNEXPLAINED, e.x(), e.y(), e.z(), 3f, 0.6f, false);
             case ModNetwork.EnvEvent.LIGHT_FAILURE -> play(ModSounds.ENV_LAMP_FAIL, cam.x, cam.y + 4, cam.z, 0.8f, 1f, false);
             case ModNetwork.EnvEvent.FLEE -> play(ModSounds.ENV_SCUTTLE_FAR, cam.x + 12, cam.y + 15, cam.z, 3f, 1.2f, false);
+            case ModNetwork.EnvEvent.HORDE_SCREAM -> {
+                // from where the horde comes (it runs towards +direction): up the corridor, high on the walls
+                int dir = e.seed() < 0 ? -1 : 1;
+                play(com.interstice.registry.SpeciesSounds.HORDE_SCREAM, cam.x, cam.y + 30, cam.z - dir * 50, 9f, 0.95f + rng.nextFloat() * 0.1f, false);
+                play(com.interstice.registry.SpeciesSounds.HORDE_SCREAM, cam.x, cam.y, cam.z, 0.35f, 0.9f, true);   // the body of it, everywhere
+                ChainRenderer.kick(cam.x, cam.y, cam.z - dir * 80, 0.6f);
+            }
             default -> {
             }
         }
@@ -137,7 +197,8 @@ public final class AudioDirector {
     }
 
     private static void ensureLoops(Minecraft mc) {
-        if (drone == null) drone = start(mc, new LoopSound(ModSounds.AMBIENT_DRONE, () -> 0.55 * amb() * duck(), false));
+        // the old shared drone stays under the region beds, quieter in a finite (version 2) Corridor
+        if (drone == null) drone = start(mc, new LoopSound(ModSounds.AMBIENT_DRONE, () -> (ClientState.layout != null && ClientState.layout.plan() != null ? 0.3 : 0.55) * amb() * duck(), false));
         if (air == null) air = start(mc, new LoopSound(ModSounds.AMBIENT_AIR, () -> (0.35 + 0.25 * ClientState.quake) * amb() * duck(), false));
         if (hum == null) hum = start(mc, new LoopSound(ModSounds.AMBIENT_HUM, () -> {
             double d = LampLightManager.nearestFixture;
@@ -150,6 +211,17 @@ public final class AudioDirector {
             if (!HordeRenderer.hordeVisible()) return 0;
             return (0.4 + 2.4 * ClientState.hordeActive) * amb();
         }, true));
+        net.minecraft.sounds.SoundEvent[] beds = {com.interstice.registry.SpeciesSounds.AMBIENT_DISTRICT, com.interstice.registry.SpeciesSounds.AMBIENT_IRONWORKS,
+                com.interstice.registry.SpeciesSounds.AMBIENT_WARD, com.interstice.registry.SpeciesSounds.AMBIENT_EXPANSE};
+        for (int i = 0; i < regionBeds.length; i++) {
+            LoopSound l = regionBeds[i];
+            if (l != null && !mc.getSoundManager().isActive(l) && l.isStopped()) regionBeds[i] = l = null;
+            if (l == null && ClientState.layout != null && ClientState.layout.plan() != null) {
+                final int k = i;
+                regionBeds[i] = start(mc, new LoopSound(beds[i], () -> regionWeight(k) * regionGain[k] * outdoors()
+                        * (1 - 0.6 * ClientState.hordeActive) * amb() * duck(), false));
+            }
+        }
         for (LoopSound l : new LoopSound[]{drone, air, hum, premonition, horde}) {
             if (l != null && !mc.getSoundManager().isActive(l) && l.isStopped()) {
                 // restart beds that the engine dropped (e.g. sound reload)

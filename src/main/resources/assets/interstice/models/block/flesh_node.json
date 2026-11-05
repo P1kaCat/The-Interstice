@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "interstice:block/flesh_node_top",
+    "side": "interstice:block/flesh_node_side",
+    "bottom": "interstice:block/flesh_growth"
+  }
+}

@@ -23,13 +23,32 @@ public final class QuakeShake extends ScreenShakeType {
     protected float getStrength() {
         float s = ClientConfig.INSTANCE.cameraShake;
         if (ClientConfig.INSTANCE.reduceIntenseEffects) s *= 0.5f;
-        return ClientState.quake * s * 0.42f;
+        return (ClientState.quake + thud) * s * 0.42f;
+    }
+
+    /** A short extra tremor (a Burden's step close by), decaying over about half a second. */
+    private static float thud;
+    private static long thudAt;
+
+    public static void thud(float k) {
+        thud = Math.max(thud, k);
+        thudAt = System.currentTimeMillis();
+        if (ClientConfig.INSTANCE.cameraShake <= 0f) return;
+        if (active == null || active.isRemoved()) {
+            try {
+                active = new QuakeShake(20 * 30);
+                VeilRenderSystem.renderer().getScreenShakeManager().addScreenShake(active);
+            } catch (Throwable t) {
+                active = null;
+            }
+        }
     }
 
     /** Ensures a shake is running while a quake is active. */
     public static void update() {
-        if (!ClientState.inInterstice || ClientState.quake <= 0.01f || ClientConfig.INSTANCE.cameraShake <= 0f) {
-            if (active != null && ClientState.quake <= 0.01f) {
+        if (thud > 0) thud = Math.max(0f, thud * (1f - (System.currentTimeMillis() - thudAt) / 600f));
+        if (!ClientState.inInterstice || ClientState.quake + thud <= 0.01f || ClientConfig.INSTANCE.cameraShake <= 0f) {
+            if (active != null && ClientState.quake + thud <= 0.01f) {
                 active.remove();
                 active = null;
             }

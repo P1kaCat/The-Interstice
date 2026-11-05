@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/chain",
+  "textures": {
+    "all": "interstice:block/rusted_chain",
+    "particle": "interstice:block/rusted_chain"
+  }
+}

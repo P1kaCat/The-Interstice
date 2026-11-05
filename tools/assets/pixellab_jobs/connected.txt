@@ -1,0 +1,11 @@
+# name job_id kind  (inpainting: plates = 64x64 2x2 mosaic with seams masked; framed = 32x32 with a border ring masked)
+rusted_plate_mosaic 4111f8ad-b17f-48a2-bbfe-92286f2ca5db mosaic
+rusted_plate_1_mosaic 1ec4d953-70cf-426c-b1e5-0174bb3e7e6f mosaic
+rusted_plate_2_mosaic fa25b25f-4887-4089-b003-ec2bdcf19750 mosaic
+rusted_plate_3_mosaic 14e943f6-ccfd-43b9-949f-f49be3c46701 mosaic
+container_red_framed 4fcb5bdb-cc13-4f0d-8938-6b1ed2281cde framed
+container_teal_framed 3ae1ed78-3808-4a2a-bdab-a208415287c6 framed
+corrugated_metal_framed 7bf1ee3c-70f4-4831-b788-2e11412a4a7e framed
+oxidized_plate_framed 19fec0f9-a321-4d45-8eb6-764c5f057be0 framed
+hazard_stripe_framed 29982daa-fde8-4408-b932-510c563e5e0b framed
+bookshelf_mosaic 89b1dae7-5b9f-4b8d-924e-50d6597b8d14 mosaic

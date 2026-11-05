@@ -6,9 +6,10 @@ game asset used by the in-game skinned-mesh renderer:
     src/client/resources/assets/interstice/textures/entity/adherent.png
 
 What the exporter adds on top of the Blockbench file:
-- Smooth skinning at joints. In Blockbench each mesh is rigidly parented to one bone. Here every
-  vertex near a joint is blended 50/50 at the pivot (fading out over JOINT_RADIUS) between the bone and
-  its parent / child, so the two overlapping segments meet without a gap when the joint bends.
+- Smooth skinning at joints (skinning.py). In Blockbench each mesh is rigidly parented to one bone. Here,
+  along the main chain, every vertex hands over from one bone to the next across the joint's bisecting
+  plane, over a width proportional to the limb's thickness; side branches (shoulders, thighs, jaw) blend
+  radially at the pivot. The game skins LOD0 with dual quaternions (volume kept at bent joints).
 - Gradient hand-over (the generator's "interstice_skin" block): a mesh can be carried by another bone at
   one end and hand over to its own bone along its length (limbs growing out of the torso, connective
   masses, moss roots). Mixed with the joint blending above.
@@ -34,6 +35,9 @@ import sys
 
 import numpy as np
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from skinning import Rig, mix_weights  # noqa: E402
+
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 ASSET_DIR = os.path.join(ROOT, "src", "client", "resources", "assets", "interstice")
 FAMILY = ["adherent", "crawler", "strider", "burden", "clinger", "hollow", "watcher", "fractured"]
@@ -51,7 +55,7 @@ def select(name):
     OUT_GLOW = os.path.join(ASSET_DIR, "textures", "entity", f"{name}_eyes.png")
 
 
-JOINT_RADIUS = 3.0     # px over which a joint blends between neighbouring bones
+SCHEME = "plane"       # skin weights: see skinning.py ("legacy" = the v5 radial blend)
 LOD1_CELL = 1.7        # px grid for the horde LOD (scaled by body length relative to the Adherent's 52 px)
 REQUIRED = ["hips", "spine", "chest", "neck", "head", "jaw"] + [f"{b}_{s}" for s in "lr" for b in
             ("shoulder", "arm", "fore", "hand", "fingers", "thigh", "shin", "foot", "toes")]
@@ -99,6 +103,7 @@ def main():
     hanging = {i for i, d in enumerate(dangles) if d}
     children = {i: [j for j, p in enumerate(parents) if p == i and j not in hanging] for i in range(len(bones))}
     P = np.array(pivots)
+    rig = Rig(bones, parents, pivots, hanging)
     tw = model.get("resolution", {}).get("width", 512)
     th = model.get("resolution", {}).get("height", 512)
 
@@ -137,7 +142,7 @@ def main():
                     n = acc[k] * sign
                     nl = np.linalg.norm(n)
                     n = n / nl if nl > 1e-9 else np.array([0, 1.0, 0])
-                    js, ws = skin_weights(p, b, parents, children, P)
+                    js, ws = rig.weights(p, b, "legacy" if b in hanging else SCHEME)   # moss strands: as before
                     if ex_bone is not None:
                         js, ws = mix_weights(js, ws, ex_bone, float(ex["w"][int(k[1:])]))
                     cache[key] = len(positions)
@@ -213,52 +218,11 @@ def main():
     glow = [t for t in tex if t.get("name", "").endswith("_eyes.png") and t.get("source", "").startswith("data:image/png;base64,")]
     if glow:
         with open(OUT_GLOW, "wb") as fh:
-            fh.write(base64.b64decode(glow[0]["source"].split(",", 1)[1]))
+            from eye_glow import grade_bytes   # saturated crimson grading (Corridor rework)
+            fh.write(grade_bytes(base64.b64decode(glow[0]["source"].split(",", 1)[1])))
     print(f"wrote {OUT_JSON}: {len(bones)} bones, LOD0 {len(lod0['indices']) // 3} tris / {len(lod0['positions']) // 3} verts, "
           f"LOD1 {len(lod1['indices']) // 3} tris / {len(lod1['positions']) // 3} verts, {len(anims)} animations "
           f"({os.path.getsize(OUT_JSON) // 1024} KB)")
-
-
-def skin_weights(p, b, parents, children, P):
-    """Own bone, plus a 50/50 blend at the own pivot (with the parent) and at the nearest child pivot."""
-    js, ws = [b], [1.0]
-    par = parents[b]
-    if par is not None:
-        d = np.linalg.norm(p - P[b])
-        w = 0.5 * max(0.0, 1.0 - d / JOINT_RADIUS)
-        if w > 0:
-            js.append(par)
-            ws.append(w)
-    best, bd = None, 1e9
-    for c in children[b]:
-        d = np.linalg.norm(p - P[c])
-        if d < bd:
-            best, bd = c, d
-    if best is not None:
-        w = 0.5 * max(0.0, 1.0 - bd / JOINT_RADIUS)
-        if w > 0:
-            js.append(best)
-            ws.append(w)
-    ws[0] = 1.0 - sum(ws[1:])
-    while len(js) < 3:
-        js.append(b)
-        ws.append(0.0)
-    return js[:3], ws[:3]
-
-
-def mix_weights(js, ws, other, wo):
-    """(1 - wo) of the joint-blended weights, wo of the other bone; the three largest kept, renormalised."""
-    acc = {}
-    for j, w in zip(js, ws):
-        acc[j] = acc.get(j, 0.0) + w * (1 - wo)
-    acc[other] = acc.get(other, 0.0) + wo
-    top = sorted(acc.items(), key=lambda kv: -kv[1])[:3]
-    tot = sum(w for _, w in top) or 1.0
-    js2, ws2 = [j for j, _ in top], [w / tot for _, w in top]
-    while len(js2) < 3:
-        js2.append(js2[0])
-        ws2.append(0.0)
-    return js2, ws2
 
 
 def cluster(pos, nor, uv, jo, we, ind, cell=LOD1_CELL):

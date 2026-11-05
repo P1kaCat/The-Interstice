@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "interstice:block/flood_lamp_side",
+    "north": "interstice:block/wall_spotlight_front",
+    "south": "interstice:block/dark_metal",
+    "east": "interstice:block/flood_lamp_side",
+    "west": "interstice:block/flood_lamp_side",
+    "up": "interstice:block/flood_lamp_side",
+    "down": "interstice:block/flood_lamp_side"
+  }
+}

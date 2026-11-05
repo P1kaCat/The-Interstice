@@ -47,6 +47,11 @@ public final class ModEntities {
         return TYPES.get(s);
     }
 
+    /** A thrown rattle lure (protective device). */
+    public static final EntityType<com.interstice.entity.ThrownLure> LURE = Registry.register(BuiltInRegistries.ENTITY_TYPE, Interstice.id("rattle_lure"),
+            EntityType.Builder.<com.interstice.entity.ThrownLure>of(com.interstice.entity.ThrownLure::new, MobCategory.MISC)
+                    .sized(0.25f, 0.25f).clientTrackingRange(6).updateInterval(10).build("rattle_lure"));
+
     /** Falling dust / debris, spawned client-side by earthquakes and structural events. */
     public static final SimpleParticleType FALLING_DUST = Registry.register(BuiltInRegistries.PARTICLE_TYPE, Interstice.id("falling_dust"), FabricParticleTypes.simple());
     /** Slow drifting motes that catch the light near the camera. */

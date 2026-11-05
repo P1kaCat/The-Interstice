@@ -1,19 +1,25 @@
-adherent.bbmodel (Adherent): 54 bones, 199 meshes, 8316 vertices, 7536 faces, texture 512x512, 3.5 texels/px
+adherent.bbmodel (Adherent): 54 bones, 186 meshes, 8515 vertices, 7792 faces, texture 512x512, 3.9 texels/px
 rest pose size (blocks): width 1.47, height 1.84 (shoulder top 1.84), length 3.32
-reared height (blocks): 3.30
+reared height (blocks): 3.34
+crawl: body dropped 0.83 blocks, back and head top at most 0.89 blocks (limbs splayed outside)
 rest contact heights before IK (px): arm_l 0.12, arm_r 0.12, leg_l 0.12, leg_r 0.12
-walk     contact height error <= 0.241 px, slip per 1/240 s <= 0.0115 px (interpolated, sampled at 240 Hz) [arm_l 0.24 leg_l 0.05 leg_r 0.05 arm_r 0.24]
-run      contact height error <= 0.626 px, slip per 1/240 s <= 0.0778 px (interpolated, sampled at 240 Hz) [leg_l 0.05 leg_r 0.06 arm_r 0.63 arm_l 0.58]
-climb    contact height error <= 0.188 px, slip per 1/240 s <= 0.0124 px (interpolated, sampled at 240 Hz) [arm_r 0.19 leg_l 0.15 leg_r 0.15 arm_l 0.19]
-cling    contact height error <= 0.114 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.11 arm_r 0.11 leg_l 0.08 leg_r 0.08]
-idle     contact height error <= 0.034 px, slip per 1/240 s <= 0.0002 px (interpolated, sampled at 240 Hz) [arm_l 0.03 arm_r 0.03 leg_l 0.00 leg_r 0.00]
-observe  contact height error <= 0.000 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.00 arm_r 0.00 leg_l 0.00 leg_r 0.00]
-search   contact height error <= 0.045 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.04 arm_r 0.04 leg_l 0.00 leg_r 0.00]
-rear     contact height error <= 0.138 px, slip per 1/240 s <= 0.0005 px (interpolated, sampled at 240 Hz) [leg_l 0.14 leg_r 0.14]
-turn     planted contact error <= 0.085 px height, 0.063 px on the ground (22.9 deg per cycle, interpolated, 240 Hz) [arm_r 0.07 leg_l 0.03 leg_r 0.03 arm_l 0.09]
-walk     junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.95-1.06, extremes 0.70-1.31 (worst: arm_r#20 0.70-1.19, arm_l#14 0.70-1.19)
-run      junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.89-1.14, extremes 0.55-1.52 (worst: arm_r#20 0.55-1.13, arm_l#14 0.57-1.11)
-climb    junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.87-1.29, extremes 0.69-1.65 (worst: arm_l#12 0.69-1.65, arm_r#18 0.69-1.65)
-rear     junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.81-1.39, extremes 0.37-2.07 (worst: arm_l#12 0.37-2.07, arm_r#18 0.37-2.07)
-turn     junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.95-1.05, extremes 0.75-1.23 (worst: thigh_l#16 0.75-1.22, thigh_r#22 0.77-1.23)
+walk     contact height error <= 0.624 px, sideways <= 0.052 px, slip per 1/240 s <= 0.0164 px (interpolated, sampled at 240 Hz) [arm_l 0.62 leg_l 0.05 leg_r 0.07 arm_r 0.62]
+run      contact height error <= 1.644 px, sideways <= 0.164 px, slip per 1/240 s <= 0.1217 px (interpolated, sampled at 240 Hz) [leg_l 0.08 leg_r 0.07 arm_r 1.64 arm_l 0.59]
+climb    contact height error <= 0.207 px, sideways <= 7.108 px, slip per 1/240 s <= 0.0080 px (interpolated, sampled at 240 Hz) [arm_r 0.21 leg_l 0.13 leg_r 0.13 arm_l 0.21]
+crawl    contact height error <= 0.451 px, sideways <= 13.593 px, slip per 1/240 s <= 0.0168 px (interpolated, sampled at 240 Hz) [arm_r 0.24 leg_l 0.45 leg_r 0.45 arm_l 0.24]
+cling    contact height error <= 0.114 px, sideways <= 6.290 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.11 arm_r 0.11 leg_l 0.08 leg_r 0.08]
+idle     contact height error <= 0.034 px, sideways <= 0.221 px, slip per 1/240 s <= 0.0002 px (interpolated, sampled at 240 Hz) [arm_l 0.03 arm_r 0.03 leg_l 0.00 leg_r 0.00]
+observe  contact height error <= 0.000 px, sideways <= 0.000 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.00 arm_r 0.00 leg_l 0.00 leg_r 0.00]
+search   contact height error <= 0.045 px, sideways <= 0.000 px, slip per 1/240 s <= 0.0000 px (interpolated, sampled at 240 Hz) [arm_l 0.04 arm_r 0.04 leg_l 0.00 leg_r 0.00]
+rear     contact height error <= 0.151 px, sideways <= 0.000 px, slip per 1/240 s <= 0.0020 px (interpolated, sampled at 240 Hz) [leg_l 0.15 leg_r 0.15]
+turn     planted contact error <= 0.091 px height, 0.063 px on the ground (22.9 deg per cycle, interpolated, 240 Hz) [arm_r 0.08 leg_l 0.03 leg_r 0.03 arm_l 0.09]
+walk     junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.83-1.16, extremes 0.15-1.84 (worst: arm_r#8 0.15-1.84, arm_l#2 0.15-1.84)
+run      junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.75-1.27, extremes 0.09-2.15 (worst: arm_r#8 0.09-2.15, arm_l#2 0.10-2.13)
+climb    junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.78-1.33, extremes 0.11-1.88 (worst: arm_l#2 0.11-1.88, arm_r#8 0.11-1.88)
+rear     junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.69-1.44, extremes 0.14-2.04 (worst: arm_l#2 0.14-2.04, arm_r#8 0.14-2.04)
+turn     junction skin (hips, chest, arms, thighs), edge length / rest over 13 poses: 1-99 % 0.92-1.07, extremes 0.53-1.42 (worst: arm_r#8 0.53-1.42, arm_l#2 0.58-1.38)
 moss: 30 hanging strands (own bones), 27 clumps; eyes: 6
+stoop    contact height error <= 0.483 px, sideways <= 0.051 px, slip per 1/240 s <= 0.0115 px (interpolated, sampled at 240 Hz) [arm_l 0.48 leg_l 0.06 leg_r 0.08 arm_r 0.48]
+crouch   contact height error <= 0.227 px, sideways <= 0.022 px, slip per 1/240 s <= 0.0097 px (interpolated, sampled at 240 Hz) [arm_l 0.23 leg_l 0.09 leg_r 0.04 arm_r 0.23]
+stoop: body dropped 0.00 blocks, back and head top 1.84 blocks (ceiling 3)
+crouch: body dropped 0.00 blocks, back and head top 1.84 blocks (ceiling 2)

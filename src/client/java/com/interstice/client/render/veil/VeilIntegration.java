@@ -90,6 +90,9 @@ public final class VeilIntegration {
         p.getUniformSafe("FogEnd").setFloat(AtmosphereController.fogEnd);
         p.getUniformSafe("FogSteps").setInt(cfg.preset.fogSteps);
         p.getUniformSafe("FloorY").setFloat(IntersticeLayout.FLOOR_Y);
+        p.getUniformSafe("RenderDist").setFloat(AtmosphereController.renderEdge);
+        p.getUniformSafe("VertStart").setFloat(AtmosphereController.vertStart);
+        p.getUniformSafe("VertEnd").setFloat(AtmosphereController.vertEnd);
         p.getUniformSafe("Emergency").setFloat(AtmosphereController.emergency);
         p.getUniformSafe("Quake").setFloat(ClientState.quake);
         p.getUniformSafe("Exposure").setFloat(AtmosphereController.exposure);
@@ -99,5 +102,6 @@ public final class VeilIntegration {
         p.getUniformSafe("Aberration").setFloat(AtmosphereController.aberration);
         p.getUniformSafe("BloomStrength").setFloat(cfg.reduceFlashing ? 0.45f : 0.8f);
         p.getUniformSafe("Silence").setFloat(ClientState.silence);
+        com.interstice.client.effects.BeamDust.applyUniforms(p);   // dust in the light beams
     }
 }

@@ -94,8 +94,8 @@ tools/creature/make_gifs.py        -> docs/creature/*.gif, v*.png (from the dev 
   113 lofted meshes (v5: muscles, vertebrae, ribs, spurs, teeth, sockets), 5921 vertices; LOD0 9810 triangles,
   LOD1 (vertex clustering) 3125. 512x512 painted skin with baked ambient occlusion. Sizes (blocks): length
   3.32, shoulder 1.84, width 1.47, reared 3.30. Hitbox 1.4x1.8. v4 archived: models/archive/adherent_v4.bbmodel.
-- Rendering: CPU linear blend skinning (`SkinnedMeshPose`, up to 3 bones per vertex, joint weights computed
-  by the exporter) into the vanilla entity vertex consumer (`AdherentMeshModel` inside the vanilla
+- Rendering: CPU skinning (`SkinnedMeshPose`, up to 3 bones per vertex, joint weights from
+  `tools/creature/skinning.py`; dual quaternions on LOD0, linear blend on LOD1) into the vanilla entity vertex consumer (`AdherentMeshModel` inside the vanilla
   `MobRenderer`). No GeckoLib, no glTF loader; Veil is not involved in the creature mesh.
 - 10 clips: idle, observe, walk, run, climb, cling, rear, threat, fall, recover. Contacts are IK-solved in
   the generator and validated between keys at 240 Hz with the runtime interpolation (walk 0.24 px, run
@@ -130,6 +130,21 @@ LOD), `docs/PERFORMANCE.md` (measurements). Key points for future work:
 - The Adherent's turn clip: `python -I tools/creature/species_generator.py adherent` merges it into
   `models/adherent.bbmodel` (geometry and other clips untouched).
 - Watch out: a bash heredoc containing apostrophes breaks in this environment; write scripts to files.
+
+## The Corridor rework (2026-11-05)
+
+Full description, tests and limitations: **`docs/CORRIDOR.md`** (world, regions, settlements, loot, survival,
+devices, invulnerability, eyes, black fog, chains, sound). Audio specification: `docs/CORRIDOR_AUDIO.md`.
+Texture requests: `docs/PIXELLAB_ASSETS.md`, batch "Corridor rework". Key points for future work:
+- `world/CorridorPlan` (length, regions, ends) and `world/GenerationVersion` (old saves keep the endless
+  version-1 Corridor; new dimensions are version 2). `world/structures/Settlements` builds the ground level.
+- `survival/SurvivalRules` + `mixin/{FoodData,Player,LivingEntity}Mixin`: no health from food, creatures only
+  hurt by severance / kill / environment. Items in `registry/ModItems`, devices in `item/`, `block/WardEmitterBlock`.
+- Client: `MusicManagerMixin` (no vanilla music), black fog in `fog.fsh` + `AtmosphereController`, the fake wall
+  continuation is off (`legacyWallContinuation`), `audio/CreatureFootsteps` (animation-synchronised steps),
+  region beds in `AudioDirector`, `render/veil/DeviceLights` (flashlight, flash).
+- Assets: `tools/assets/gen_survival_textures.py`, `tools/audio/gen_corridor_audio.py`, `tools/creature/eye_glow.py`.
+- Checkpoint before the rework: local tag `checkpoint-v7-before-corridor`.
 
 ## Verification status
 

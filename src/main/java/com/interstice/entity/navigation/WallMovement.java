@@ -31,16 +31,25 @@ public final class WallMovement {
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         int by = (int) Math.floor(y + 0.6);
         int bz = (int) Math.floor(z);
-        for (int i = 0; i < 26; i++) {
-            int x = start + side * i;
-            p.set(x, by, bz);
-            if (!level.isLoaded(p)) return Double.NaN;
-            if (!level.getBlockState(p).getCollisionShape(level, p).isEmpty()) {
-                double edge = side < 0 ? x + 1.0 : x;
-                return edge - side * (halfWidth + 0.03);
+        // the body spans more than a block: it rests on the most protruding surface of the 3x3 patch under it, so a
+        // one-block hole (a missing block, a vent, a doorway's edge) is bridged instead of swallowing or stopping it
+        int best = Integer.MAX_VALUE;
+        for (int dy = -1; dy <= 1; dy++)
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int i = 0; i < 26 && i < best; i++) {
+                    int x = start + side * i;
+                    p.set(x, by + dy, bz + dz);
+                    if (!level.isLoaded(p)) return Double.NaN;
+                    if (!level.getBlockState(p).getCollisionShape(level, p).isEmpty()) {
+                        best = i;
+                        break;
+                    }
+                }
             }
-        }
-        return Double.NaN;
+        if (best == Integer.MAX_VALUE) return Double.NaN;
+        int x = start + side * best;
+        double edge = side < 0 ? x + 1.0 : x;
+        return edge - side * (halfWidth + 0.03);
     }
 
     /** Eases the current X towards the solved surface. */

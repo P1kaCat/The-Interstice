@@ -1,7 +1,18 @@
 {
   "variants": {
-    "": {
-      "model": "interstice:block/cracked_concrete"
-    }
+    "": [
+      {
+        "model": "interstice:block/cracked_concrete"
+      },
+      {
+        "model": "interstice:block/cracked_concrete_1"
+      },
+      {
+        "model": "interstice:block/cracked_concrete_2"
+      },
+      {
+        "model": "interstice:block/cracked_concrete_3"
+      }
+    ]
   }
 }

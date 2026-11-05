@@ -48,6 +48,7 @@ public abstract class GameTestServerLevelsMixin {
     private void interstice$addDimensionForGameTests(ChunkProgressListener listener, CallbackInfo ci) {
         MinecraftServer self = (MinecraftServer) (Object) this;
         if (!(self instanceof GameTestServer) || levels.containsKey(ModWorld.INTERSTICE)) return;
+        com.interstice.world.GenerationVersion.force(com.interstice.world.GenerationVersion.CURRENT);   // tests target the current generation
         var access = self.registryAccess();
         Holder<DimensionType> type = access.registryOrThrow(Registries.DIMENSION_TYPE).getHolderOrThrow(ModWorld.INTERSTICE_TYPE);
         Holder<Biome> biome = access.registryOrThrow(Registries.BIOME).getHolderOrThrow(ResourceKey.create(Registries.BIOME, Interstice.id("the_interstice")));

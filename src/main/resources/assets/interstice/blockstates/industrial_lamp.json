@@ -1,7 +1,25 @@
 {
   "variants": {
-    "": {
-      "model": "interstice:block/industrial_lamp"
+    "facing=up": {
+      "model": "interstice:block/industrial_lamp_floor"
+    },
+    "facing=down": {
+      "model": "interstice:block/industrial_lamp_ceiling"
+    },
+    "facing=south": {
+      "model": "interstice:block/industrial_lamp_wall"
+    },
+    "facing=west": {
+      "model": "interstice:block/industrial_lamp_wall",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "interstice:block/industrial_lamp_wall",
+      "y": 180
+    },
+    "facing=east": {
+      "model": "interstice:block/industrial_lamp_wall",
+      "y": 270
     }
   }
 }

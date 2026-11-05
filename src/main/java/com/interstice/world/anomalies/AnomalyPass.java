@@ -14,6 +14,9 @@ public final class AnomalyPass {
 
     public static void run(ChunkWriter w) {
         IntersticeLayout L = w.layout;
+        // the finite Corridor (version 2) has no incoherent architecture: no hanging rooms, duplicated bunkers,
+        // lamp gardens or stairs in the air among its streets (player feedback 2026-11-05)
+        if (L.plan() != null) return;
         int cx = w.minX + 8, cz = w.minZ + 8;
         if (L.wallDepth(cx, cz) > -14) return;
         if (Math.abs(cz) < 48) return;
@@ -29,6 +32,7 @@ public final class AnomalyPass {
     }
 
     public static AnomalyType anomalyForChunk(IntersticeLayout L, int chunkX, int chunkZ) {
+        if (L.plan() != null) return null;
         int cx = (chunkX << 4) + 8, cz = (chunkZ << 4) + 8;
         if (L.wallDepth(cx, cz) > -14 || Math.abs(cz) < 48) return null;
         double level = L.anomalyLevel(cz);

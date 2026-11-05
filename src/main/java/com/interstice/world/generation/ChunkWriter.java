@@ -44,8 +44,12 @@ public final class ChunkWriter {
 
     public void set(int x, int y, int z, BlockState state) {
         if (!inside(x, y, z)) return;
+        state = VanillaSubstitutes.swap(state);                         // the Corridor's own copies of vanilla blocks
+        state = com.interstice.block.MacroTileBlock.at(state, x, z);   // textures spanning 2x2 blocks: pick the quarter
         LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
-        section.setBlockState(x & 15, y & 15, z & 15, state, false);
+        BlockState old = section.setBlockState(x & 15, y & 15, z & 15, state, false);
+        // a container replaced by something else must not leave its pending block entity behind
+        if (old.hasBlockEntity() && old.getBlock() != state.getBlock()) chunk.removeBlockEntity(new net.minecraft.core.BlockPos(x, y, z));
     }
 
     public BlockState get(int x, int y, int z) {
@@ -76,6 +80,27 @@ public final class ChunkWriter {
             for (int z = az; z <= bz; z++)
                 for (int y = ay; y <= by; y++)
                     setIfAir(x, y, z, state);
+    }
+
+    /**
+     * A block entity to create with the chunk (e.g. a loot chest): the NBT is kept as pending block-entity data
+     * and turned into the real block entity when the chunk is promoted. Ignored outside this chunk.
+     */
+    public void blockEntity(int x, int y, int z, net.minecraft.nbt.CompoundTag tag) {
+        if (!inside(x, y, z)) return;
+        tag.putInt("x", x);
+        tag.putInt("y", y);
+        tag.putInt("z", z);
+        chunk.setBlockEntityNbt(tag);
+    }
+
+    /** A loot container at (x, y, z) filled on first opening from {@code lootTable} (the block itself is set by the caller). */
+    public void lootChest(int x, int y, int z, String blockEntityId, String lootTable, long seed) {
+        net.minecraft.nbt.CompoundTag t = new net.minecraft.nbt.CompoundTag();
+        t.putString("id", VanillaSubstitutes.blockEntityId(blockEntityId));
+        t.putString("LootTable", lootTable);
+        t.putLong("LootTableSeed", seed);
+        blockEntity(x, y, z, t);
     }
 
     /** World X of a point at wall-depth {@code d} on the given side (negative d = in the corridor). */

@@ -1,0 +1,8 @@
+{
+  "parent": "interstice:block/lamp_floor",
+  "textures": {
+    "lamp": "interstice:block/sodium_lamp",
+    "metal": "interstice:block/dark_metal",
+    "particle": "interstice:block/sodium_lamp"
+  }
+}

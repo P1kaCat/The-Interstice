@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "interstice:block/clinic_tile",
+    "top": "interstice:block/clinic_tile",
+    "side": "interstice:block/clinic_tile"
+  }
+}

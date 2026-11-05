@@ -17,7 +17,8 @@ import java.util.List;
 public final class ChainField {
     public static final int CELL = 120;
 
-    public enum Kind { SPAN, HANG, ANCHOR }
+    /** SPAN: wall to wall. HANG: from the dark above. ANCHOR: the anchor landmark. BROKEN: torn, one end on a wall, the other loose. */
+    public enum Kind { SPAN, HANG, ANCHOR, BROKEN }
 
     public static final class ChainDef {
         public final long id;
@@ -91,7 +92,16 @@ public final class ChainField {
         List<ChainDef> list = new ArrayList<>(3);
         IntersticeLayout L = layout;
         long h = Hash.of(L.sub(701), c);
-        int n = (int) (Hash.unit(h, 0) * 3.2);
+        double density = 1.0;
+        com.interstice.world.CorridorPlan plan = L.plan();
+        if (plan != null) {
+            double zc = c * CELL + CELL / 2.0;
+            if (!plan.inside(zc)) return list;   // nothing beyond the bulkheads
+            float[] wgt = plan.weights(zc);
+            // the Ironworks is full of chains, the Expanse has a few, far apart
+            density = wgt[0] * 0.9 + wgt[1] * 2.4 + wgt[2] * 1.0 + wgt[3] * 0.55;
+        }
+        int n = (int) (Hash.unit(h, 0) * 3.2 * density);
         if (c == 0) n = Math.max(n, 2); // the arrival area always shows the chains
         for (int i = 0; i < n; i++) {
             long hi = Hash.of(h, i + 1);
@@ -99,13 +109,18 @@ public final class ChainField {
             double z = c * CELL + 8 + Hash.unit(hi, 2) * (CELL - 16);
             float scale = 0.9f + (float) Hash.unit(hi, 3) * 0.8f;
             float phase = (float) (Hash.unit(hi, 4) * Math.PI * 2);
-            if (roll < 0.5) {
+            boolean v2 = plan != null;
+            if (roll < (v2 ? 0.66 : 0.5)) {
                 double z2 = z + (Hash.unit(hi, 5) - 0.5) * 50;
-                double ya = IntersticeLayout.FLOOR_Y + 90 + Hash.unit(hi, 6) * 520;
-                double yb = Math.max(IntersticeLayout.FLOOR_Y + 80, ya + (Hash.unit(hi, 7) - 0.5) * 160);
+                // version 2: most spans hang low enough to be seen from the street (above the roofs), a few lost high up
+                double ya = v2 ? IntersticeLayout.FLOOR_Y + 30 + Math.pow(Hash.unit(hi, 6), 1.7) * 300
+                        : IntersticeLayout.FLOOR_Y + 90 + Hash.unit(hi, 6) * 520;
+                double yb = v2 ? Math.max(IntersticeLayout.FLOOR_Y + 30, ya + (Hash.unit(hi, 7) - 0.5) * 50)
+                        : Math.max(IntersticeLayout.FLOOR_Y + 80, ya + (Hash.unit(hi, 7) - 0.5) * 160);
                 double ax = L.faceX(-1, z) + 0.5, bx = L.faceX(1, z2) - 0.5;
                 double span = Math.sqrt((bx - ax) * (bx - ax) + (z2 - z) * (z2 - z));
                 double sag = span * (0.08 + Hash.unit(hi, 8) * 0.16);
+                if (v2) sag = Math.min(sag, Math.min(ya, yb) - (IntersticeLayout.FLOOR_Y + 22));   // clear of the rooftops
                 list.add(new ChainDef(hi, Kind.SPAN, ax, ya, z, bx, yb, z2, sag, scale,
                         0.05f + (float) Hash.unit(hi, 9) * 0.1f, 0.10f + (float) Hash.unit(hi, 10) * 0.08f, phase, false));
             } else {
@@ -115,6 +130,18 @@ public final class ChainField {
                 list.add(new ChainDef(hi, Kind.HANG, x, IntersticeLayout.VIRTUAL_TOP, z, x, bottom, z, 0, scale,
                         1.5f + (float) Hash.unit(hi, 7) * 4f, 0.06f + (float) Hash.unit(hi, 8) * 0.05f, phase, Hash.unit(hi, 9) < 0.7));
             }
+        }
+        // torn chains: one end on a wall, the rest hanging loose, swinging heavily
+        int nb = (int) (Hash.unit(h, 50) * 1.6 * density);
+        for (int i = 0; i < nb; i++) {
+            long hi = Hash.of(h, 100 + i);
+            double z = c * CELL + 6 + Hash.unit(hi, 1) * (CELL - 12);
+            int side = Hash.unit(hi, 2) < 0.5 ? -1 : 1;
+            double top = IntersticeLayout.FLOOR_Y + 70 + Hash.unit(hi, 3) * 180;
+            double x = L.faceX(side, z) - side * 0.8;
+            double len = 40 + Hash.unit(hi, 4) * Math.min(150, top - IntersticeLayout.FLOOR_Y - 12);
+            list.add(new ChainDef(hi, Kind.BROKEN, x, top, z, x, top - len, z, 0, 0.9f + (float) Hash.unit(hi, 5) * 0.6f,
+                    2.0f + (float) Hash.unit(hi, 6) * 3f, 0.08f + (float) Hash.unit(hi, 7) * 0.05f, (float) (Hash.unit(hi, 8) * 6.28), false));
         }
         // chains hanging from the giant beams
         for (int bc = Math.floorDiv(c * CELL, StructurePass.BEAM_CELL); bc <= Math.floorDiv(c * CELL + CELL - 1, StructurePass.BEAM_CELL); bc++) {

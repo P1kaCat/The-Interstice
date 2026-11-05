@@ -1,0 +1,10 @@
+{
+  "parent": "minecraft:block/cauldron",
+  "textures": {
+    "particle": "interstice:block/rusted_basin_side",
+    "top": "interstice:block/rusted_iron",
+    "bottom": "interstice:block/rusted_iron_dark",
+    "side": "interstice:block/rusted_basin_side",
+    "inside": "interstice:block/rusted_iron_dark"
+  }
+}

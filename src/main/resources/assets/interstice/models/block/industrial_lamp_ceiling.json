@@ -1,0 +1,8 @@
+{
+  "parent": "interstice:block/lamp_ceiling",
+  "textures": {
+    "lamp": "interstice:block/industrial_lamp",
+    "metal": "interstice:block/dark_metal",
+    "particle": "interstice:block/industrial_lamp"
+  }
+}

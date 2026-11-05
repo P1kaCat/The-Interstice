@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "interstice:block/steel_beam"
+    },
+    "axis=z": {
+      "model": "interstice:block/steel_beam_horizontal",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "interstice:block/steel_beam_horizontal",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

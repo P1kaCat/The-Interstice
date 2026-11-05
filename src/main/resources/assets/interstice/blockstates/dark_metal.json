@@ -1,7 +1,18 @@
 {
   "variants": {
-    "": {
-      "model": "interstice:block/dark_metal"
-    }
+    "": [
+      {
+        "model": "interstice:block/dark_metal"
+      },
+      {
+        "model": "interstice:block/dark_metal_1"
+      },
+      {
+        "model": "interstice:block/dark_metal_2"
+      },
+      {
+        "model": "interstice:block/dark_metal_3"
+      }
+    ]
   }
 }

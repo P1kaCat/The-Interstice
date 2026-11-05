@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/template_glass_pane_noside_alt",
+  "textures": {
+    "pane": "interstice:block/blackout_pane",
+    "edge": "interstice:block/blackout_pane_edge",
+    "particle": "interstice:block/blackout_pane"
+  }
+}

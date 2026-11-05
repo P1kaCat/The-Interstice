@@ -16,10 +16,10 @@ package com.interstice.client.config;
  * </ul>
  */
 public enum GraphicsPreset {
-    LOW(6, 48, false, 350, 40, 40, 0, 220, 4, false),
-    MEDIUM(12, 64, false, 900, 90, 90, 1, 320, 8, true),
-    HIGH(24, 80, true, 1800, 160, 150, 2, 460, 14, true),
-    ULTRA(40, 112, true, 3200, 260, 240, 3, 640, 22, true);
+    LOW(10, 80, false, 350, 40, 40, 0, 220, 4, false),
+    MEDIUM(20, 110, false, 900, 90, 90, 1, 320, 8, true),
+    HIGH(40, 140, true, 1800, 160, 150, 2, 460, 14, true),
+    ULTRA(64, 190, true, 3200, 260, 240, 3, 640, 22, true);
 
     public final int lightBudget;
     public final int lightRange;

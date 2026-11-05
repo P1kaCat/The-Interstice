@@ -86,6 +86,8 @@ public class IntersticeConfigScreen extends Screen {
         entries.add(new Header("GRAPHICS"));
         entries.add(new Cycle("Quality preset", () -> c.preset.name().toLowerCase(), () -> c.preset = c.preset.next()));
         entries.add(new Slider("Fog density", 0.4, 1.6, 0.05, "%.2f", () -> c.fogDensity, v -> c.fogDensity = (float) v));
+        entries.add(new Slider("Fog distance", 0.5, 1.5, 0.05, "%.2fx", () -> c.fogDistance, v -> c.fogDistance = (float) v));
+        entries.add(new Slider("Darkness above", 0.5, 2.0, 0.05, "%.2fx", () -> c.verticalFog, v -> c.verticalFog = (float) v));
         entries.add(new Toggle("Dynamic lighting", () -> c.dynamicLighting, v -> c.dynamicLighting = v));
         entries.add(new Toggle("Volumetric light", () -> c.volumetricLight, v -> c.volumetricLight = v));
         entries.add(new Toggle("Post-processing", () -> c.postProcessing, v -> c.postProcessing = v));

@@ -346,5 +346,518 @@
         "name": "interstice:voice/stay"
       }
     ]
+  },
+  "creature.adherent.step": {
+    "sounds": [
+      "interstice:creature/adherent/step_0",
+      "interstice:creature/adherent/step_1",
+      "interstice:creature/adherent/step_2",
+      "interstice:creature/adherent/step_3"
+    ]
+  },
+  "creature.adherent.scrape": {
+    "sounds": [
+      "interstice:creature/adherent/scrape_0",
+      "interstice:creature/adherent/scrape_1",
+      "interstice:creature/adherent/scrape_2"
+    ]
+  },
+  "creature.adherent.breath": {
+    "sounds": [
+      "interstice:creature/adherent/breath_0",
+      "interstice:creature/adherent/breath_1",
+      "interstice:creature/adherent/breath_2"
+    ]
+  },
+  "creature.adherent.vocal": {
+    "sounds": [
+      "interstice:creature/adherent/vocal_0",
+      "interstice:creature/adherent/vocal_1"
+    ]
+  },
+  "creature.adherent.click": {
+    "sounds": [
+      "interstice:creature/adherent/click_0",
+      "interstice:creature/adherent/click_1",
+      "interstice:creature/adherent/click_2"
+    ]
+  },
+  "creature.crawler.step": {
+    "sounds": [
+      "interstice:creature/crawler/step_0",
+      "interstice:creature/crawler/step_1",
+      "interstice:creature/crawler/step_2",
+      "interstice:creature/crawler/step_3"
+    ]
+  },
+  "creature.crawler.scrape": {
+    "sounds": [
+      "interstice:creature/crawler/scrape_0",
+      "interstice:creature/crawler/scrape_1",
+      "interstice:creature/crawler/scrape_2"
+    ]
+  },
+  "creature.crawler.breath": {
+    "sounds": [
+      "interstice:creature/crawler/breath_0",
+      "interstice:creature/crawler/breath_1",
+      "interstice:creature/crawler/breath_2"
+    ]
+  },
+  "creature.crawler.vocal": {
+    "sounds": [
+      "interstice:creature/crawler/vocal_0",
+      "interstice:creature/crawler/vocal_1"
+    ]
+  },
+  "creature.crawler.click": {
+    "sounds": [
+      "interstice:creature/crawler/click_0",
+      "interstice:creature/crawler/click_1",
+      "interstice:creature/crawler/click_2"
+    ]
+  },
+  "creature.strider.step": {
+    "sounds": [
+      "interstice:creature/strider/step_0",
+      "interstice:creature/strider/step_1",
+      "interstice:creature/strider/step_2",
+      "interstice:creature/strider/step_3"
+    ]
+  },
+  "creature.strider.scrape": {
+    "sounds": [
+      "interstice:creature/strider/scrape_0",
+      "interstice:creature/strider/scrape_1",
+      "interstice:creature/strider/scrape_2"
+    ]
+  },
+  "creature.strider.breath": {
+    "sounds": [
+      "interstice:creature/strider/breath_0",
+      "interstice:creature/strider/breath_1"
+    ]
+  },
+  "creature.strider.vocal": {
+    "sounds": [
+      "interstice:creature/strider/vocal_0",
+      "interstice:creature/strider/vocal_1"
+    ]
+  },
+  "creature.strider.click": {
+    "sounds": [
+      "interstice:creature/strider/click_0",
+      "interstice:creature/strider/click_1",
+      "interstice:creature/strider/click_2"
+    ]
+  },
+  "creature.burden.step": {
+    "sounds": [
+      "interstice:creature/burden/step_0",
+      "interstice:creature/burden/step_1",
+      "interstice:creature/burden/step_2",
+      "interstice:creature/burden/step_3"
+    ]
+  },
+  "creature.burden.scrape": {
+    "sounds": [
+      "interstice:creature/burden/scrape_0",
+      "interstice:creature/burden/scrape_1",
+      "interstice:creature/burden/scrape_2"
+    ]
+  },
+  "creature.burden.breath": {
+    "sounds": [
+      "interstice:creature/burden/breath_0",
+      "interstice:creature/burden/breath_1",
+      "interstice:creature/burden/breath_2"
+    ]
+  },
+  "creature.burden.vocal": {
+    "sounds": [
+      "interstice:creature/burden/vocal_0",
+      "interstice:creature/burden/vocal_1"
+    ]
+  },
+  "creature.burden.click": {
+    "sounds": [
+      "interstice:creature/burden/click_0",
+      "interstice:creature/burden/click_1",
+      "interstice:creature/burden/click_2"
+    ]
+  },
+  "creature.clinger.step": {
+    "sounds": [
+      "interstice:creature/clinger/step_0",
+      "interstice:creature/clinger/step_1",
+      "interstice:creature/clinger/step_2",
+      "interstice:creature/clinger/step_3"
+    ]
+  },
+  "creature.clinger.scrape": {
+    "sounds": [
+      "interstice:creature/clinger/scrape_0",
+      "interstice:creature/clinger/scrape_1",
+      "interstice:creature/clinger/scrape_2"
+    ]
+  },
+  "creature.clinger.breath": {
+    "sounds": [
+      "interstice:creature/clinger/breath_0",
+      "interstice:creature/clinger/breath_1",
+      "interstice:creature/clinger/breath_2"
+    ]
+  },
+  "creature.clinger.vocal": {
+    "sounds": [
+      "interstice:creature/clinger/vocal_0",
+      "interstice:creature/clinger/vocal_1"
+    ]
+  },
+  "creature.clinger.click": {
+    "sounds": [
+      "interstice:creature/clinger/click_0",
+      "interstice:creature/clinger/click_1",
+      "interstice:creature/clinger/click_2",
+      "interstice:creature/clinger/click_3"
+    ]
+  },
+  "creature.hollow.step": {
+    "sounds": [
+      "interstice:creature/hollow/step_0",
+      "interstice:creature/hollow/step_1",
+      "interstice:creature/hollow/step_2",
+      "interstice:creature/hollow/step_3"
+    ]
+  },
+  "creature.hollow.scrape": {
+    "sounds": [
+      "interstice:creature/hollow/scrape_0",
+      "interstice:creature/hollow/scrape_1",
+      "interstice:creature/hollow/scrape_2"
+    ]
+  },
+  "creature.hollow.breath": {
+    "sounds": [
+      "interstice:creature/hollow/breath_0",
+      "interstice:creature/hollow/breath_1",
+      "interstice:creature/hollow/breath_2"
+    ]
+  },
+  "creature.hollow.vocal": {
+    "sounds": [
+      "interstice:creature/hollow/vocal_0",
+      "interstice:creature/hollow/vocal_1",
+      "interstice:creature/hollow/vocal_2"
+    ]
+  },
+  "creature.hollow.click": {
+    "sounds": [
+      "interstice:creature/hollow/click_0",
+      "interstice:creature/hollow/click_1",
+      "interstice:creature/hollow/click_2"
+    ]
+  },
+  "creature.watcher.step": {
+    "sounds": [
+      "interstice:creature/watcher/step_0",
+      "interstice:creature/watcher/step_1",
+      "interstice:creature/watcher/step_2",
+      "interstice:creature/watcher/step_3"
+    ]
+  },
+  "creature.watcher.scrape": {
+    "sounds": [
+      "interstice:creature/watcher/scrape_0",
+      "interstice:creature/watcher/scrape_1",
+      "interstice:creature/watcher/scrape_2"
+    ]
+  },
+  "creature.watcher.breath": {
+    "sounds": [
+      "interstice:creature/watcher/breath_0",
+      "interstice:creature/watcher/breath_1"
+    ]
+  },
+  "creature.watcher.vocal": {
+    "sounds": [
+      "interstice:creature/watcher/vocal_0",
+      "interstice:creature/watcher/vocal_1"
+    ]
+  },
+  "creature.watcher.click": {
+    "sounds": [
+      "interstice:creature/watcher/click_0",
+      "interstice:creature/watcher/click_1",
+      "interstice:creature/watcher/click_2"
+    ]
+  },
+  "creature.fractured.step": {
+    "sounds": [
+      "interstice:creature/fractured/step_0",
+      "interstice:creature/fractured/step_1",
+      "interstice:creature/fractured/step_2",
+      "interstice:creature/fractured/step_3"
+    ]
+  },
+  "creature.fractured.scrape": {
+    "sounds": [
+      "interstice:creature/fractured/scrape_0",
+      "interstice:creature/fractured/scrape_1",
+      "interstice:creature/fractured/scrape_2"
+    ]
+  },
+  "creature.fractured.breath": {
+    "sounds": [
+      "interstice:creature/fractured/breath_0",
+      "interstice:creature/fractured/breath_1",
+      "interstice:creature/fractured/breath_2"
+    ]
+  },
+  "creature.fractured.vocal": {
+    "sounds": [
+      "interstice:creature/fractured/vocal_0",
+      "interstice:creature/fractured/vocal_1"
+    ]
+  },
+  "creature.fractured.click": {
+    "sounds": [
+      "interstice:creature/fractured/click_0",
+      "interstice:creature/fractured/click_1",
+      "interstice:creature/fractured/click_2"
+    ]
+  },
+  "ambient.forgotten_district": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/forgotten_district",
+        "stream": true
+      }
+    ]
+  },
+  "ambient.ironworks": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/ironworks",
+        "stream": true
+      }
+    ]
+  },
+  "ambient.contaminated_ward": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/contaminated_ward",
+        "stream": true
+      }
+    ]
+  },
+  "ambient.dead_expanse": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/dead_expanse",
+        "stream": true
+      }
+    ]
+  },
+  "env.building_rattle": {
+    "sounds": [
+      "interstice:env/building_rattle_0",
+      "interstice:env/building_rattle_1",
+      "interstice:env/building_rattle_2"
+    ]
+  },
+  "env.dust_fall": {
+    "sounds": [
+      "interstice:env/dust_fall_0",
+      "interstice:env/dust_fall_1"
+    ]
+  },
+  "env.metal_contact": {
+    "sounds": [
+      "interstice:env/metal_contact_0",
+      "interstice:env/metal_contact_1",
+      "interstice:env/metal_contact_2"
+    ]
+  },
+  "env.chain_tension": {
+    "sounds": [
+      "interstice:env/chain_tension_0",
+      "interstice:env/chain_tension_1"
+    ]
+  },
+  "creature.adherent.land": {
+    "sounds": [
+      "interstice:creature/adherent/land_0",
+      "interstice:creature/adherent/land_1",
+      "interstice:creature/adherent/land_2"
+    ]
+  },
+  "creature.adherent.hurt": {
+    "sounds": [
+      "interstice:creature/adherent/hurt_0",
+      "interstice:creature/adherent/hurt_1",
+      "interstice:creature/adherent/hurt_2"
+    ]
+  },
+  "creature.crawler.land": {
+    "sounds": [
+      "interstice:creature/crawler/land_0",
+      "interstice:creature/crawler/land_1",
+      "interstice:creature/crawler/land_2"
+    ]
+  },
+  "creature.crawler.hurt": {
+    "sounds": [
+      "interstice:creature/crawler/hurt_0",
+      "interstice:creature/crawler/hurt_1",
+      "interstice:creature/crawler/hurt_2"
+    ]
+  },
+  "creature.strider.land": {
+    "sounds": [
+      "interstice:creature/strider/land_0",
+      "interstice:creature/strider/land_1",
+      "interstice:creature/strider/land_2"
+    ]
+  },
+  "creature.strider.hurt": {
+    "sounds": [
+      "interstice:creature/strider/hurt_0",
+      "interstice:creature/strider/hurt_1",
+      "interstice:creature/strider/hurt_2"
+    ]
+  },
+  "creature.burden.land": {
+    "sounds": [
+      "interstice:creature/burden/land_0",
+      "interstice:creature/burden/land_1",
+      "interstice:creature/burden/land_2"
+    ]
+  },
+  "creature.burden.hurt": {
+    "sounds": [
+      "interstice:creature/burden/hurt_0",
+      "interstice:creature/burden/hurt_1",
+      "interstice:creature/burden/hurt_2"
+    ]
+  },
+  "creature.clinger.land": {
+    "sounds": [
+      "interstice:creature/clinger/land_0",
+      "interstice:creature/clinger/land_1",
+      "interstice:creature/clinger/land_2"
+    ]
+  },
+  "creature.clinger.hurt": {
+    "sounds": [
+      "interstice:creature/clinger/hurt_0",
+      "interstice:creature/clinger/hurt_1",
+      "interstice:creature/clinger/hurt_2"
+    ]
+  },
+  "creature.hollow.land": {
+    "sounds": [
+      "interstice:creature/hollow/land_0",
+      "interstice:creature/hollow/land_1",
+      "interstice:creature/hollow/land_2"
+    ]
+  },
+  "creature.hollow.hurt": {
+    "sounds": [
+      "interstice:creature/hollow/hurt_0",
+      "interstice:creature/hollow/hurt_1",
+      "interstice:creature/hollow/hurt_2"
+    ]
+  },
+  "creature.watcher.land": {
+    "sounds": [
+      "interstice:creature/watcher/land_0",
+      "interstice:creature/watcher/land_1",
+      "interstice:creature/watcher/land_2"
+    ]
+  },
+  "creature.watcher.hurt": {
+    "sounds": [
+      "interstice:creature/watcher/hurt_0",
+      "interstice:creature/watcher/hurt_1",
+      "interstice:creature/watcher/hurt_2"
+    ]
+  },
+  "creature.fractured.land": {
+    "sounds": [
+      "interstice:creature/fractured/land_0",
+      "interstice:creature/fractured/land_1",
+      "interstice:creature/fractured/land_2"
+    ]
+  },
+  "creature.fractured.hurt": {
+    "sounds": [
+      "interstice:creature/fractured/hurt_0",
+      "interstice:creature/fractured/hurt_1",
+      "interstice:creature/fractured/hurt_2"
+    ]
+  },
+  "event.horde_scream": {
+    "sounds": [
+      {
+        "name": "interstice:event/horde_scream",
+        "stream": true
+      }
+    ]
+  },
+  "creature.adherent.alert": {
+    "sounds": [
+      "interstice:creature/adherent/alert_0",
+      "interstice:creature/adherent/alert_1"
+    ]
+  },
+  "creature.crawler.alert": {
+    "sounds": [
+      "interstice:creature/crawler/alert_0",
+      "interstice:creature/crawler/alert_1"
+    ]
+  },
+  "creature.strider.alert": {
+    "sounds": [
+      "interstice:creature/strider/alert_0",
+      "interstice:creature/strider/alert_1"
+    ]
+  },
+  "creature.burden.alert": {
+    "sounds": [
+      "interstice:creature/burden/alert_0",
+      "interstice:creature/burden/alert_1"
+    ]
+  },
+  "creature.clinger.alert": {
+    "sounds": [
+      "interstice:creature/clinger/alert_0",
+      "interstice:creature/clinger/alert_1"
+    ]
+  },
+  "creature.hollow.alert": {
+    "sounds": [
+      "interstice:creature/hollow/alert_0",
+      "interstice:creature/hollow/alert_1"
+    ]
+  },
+  "creature.watcher.alert": {
+    "sounds": [
+      "interstice:creature/watcher/alert_0",
+      "interstice:creature/watcher/alert_1"
+    ]
+  },
+  "creature.fractured.alert": {
+    "sounds": [
+      "interstice:creature/fractured/alert_0",
+      "interstice:creature/fractured/alert_1"
+    ]
+  },
+  "voice.find_a_way": {
+    "sounds": [
+      {
+        "name": "interstice:voice/find_a_way"
+      }
+    ]
   }
 }

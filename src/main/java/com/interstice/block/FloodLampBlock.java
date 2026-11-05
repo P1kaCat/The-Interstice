@@ -11,13 +11,23 @@ import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 
-/** High-intensity flood light. FACING is the direction the beam points. */
+/** High-intensity flood light (or the wall searchlight). FACING is the direction the beam points. */
 public class FloodLampBlock extends DirectionalBlock {
     public static final MapCodec<FloodLampBlock> CODEC = simpleCodec(FloodLampBlock::new);
+    private final LampKind kind;
 
     public FloodLampBlock(Properties properties) {
+        this(LampKind.FLOOD, properties);
+    }
+
+    public FloodLampBlock(LampKind kind, Properties properties) {
         super(properties);
+        this.kind = kind;
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.DOWN));
+    }
+
+    public LampKind kind() {
+        return kind;
     }
 
     @Override
@@ -37,6 +47,6 @@ public class FloodLampBlock extends DirectionalBlock {
 
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        LampHooks.notifySeen(level, pos, LampKind.FLOOD);
+        LampHooks.notifySeen(level, pos, kind);
     }
 }

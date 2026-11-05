@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "interstice:block/concrete_panel",
+    "top": "interstice:block/concrete_panel",
+    "side": "interstice:block/concrete_panel"
+  }
+}

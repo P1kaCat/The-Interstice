@@ -40,7 +40,7 @@ public enum AnomalyType {
     STAIRS_TO_NOWHERE(0.05) {
         @Override
         void place(ChunkWriter w, int x, int fy, int z, long h) {
-            BlockState stair = Blocks.STONE_BRICK_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.EAST);
+            BlockState stair = ModBlocks.CONCRETE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.EAST);
             for (int i = 0; i < 12; i++) {
                 int sx = x - 6 + i;
                 for (int dz = 0; dz < 2; dz++) {
@@ -77,7 +77,7 @@ public enum AnomalyType {
         @Override
         void place(ChunkWriter w, int x, int fy, int z, long h) {
             StructurePass.placeBunker(w, x - 3, z - 3, 7, 7, fy + 20, Direction.UP, false);
-            BlockState inv = Blocks.STONE_BRICK_STAIRS.defaultBlockState().setValue(StairBlock.HALF, Half.TOP).setValue(StairBlock.FACING, Direction.WEST);
+            BlockState inv = ModBlocks.CONCRETE_STAIRS.defaultBlockState().setValue(StairBlock.HALF, Half.TOP).setValue(StairBlock.FACING, Direction.WEST);
             for (int i = 0; i < 4; i++) w.set(x - 2 + i, fy + 18 - i, z, inv);
         }
     },
@@ -104,7 +104,7 @@ public enum AnomalyType {
     INVERTED_STAIRS(0.6) {
         @Override
         void place(ChunkWriter w, int x, int fy, int z, long h) {
-            BlockState inv = Blocks.STONE_BRICK_STAIRS.defaultBlockState().setValue(StairBlock.HALF, Half.TOP).setValue(StairBlock.FACING, Direction.SOUTH);
+            BlockState inv = ModBlocks.CONCRETE_STAIRS.defaultBlockState().setValue(StairBlock.HALF, Half.TOP).setValue(StairBlock.FACING, Direction.SOUTH);
             for (int i = 0; i < 10; i++) w.set(x, fy + 24 - i, z - 5 + i, inv);
             w.set(x, fy + 25, z - 5, ModBlocks.INDUSTRIAL_LAMP.defaultBlockState());
         }

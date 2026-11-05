@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "interstice:block/rotten_bookshelf",
+    "end": "interstice:block/floorboards"
+  }
+}

@@ -17,6 +17,8 @@ public enum Species {
             .wall(WallStyle.STEADY, 0.05f, 0.13f, 10, 16, 80, 580, 0.55f, 0.20f, 0.15f, 0.30f)
             .stampede(65f, 1.0f, 1.0f, 1.0f, 0.0f)
             .ground(0.55f, 0.20f, 0.10f, 0.05f, 0.10f, 1.0f)
+            .chase(5.0f)
+            .senses(70, 115, 0, 36, 0.30f, 0.0f, 1.0f, 12, 3600, true)
             .voice(1.0f, 1.0f, 220)
             .horde(1.0f, 1.0f, 0.55f)),
     CRAWLER(new Traits()
@@ -24,6 +26,8 @@ public enum Species {
             .wall(WallStyle.DART, 0.13f, 0.22f, 6, 9, 20, 160, 0.70f, 0.05f, 0.5f, 0.10f)
             .stampede(12f, 1.15f, 0.30f, 0.6f, 0.0f)
             .ground(0.05f, 0.15f, 0.45f, 0.35f, 0.0f, 0.5f)
+            .chase(6.2f)
+            .senses(100, 160, 0, 22, 0.50f, 0.30f, 1.2f, 18, 2400, true)
             .voice(1.45f, 0.6f, 160)
             .horde(0.62f, 0.95f, 0.45f)),
     STRIDER(new Traits()
@@ -31,6 +35,8 @@ public enum Species {
             .wall(WallStyle.LONG_STRIDE, 0.08f, 0.12f, 8, 28, 160, 900, 0.50f, 0.05f, 0.12f, 0.30f)
             .stampede(8f, 1.25f, 1.0f, 1.3f, 0.0f)
             .ground(0.20f, 0.35f, 0.15f, 0.0f, 0.30f, 1.6f)
+            .chase(5.8f)
+            .senses(55, 95, 0, 48, 0.20f, 0.0f, 0.8f, 6, 3000, true)
             .voice(0.75f, 1.2f, 300)
             .horde(1.35f, 1.45f, 0.6f)),
     BURDEN(new Traits()
@@ -38,6 +44,8 @@ public enum Species {
             .wall(WallStyle.HEAVY, 0.03f, 0.05f, 6, 10, 400, 1400, 0.40f, 0.0f, 0.03f, 0.20f)
             .stampede(5f, 0.8f, 0.5f, 0.7f, 0.0f)
             .ground(0.45f, 0.25f, 0.0f, 0.0f, 0.30f, 1.4f)
+            .chase(3.6f)
+            .senses(50, 85, 0, 20, 0.10f, 0.0f, 1.5f, 10, 4800, false)
             .voice(0.55f, 2.2f, 280)
             .horde(1.3f, 1.25f, 0.42f)),
     CLINGER(new Traits()
@@ -45,6 +53,8 @@ public enum Species {
             .wall(WallStyle.STILL, 0.02f, 0.04f, 3, 4, 2400, 7200, 0.10f, 0.0f, 0.4f, 0.85f)
             .stampede(3f, 0.9f, 0.15f, 1.0f, 0.85f)
             .ground(0.10f, 0.20f, 0.20f, 0.50f, 0.0f, 1.0f)
+            .chase(4.4f)
+            .senses(80, 140, 0, 30, 0.60f, 0.85f, 1.0f, 4, 7200, true)
             .voice(0.9f, 0.4f, 900)
             .horde(1.05f, 0.7f, 0.5f)),
     HOLLOW(new Traits()
@@ -52,6 +62,8 @@ public enum Species {
             .wall(WallStyle.IRREGULAR, 0.05f, 0.12f, 8, 12, 60, 400, 0.55f, 0.10f, 0.25f, 0.20f)
             .stampede(3f, 0.95f, 2.5f, 1.4f, 0.0f)
             .ground(0.05f, 0.15f, 0.55f, 0.15f, 0.10f, 1.2f)
+            .chase(4.8f)
+            .senses(40, 70, 0, 12, 0.0f, 0.2f, 1.9f, 14, 2400, true)
             .voice(1.15f, 0.8f, 180)
             .horde(1.05f, 1.05f, 0.68f)),
     WATCHER(new Traits()
@@ -59,6 +71,8 @@ public enum Species {
             .wall(WallStyle.WATCH, 0.03f, 0.06f, 5, 8, 400, 2000, 0.25f, 0.05f, 0.05f, 0.60f)
             .stampede(2f, 0.9f, 0.8f, 1.0f, 0.0f)
             .ground(0.10f, 0.60f, 0.10f, 0.20f, 0.0f, 1.0f)
+            .chase(4.0f)
+            .senses(30, 60, 0, 64, 0.70f, 0.0f, 0.6f, 4, 6000, true)
             .voice(0.85f, 0.5f, 1200)
             .horde(1.2f, 1.2f, 0.52f)),
     FRACTURED(new Traits()
@@ -66,6 +80,8 @@ public enum Species {
             .wall(WallStyle.LURCH, 0.06f, 0.14f, 9, 14, 80, 600, 0.55f, 0.10f, 0.2f, 0.30f)
             .stampede(2f, 1.0f, 1.3f, 1.0f, 0.0f)
             .ground(0.40f, 0.25f, 0.15f, 0.05f, 0.15f, 1.1f)
+            .chase(4.6f)
+            .senses(75, 110, 35, 32, 0.30f, 0.0f, 1.1f, 10, 3600, true)
             .voice(0.9f, 1.0f, 240)
             .horde(1.15f, 1.15f, 0.5f));
 
@@ -138,6 +154,16 @@ public enum Species {
         public int ambientInterval;
         // horde visuals (relative to the Adherent sprite)
         public float spriteLength, spriteHeight, shade;
+        // senses (ground brain): field of view and periphery half-angles (deg) around a gaze turned fovOffset deg to
+        // the creature's left, sight range (blocks), dark vision (0: needs light, 1: sees in the dark), motion-only
+        // vision (1: a still player is invisible), hearing (noise radius multiplier), smell range (blocks of scent
+        // trail it can pick up), persistence (ticks without any stimulus before it gives up and climbs away)
+        public float fov, periphery, fovOffset, sightRange, darkVision, motionOnly, hearing, smell;
+        public int persistence;
+        /** Top speed when hunting, in blocks per second (a walking player does 4.3, sprinting 5.6). */
+        public float chase;
+        /** Can flatten itself to pass through one-block gaps (crawl clip, 0.9-block hitbox). */
+        public boolean squeeze;
 
         Traits body(float w, float h, float eye, float health, float damageMul, float groundSpeed, float mass) {
             this.width = w; this.height = h; this.eyeHeight = eye; this.health = health; this.damageMul = damageMul;
@@ -167,6 +193,19 @@ public enum Species {
 
         Traits voice(float pitch, float volume, int ambientInterval) {
             this.pitch = pitch; this.volume = volume; this.ambientInterval = ambientInterval;
+            return this;
+        }
+
+        Traits chase(float blocksPerSecond) {
+            this.chase = blocksPerSecond;
+            return this;
+        }
+
+        Traits senses(float fov, float periphery, float fovOffset, float sightRange, float darkVision, float motionOnly,
+                      float hearing, float smell, int persistence, boolean squeeze) {
+            this.fov = fov; this.periphery = periphery; this.fovOffset = fovOffset; this.sightRange = sightRange;
+            this.darkVision = darkVision; this.motionOnly = motionOnly; this.hearing = hearing; this.smell = smell;
+            this.persistence = persistence; this.squeeze = squeeze;
             return this;
         }
 

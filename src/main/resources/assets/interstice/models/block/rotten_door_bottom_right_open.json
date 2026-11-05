@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/door_bottom_right_open",
+  "textures": {
+    "bottom": "interstice:block/rotten_door_bottom",
+    "top": "interstice:block/rotten_door_top"
+  }
+}

@@ -43,8 +43,9 @@ import java.util.List;
  * range get a Veil light, up to the preset's light budget; lights beyond the
  * budget are released. Behaviour: deterministic per-fixture malfunctions
  * (flicker, dead lamps), event-driven failures during quakes, red emergency
- * lighting during the Stampede, and a handful of very distant high "beacons"
- * with strong in-scattering that reveal silhouettes through the fog.
+ * lighting during the Stampede. (The invisible distant "beacons", point lights of 85 blocks with strong in-scattering,
+ * were removed on 2026-11-05: they lit the chains evenly from end to end and greyed the air; the wall searchlights
+ * now light the heights from a fixture one can see.)
  */
 public final class LampLightManager {
     private static final class Lamp {
@@ -52,14 +53,19 @@ public final class LampLightManager {
         final LampKind kind;
         final Direction facing;
         final long hash;
+        /** A long-throw flood lamp high on a wall, aimed across the corridor at the chains and the far wall. */
+        final boolean high;
         LightRenderHandle<? extends LightData> handle;
         double dist2;
+        /** 0..1: a light just given a Veil handle fades in instead of popping on. */
+        float fade;
 
         Lamp(long pos, LampKind kind, Direction facing) {
             this.pos = pos;
             this.kind = kind;
             this.facing = facing;
             this.hash = Hash.mix(pos * 31 + kind.ordinal());
+            this.high = kind == LampKind.SPOTLIGHT;
         }
     }
 
@@ -67,10 +73,11 @@ public final class LampLightManager {
     private static final Long2ObjectOpenHashMap<LongArrayList> byChunk = new Long2ObjectOpenHashMap<>();
     private static final List<Lamp> active = new ArrayList<>();
     private static final List<Lamp> candidates = new ArrayList<>();
-    private static final List<LightRenderHandle<PointLightData>> beacons = new ArrayList<>();
     private static boolean veilOk = true;
 
     public static int activeLights, knownFixtures;
+    /** The spot beams lit this frame (flood lamps), for the dust drifting through them ({@code BeamDust}). */
+    public static final List<com.interstice.client.effects.BeamDust.Beam> spotBeams = new ArrayList<>();
     public static double nearestFixture = Double.MAX_VALUE;
 
     private LampLightManager() {}
@@ -126,8 +133,8 @@ public final class LampLightManager {
         LampKind kind;
         Direction facing = Direction.DOWN;
         if (s.getBlock() instanceof LampBlock lb) kind = lb.kind();
-        else if (s.getBlock() instanceof FloodLampBlock) {
-            kind = LampKind.FLOOD;
+        else if (s.getBlock() instanceof FloodLampBlock fb) {
+            kind = fb.kind();
             facing = s.getValue(DirectionalBlock.FACING);
         } else return;
         lamps.put(pos, new Lamp(pos, kind, facing));
@@ -138,8 +145,6 @@ public final class LampLightManager {
         lamps.clear();
         byChunk.clear();
         active.clear();
-        for (LightRenderHandle<PointLightData> h : beacons) safeFree(h);
-        beacons.clear();
     }
 
     // ------------------------------------------------------------- per frame
@@ -150,8 +155,6 @@ public final class LampLightManager {
         if (!veilOk || !ClientState.inInterstice || !cfg.dynamicLighting) {
             for (Lamp l : active) release(l);
             active.clear();
-            for (LightRenderHandle<PointLightData> h : beacons) safeFree(h);
-            beacons.clear();
             activeLights = 0;
             return;
         }
@@ -175,11 +178,14 @@ public final class LampLightManager {
             double dx = BlockPos.getX(p) + 0.5 - cam.x, dy = BlockPos.getY(p) + 0.5 - cam.y, dz = BlockPos.getZ(p) + 0.5 - cam.z;
             l.dist2 = dx * dx + dy * dy + dz * dz;
             if (l.dist2 < nearestFixture) nearestFixture = l.dist2;
-            double r = l.kind == LampKind.FLOOD ? range2 * 2.2 : range2;
+            double r = l.high ? range2 * 5.0 : l.kind == LampKind.FLOOD ? range2 * 2.2 : range2;
             if (l.dist2 < r && !isDead(l)) candidates.add(l);
         }
         nearestFixture = Math.sqrt(nearestFixture);
-        candidates.sort((a, b) -> Double.compare(a.dist2, b.dist2));
+        // the high floods light what is far away (the chains, the far wall): they rank as if 2.5x closer
+        // lamps already lit rank 30% closer, so at the edge of the budget the same lamps stay lit instead of two
+        // lamps trading places every frame as the camera moves (that switching read as flicker)
+        candidates.sort((a, b) -> Double.compare(rank(a), rank(b)));
         int budget = preset.lightBudget;
         for (int i = budget; i < candidates.size(); i++) release(candidates.get(i));
         if (candidates.size() > budget) candidates.subList(budget, candidates.size()).clear();
@@ -187,34 +193,52 @@ public final class LampLightManager {
         active.clear();
 
         double t = ClientState.time;
+        spotBeams.clear();
         for (Lamp l : candidates) {
-            if (l.handle == null || !l.handle.isValid()) l.handle = create(renderer, l, preset);
+            if (l.handle == null || !l.handle.isValid()) {
+                l.handle = create(renderer, l, preset);
+                l.fade = 0f;
+            }
             if (l.handle == null) continue;
-            float b = brightness(l, t, cfg);
+            l.fade = Math.min(1f, l.fade + 0.06f);
+            float b = brightness(l, t, cfg) * l.fade * l.fade;
+            // fade out towards the edge of the light range instead of switching off (no popping on the walls)
+            double rr = l.high ? range2 * 5.0 : l.kind == LampKind.FLOOD ? range2 * 2.2 : range2;
+            float edge = (float) Math.sqrt(l.dist2 / rr);
+            b *= 1f - Mth.clamp((edge - 0.65f) / 0.35f, 0f, 1f);
             LightData data = l.handle.getLightData();
             data.setBrightness(b);
             l.handle.markDirty();
             active.add(l);
+            if ((l.kind == LampKind.FLOOD || l.high) && b > 0.05f) {
+                Vector3f d = beamDir(l);
+                spotBeams.add(new com.interstice.client.effects.BeamDust.Beam(
+                        BlockPos.getX(l.pos) + 0.5 + d.x * 0.6, BlockPos.getY(l.pos) + 0.5 + d.y * 0.6, BlockPos.getZ(l.pos) + 0.5 + d.z * 0.6,
+                        d.x, d.y, d.z, (float) Math.toRadians(l.high ? 10 : 32), l.high ? 110f : l.kind.radius * 0.8f,
+                        Math.min(1f, b / l.kind.brightness), l.kind.r, l.kind.g, l.kind.b, false));
+            }
         }
-        updateBeacons(renderer, cam, preset, t);
-        activeLights = active.size() + beacons.size();
+        activeLights = active.size();
     }
 
     private static LightRenderHandle<? extends LightData> create(LightRenderer renderer, Lamp l, GraphicsPreset preset) {
         double x = BlockPos.getX(l.pos) + 0.5, y = BlockPos.getY(l.pos) + 0.5, z = BlockPos.getZ(l.pos) + 0.5;
         try {
-            if (l.kind == LampKind.FLOOD) {
+            if (l.kind == LampKind.FLOOD || l.high) {
                 SpotLightData s = new SpotLightData();
-                Vector3f dir = l.facing.step();
+                Vector3f dir = beamDir(l);
                 s.getPositionMutable().set(x + dir.x * 0.6, y + dir.y * 0.6, z + dir.z * 0.6);
-                // Veil spot lights shine along -Z of their orientation
-                s.getOrientationMutable().set(new Quaternionf().rotationTo(0, 0, -1, dir.x, dir.y, dir.z));
-                s.setAngle((float) Math.toRadians(32));
+                // Veil takes a point to the light's space as R (p - pos) and the beam runs along +Z there: R maps the
+                // facing onto +Z (the old rotationTo(-Z -> facing) pointed the uplights at the floor)
+                s.getOrientationMutable().set(new Quaternionf().rotationTo(dir.x, dir.y, dir.z, 0, 0, 1));
+                // Veil's spot shader: the cone's edge is setSize (radians), setAngle the soft edge inside it (the old size
+                // 1.0 gave the searchlights a 57-degree cone that flooded the plazas)
+                s.setSize((float) Math.toRadians(l.high ? 10 : 32));
+                s.setAngle((float) Math.toRadians(l.high ? 4 : 14));
                 s.setDistance(l.kind.radius);
-                s.setSize(0.6f);
                 s.setColor(l.kind.r, l.kind.g, l.kind.b);
                 s.setBrightness(l.kind.brightness);
-                s.setInscatteringStrength(preset.inscattering && ClientConfig.INSTANCE.volumetricLight ? 0.9f : 0f);
+                s.setInscatteringStrength(preset.inscattering && ClientConfig.INSTANCE.volumetricLight ? (l.high ? 0.4f : 0.28f) : 0f);   // the searchlights' beam just shows in the air
                 return renderer.addLight(s);
             }
             PointLightData p = new PointLightData();
@@ -233,7 +257,7 @@ public final class LampLightManager {
 
     /** 8% of fixtures are simply dead. */
     private static boolean isDead(Lamp l) {
-        return Hash.unit(l.hash, 1) < 0.08 && l.kind != LampKind.EMERGENCY;
+        return Hash.unit(l.hash, 1) < 0.08 && l.kind != LampKind.EMERGENCY && l.kind != LampKind.SPOTLIGHT;
     }
 
     private static float brightness(Lamp l, double t, ClientConfig cfg) {
@@ -246,60 +270,46 @@ public final class LampLightManager {
             return base * (0.18f + 2.4f * emer * pulse);
         }
         float b = base;
+        // the big beams never flicker (one of them lights a whole stretch of the corridor)
+        boolean big = l.kind == LampKind.FLOOD || l.kind == LampKind.SPOTLIGHT;
         // malfunctioning fixtures
-        if (Hash.unit(l.hash, 3) < 0.15) b *= flicker(l.hash, t, calm);
+        if (!big && Hash.unit(l.hash, 3) < 0.15) b *= flicker(l.hash, t, calm);
         // event-driven failure: each lamp has its own threshold, so failure spreads unevenly
         if (fail > 0 && Hash.unit(l.hash, 4) < fail) {
-            b *= calm ? 0.3f : flicker(l.hash ^ 0x5bd1e995L, t * 2.5, false) * 0.6f;
+            b *= calm || big ? 0.4f : flicker(l.hash ^ 0x5bd1e995L, t * 2.5, false) * 0.6f;
         }
         // during the Stampede the normal lights dim and the emergency circuit takes over
         b *= 1f - emer * 0.55f;
         return b;
     }
 
+    /**
+     * A failing tube: a slow unsteady glow with now and then a short dip. {@code t} is in game ticks (it was used as
+     * seconds: 11.3 rad per tick made a 36 Hz strobe with hard cuts, unbearable once the beams lit the whole corridor).
+     */
     private static float flicker(long h, double t, boolean calm) {
-        double n = Math.sin(t * (0.9 + Hash.unit(h, 5) * 2.1)) + Math.sin(t * 3.7 + Hash.unit(h, 6) * 9) * 0.6 + Math.sin(t * 11.3) * 0.25;
-        if (calm) return 0.75f + (float) n * 0.08f;
-        if (n > 0.9) return 0.05f;
-        return Mth.clamp(0.75f + (float) n * 0.25f, 0.2f, 1.1f);
+        double s = t / 20.0;
+        double n = Math.sin(s * (0.9 + Hash.unit(h, 5) * 2.1)) + Math.sin(s * 3.7 + Hash.unit(h, 6) * 9) * 0.6 + Math.sin(s * 7.3 + Hash.unit(h, 7) * 5) * 0.25;
+        if (calm) return 0.8f + (float) n * 0.06f;
+        // above 1.25 (a few percent of the time) the tube dips, smoothly, to a third
+        float dip = (float) Mth.clamp((n - 1.25) / 0.3, 0.0, 1.0);
+        return Mth.clamp(0.8f + (float) n * 0.12f, 0.5f, 1.05f) * (1f - 0.65f * dip);
     }
 
-    /** Distant high beacons along the walls: big radius, strong in-scattering. */
-    private static void updateBeacons(LightRenderer renderer, Vec3 cam, GraphicsPreset preset, double t) {
-        IntersticeLayout L = ClientState.layout;
-        int wanted = preset.inscattering && ClientConfig.INSTANCE.volumetricLight ? 3 : 1;
-        int cell = (int) Math.floor(cam.z / 190.0);
-        int idx = 0;
-        for (int c = cell - 1; c <= cell + 1 && idx < wanted; c++) {
-            long h = Hash.of(L.sub(901), c);
-            if (Hash.unit(h, 0) > 0.75) continue;
-            int side = Hash.unit(h, 1) < 0.5 ? -1 : 1;
-            double z = c * 190.0 + Hash.unit(h, 2) * 190;
-            double y = IntersticeLayout.FLOOR_Y + 150 + Hash.unit(h, 3) * 330;
-            double x = L.faceX(side, z) - side * 4;
-            LightRenderHandle<PointLightData> handle;
-            if (idx < beacons.size()) handle = beacons.get(idx);
-            else {
-                PointLightData p = new PointLightData();
-                try {
-                    handle = renderer.addLight(p);
-                } catch (Throwable e) {
-                    veilOk = false;
-                    return;
-                }
-                beacons.add(handle);
-            }
-            PointLightData p = handle.getLightData();
-            boolean red = Hash.unit(h, 4) < 0.3 || ClientState.emergency > 0.6f;
-            p.setPosition(x, y, z);
-            p.setRadius(85f);
-            if (red) p.setColor(1f, 0.12f, 0.06f); else p.setColor(0.55f, 0.68f, 1f);
-            p.setBrightness((red ? 1.5f : 1.1f) * (1f - ClientState.lightFailure * 0.6f));
-            p.setInscatteringStrength(preset.inscattering && ClientConfig.INSTANCE.volumetricLight ? 1.6f : 0f);
-            handle.markDirty();
-            idx++;
-        }
-        while (beacons.size() > idx) safeFree(beacons.remove(beacons.size() - 1));
+    /**
+     * The beam's direction: the fixture's facing; the wall searchlights are tilted 6 degrees up, so with their
+     * 10-degree cone the lower edge sinks only 4 degrees (7 blocks over 100, from 30 up): they light the heights (chains, far wall) and never the floor (aimed
+     * level, an 18-degree cone reached the floor some 90 blocks away and lit a whole plaza evenly).
+     */
+    private static Vector3f beamDir(Lamp l) {
+        Vector3f d = l.facing.step();
+        if (l.high) d.add(0, 0.105f, 0).normalize();   // 6 degrees up
+        return d;
+    }
+
+    private static double rank(Lamp l) {
+        double d = l.high ? l.dist2 / 6.25 : l.dist2;
+        return l.handle != null ? d * 0.49 : d;
     }
 
     private static void release(Lamp l) {

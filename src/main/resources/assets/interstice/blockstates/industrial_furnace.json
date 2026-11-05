@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "interstice:block/industrial_furnace",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "interstice:block/industrial_furnace",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "interstice:block/industrial_furnace",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "interstice:block/industrial_furnace",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/ladder",
+  "textures": {
+    "texture": "interstice:block/rusted_ladder",
+    "particle": "interstice:block/rusted_ladder"
+  }
+}
