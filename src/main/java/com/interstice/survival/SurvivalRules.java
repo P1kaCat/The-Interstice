@@ -34,7 +34,7 @@ public final class SurvivalRules {
 
     /** True in every dimension of THE INTERSTICE (one today). */
     public static boolean isInterstice(Level level) {
-        return ModWorld.isInterstice(level);
+        return ModWorld.isAnyLevel(level);   // the same rules in all five levels
     }
 
     public static DamageSource severance(Level level, Entity attacker) {

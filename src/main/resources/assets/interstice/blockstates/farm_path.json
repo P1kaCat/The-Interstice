@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "interstice:block/farm_path"
+      },
+      {
+        "model": "interstice:block/farm_path",
+        "y": 90
+      },
+      {
+        "model": "interstice:block/farm_path",
+        "y": 180
+      },
+      {
+        "model": "interstice:block/farm_path",
+        "y": 270
+      },
+      {
+        "model": "interstice:block/farm_path_1"
+      },
+      {
+        "model": "interstice:block/farm_path_1",
+        "y": 90
+      },
+      {
+        "model": "interstice:block/farm_path_1",
+        "y": 180
+      },
+      {
+        "model": "interstice:block/farm_path_1",
+        "y": 270
+      }
+    ]
+  }
+}

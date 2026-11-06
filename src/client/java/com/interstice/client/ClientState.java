@@ -23,6 +23,8 @@ public final class ClientState {
 
     public static IntersticeLayout layout;
     public static boolean inInterstice;
+    /** Level 00 / any of the five levels (shared: no vanilla music). */
+    public static boolean inThreshold, inAnyLevel, inWheatFarm;
 
     // ---- stampede mirror
     public static StampedePhase phase = StampedePhase.IDLE;
@@ -107,6 +109,9 @@ public final class ClientState {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         inInterstice = level != null && ModWorld.isInterstice(level) && layout != null;
+        inThreshold = ModWorld.isThreshold(level);
+        inWheatFarm = ModWorld.isWheatFarm(level);
+        inAnyLevel = ModWorld.isAnyLevel(level);
         if (level == null) return;
         time = level.getGameTime() + partialTick;
 
@@ -167,6 +172,7 @@ public final class ClientState {
             }
         }
 
+        float whiteout = 0;
         Iterator<ModNetwork.EnvEvent> it = events.iterator();
         while (it.hasNext()) {
             ModNetwork.EnvEvent e = it.next();
@@ -176,6 +182,7 @@ public final class ClientState {
                 continue;
             }
             switch (e.kind()) {
+                case ModNetwork.EnvEvent.WHITEOUT -> whiteout = Math.max(whiteout, envelope(t, e.duration(), 0.3, 0.55));
                 case ModNetwork.EnvEvent.QUAKE -> {
                     float env = envelope(t, e.duration(), 0.15, 0.35);
                     q = Math.max(q, env * e.intensity());
@@ -189,6 +196,7 @@ public final class ClientState {
                 }
             }
         }
+        com.interstice.client.effects.RiftTransition.scriptedWhite = whiteout;
 
         // the Stampede shakes the chains: a tremor in the premonition, the full shudder while the horde passes
         chain = Math.max(chain, Math.max(horde * 0.85f, prem * 0.3f));

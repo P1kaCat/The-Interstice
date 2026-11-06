@@ -1,0 +1,5 @@
+# Level 02 The Wheat Farm
+wheat_stalks_0 655d96d7-1927-4131-8ef0-924f465bb5dc alpha
+wheat_stalks_1 ec239f47-d3d0-429d-b506-6f72e6271103 alpha
+wheat_field 623190aa-869f-4380-9c6a-eb60470d66a8 tile
+farm_path 6d699f10-990b-4634-8e2b-64bd70ee9cdf tile

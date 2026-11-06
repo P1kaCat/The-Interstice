@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "interstice:block/wheat_field"
+      },
+      {
+        "model": "interstice:block/wheat_field_1"
+      }
+    ]
+  }
+}

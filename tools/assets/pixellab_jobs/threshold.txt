@@ -1,0 +1,3 @@
+# Level 00 The Threshold: the twisting tunnel (ThresholdRenderer)
+threshold_wall f160479a-8610-4126-b6c3-0a5985a1ba30 tile
+threshold_rib 349f00ea-2a63-44b0-bb34-3407df7d4fff tile

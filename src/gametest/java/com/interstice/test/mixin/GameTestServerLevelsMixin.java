@@ -59,5 +59,22 @@ public abstract class GameTestServerLevelsMixin {
                 ModWorld.INTERSTICE, stem, listener, worldData.isDebugWorld(), seed, ImmutableList.of(), false, overworld.getRandomSequences());
         levels.put(ModWorld.INTERSTICE, level);
         Interstice.LOG.info("[gametest] created {} for headless tests", ModWorld.INTERSTICE.location());
+        // Level 00, The Threshold
+        ResourceKey<DimensionType> thrType = ResourceKey.create(Registries.DIMENSION_TYPE, Interstice.id("threshold"));
+        LevelStem thrStem = new LevelStem(access.registryOrThrow(Registries.DIMENSION_TYPE).getHolderOrThrow(thrType),
+                new com.interstice.world.threshold.ThresholdChunkGenerator(new FixedBiomeSource(biome)));
+        ServerLevel thr = new ServerLevel(self, executor, storageSource, new DerivedLevelData(worldData, worldData.overworldData()),
+                ModWorld.THRESHOLD, thrStem, listener, worldData.isDebugWorld(), seed, ImmutableList.of(), false, overworld.getRandomSequences());
+        levels.put(ModWorld.THRESHOLD, thr);
+        Interstice.LOG.info("[gametest] created {} for headless tests", ModWorld.THRESHOLD.location());
+        // Level 02, The Wheat Farm
+        ResourceKey<DimensionType> wheatType = ResourceKey.create(Registries.DIMENSION_TYPE, Interstice.id("wheat_farm"));
+        Holder<Biome> wheatBiome = access.registryOrThrow(Registries.BIOME).getHolderOrThrow(ResourceKey.create(Registries.BIOME, Interstice.id("wheat_farm")));
+        LevelStem wheatStem = new LevelStem(access.registryOrThrow(Registries.DIMENSION_TYPE).getHolderOrThrow(wheatType),
+                new com.interstice.world.wheat.WheatChunkGenerator(new FixedBiomeSource(wheatBiome)));
+        ServerLevel wheat = new ServerLevel(self, executor, storageSource, new DerivedLevelData(worldData, worldData.overworldData()),
+                ModWorld.WHEAT_FARM, wheatStem, listener, worldData.isDebugWorld(), seed, ImmutableList.of(), false, overworld.getRandomSequences());
+        levels.put(ModWorld.WHEAT_FARM, wheat);
+        Interstice.LOG.info("[gametest] created {} for headless tests", ModWorld.WHEAT_FARM.location());
     }
 }

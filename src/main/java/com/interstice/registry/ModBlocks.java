@@ -180,6 +180,21 @@ public final class ModBlocks {
             BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(1.5f).sound(SoundType.METAL).noOcclusion()
                     .lightLevel(s -> s.getValue(com.interstice.block.WardEmitterBlock.LIT) ? 6 : 0));
 
+    /** Level 02: the golden surface of the fields (the stalks are drawn by the client) and the dusty farm track. */
+    public static final Block WHEAT_FIELD = register("wheat_field", Block::new,
+            BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_YELLOW).strength(0.6f).sound(SoundType.GRASS));
+    public static final Block FARM_PATH = register("farm_path", Block::new,
+            BlockBehaviour.Properties.of().mapColor(MapColor.DIRT).strength(0.6f).sound(SoundType.GRAVEL));
+
+    /** Level 02: the farmhouse's front door; it looks like the pale door but cannot be opened (iron-type). */
+    public static final Block FAKE_DOOR = register("fake_door",
+            p -> new net.minecraft.world.level.block.DoorBlock(net.minecraft.world.level.block.state.properties.BlockSetType.IRON, p),
+            BlockBehaviour.Properties.of().mapColor(MapColor.WOOD).strength(-1f, 3600000f).noOcclusion().noLootTable());
+
+    /** A rift between levels (invisible as a block: each level draws its own); walking in leads to the next level. */
+    public static final Block RIFT = register("rift", com.interstice.block.RiftBlock::new,
+            BlockBehaviour.Properties.of().mapColor(MapColor.SNOW).strength(-1f, 3600000f).noCollission().noLootTable().noOcclusion().lightLevel(s -> 15));
+
     /** The far end of the finite Corridor: walking into it leaves THE INTERSTICE. */
     public static final Block EXIT_THRESHOLD = register("exit_threshold", com.interstice.block.ExitThresholdBlock::new,
             BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_BLACK).strength(-1f, 3600000f).noCollission().noLootTable().lightLevel(s -> 3));

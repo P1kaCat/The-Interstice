@@ -21,7 +21,7 @@ public abstract class MusicManagerMixin {
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true)
     private void interstice$silence(CallbackInfo ci) {
-        if (ClientState.inInterstice) {
+        if (ClientState.inInterstice || ClientState.inAnyLevel) {
             stopPlaying();
             ci.cancel();
         }

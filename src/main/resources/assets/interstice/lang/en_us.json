@@ -131,5 +131,9 @@
   "block.interstice.dust_web": "Dust Web",
   "block.interstice.dead_roots": "Dead Roots",
   "block.interstice.flesh_node": "Flesh Node",
-  "block.interstice.abyssal_rock": "Abyssal Rock"
+  "block.interstice.abyssal_rock": "Abyssal Rock",
+  "block.interstice.rift": "Rift",
+  "block.interstice.wheat_field": "Wheat Field",
+  "block.interstice.farm_path": "Farm Track",
+  "block.interstice.fake_door": "Door"
 }

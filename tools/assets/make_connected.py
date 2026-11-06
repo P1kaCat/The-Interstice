@@ -117,7 +117,7 @@ def connected():
 
 def overlays():
     sets = {"flesh": ("flesh_growth", 9, True), "soil": ("grime_soil", 8, False), "rubble": ("concrete_rubble", 7, False),
-            "plaster": ("plaster_wall", 7, False)}
+            "plaster": ("plaster_wall", 7, False), "path": ("farm_path", 5, False)}
     yy, xx = np.mgrid[0:N, 0:N]
     for name, (src, depth, veins) in sets.items():
         tex = load(os.path.join(TEX, src + ".png"))

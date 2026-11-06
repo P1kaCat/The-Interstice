@@ -30,7 +30,9 @@ public final class ModNetwork {
 
     /** Short environmental event (earthquake, chain shudder, light failure, silence, distant impact, stare cue). */
     public record EnvEvent(int kind, long startTick, int duration, float intensity, long seed, double x, double y, double z) implements CustomPacketPayload {
-        public static final int QUAKE = 0, CHAIN_SHUDDER = 1, LIGHT_FAILURE = 2, SILENCE = 3, DISTANT_IMPACT = 4, STARE = 5, FLEE = 6, FLASH = 7, HORDE_SCREAM = 8;
+        public static final int QUAKE = 0, CHAIN_SHUDDER = 1, LIGHT_FAILURE = 2, SILENCE = 3, DISTANT_IMPACT = 4, STARE = 5, FLEE = 6, FLASH = 7, HORDE_SCREAM = 8,
+                /** Level 02: the screen goes white (the path keeper sets the player back on the track). */
+                WHITEOUT = 9;
         public static final Type<EnvEvent> TYPE = new Type<>(Interstice.id("env_event"));
         public static final StreamCodec<FriendlyByteBuf, EnvEvent> CODEC = CustomPacketPayload.codec((p, b) -> {
             b.writeVarInt(p.kind);

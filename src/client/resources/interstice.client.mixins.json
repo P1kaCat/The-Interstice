@@ -5,8 +5,10 @@
   "client": [
     "ChannelMixin",
     "FogRendererMixin",
+    "GameRendererFarMixin",
     "LightTextureMixin",
-    "MusicManagerMixin"
+    "MusicManagerMixin",
+    "ReceivingLevelScreenMixin"
   ],
   "injectors": { "defaultRequire": 1 }
 }

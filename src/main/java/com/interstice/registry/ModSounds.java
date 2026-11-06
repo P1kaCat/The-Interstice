@@ -16,6 +16,11 @@ public final class ModSounds {
     public static final SoundEvent ENV_CHAIN_IMPACT = reg("env.chain_impact");
     public static final SoundEvent ENV_STRUCTURE_GROAN = reg("env.structure_groan");
     public static final SoundEvent ENV_RUMBLE = reg("env.rumble");
+    // Level 02, The Wheat Farm (tools/audio/gen_wheat_audio.py)
+    public static final SoundEvent WHEAT_WIND = reg("ambient.wheat_wind");
+    public static final SoundEvent WHEAT_RUSTLE = reg("ambient.wheat_rustle");
+    public static final SoundEvent WHEAT_GUST = reg("ambient.wheat_gust");
+    public static final SoundEvent TURBINE_WHOOSH = reg("turbine.whoosh");
     public static final SoundEvent ENV_DEBRIS = reg("env.debris");
     public static final SoundEvent ENV_SCUTTLE_FAR = reg("env.scuttle_far");
     public static final SoundEvent ENV_UNEXPLAINED = reg("env.unexplained");
@@ -34,7 +39,7 @@ public final class ModSounds {
     public static final SoundEvent CREATURE_LAND = reg("creature.land");
     public static final SoundEvent CREATURE_SNIFF = reg("creature.sniff");
 
-    public static final String[] VOICE_LINES = {"hide", "dont_move", "not_yet", "go", "they_hear", "look_up", "closer", "stay", "find_a_way"};
+    public static final String[] VOICE_LINES = {"hide", "dont_move", "not_yet", "go", "they_hear", "look_up", "closer", "stay", "find_a_way", "do_not_leave"};
 
     static {
         for (String line : VOICE_LINES) reg("voice." + line);

@@ -35,7 +35,7 @@ public class ExitThresholdBlock extends Block {
         if (level.isClientSide || !(entity instanceof ServerPlayer p) || !ModWorld.isInterstice(level) || p.isSpectator()) return;
         if (p.isOnPortalCooldown()) return;
         p.setPortalCooldown();
-        IntersticeTeleport.leave(p);
+        IntersticeTeleport.throughRift(p);   // on to Level 02 (out of THE INTERSTICE if it is not there)
     }
 
     @Override

@@ -271,7 +271,7 @@ public final class AutoTest {
                 if (t == 0) server(mc, s -> {
                     IntersticeServer.get().director.setPaused(true);
                     if (subject != null) subject.discard();
-                    IntersticeTeleport.enter(sp(s));
+                    IntersticeTeleport.enterCorridor(sp(s));
                 });
                 if (t == 160) server(mc, s -> {
                     IntersticeServer is = IntersticeServer.get();
@@ -602,6 +602,82 @@ public final class AutoTest {
         p.setXRot(pitch);
     }
 
+    private static Boolean wheatMode;
+
+    /** Flag content "wheat": Level 02 views (close wheat, along the track both ways) and a dump of the stalk texture. */
+    private static boolean wheatMode(Minecraft mc) {
+        if (wheatMode == null) {
+            try {
+                wheatMode = Files.readString(mc.gameDirectory.toPath().resolve("interstice_autotest.flag")).contains("wheat");
+            } catch (Exception e) {
+                wheatMode = false;
+            }
+        }
+        return wheatMode;
+    }
+
+    private static void wheatView(Minecraft mc, double x, double z, float yaw, float pitch) {
+        server(mc, s -> {
+            ServerPlayer sp = s.getPlayerList().getPlayers().get(0);
+            sp.teleportTo(sp.serverLevel(), x, com.interstice.world.wheat.WheatLayout.GROUND_Y, z, yaw, pitch);
+        });
+    }
+
+    private static void wheatTick(Minecraft mc) {
+        switch (step) {
+            case 0 -> {
+                if (after(40)) {
+                    server(mc, s -> {
+                        ServerPlayer sp = s.getPlayerList().getPlayers().get(0);
+                        sp.setGameMode(net.minecraft.world.level.GameType.CREATIVE);
+                        IntersticeTeleport.toLevel(sp, com.interstice.world.levels.IntersticeLevel.WHEAT_FARM);
+                    });
+                    next();
+                }
+            }
+            case 1 -> {
+                if (after(160)) {
+                    wheatView(mc, 2.5, 40.5, -90f, 12f);   // facing +x, into the field beside the track
+                    next();
+                }
+            }
+            case 2 -> {
+                if (after(80)) {
+                    shot(mc, "wheat_close");
+                    try {
+                        int id = mc.getTextureManager().getTexture(Interstice.id("textures/level/wheat_stalks.png")).getId();
+                        com.mojang.blaze3d.platform.GlStateManager._bindTexture(id);
+                        com.mojang.blaze3d.platform.NativeImage img = new com.mojang.blaze3d.platform.NativeImage(64, 64, false);
+                        img.downloadTexture(0, false);
+                        img.writeToFile(mc.gameDirectory.toPath().resolve("screenshots/interstice_wheat_tex_dump.png"));
+                        img.close();
+                    } catch (Exception e) {
+                        Interstice.LOG.error("[autotest] texture dump failed", e);
+                    }
+                    wheatView(mc, 0.5, 6.5, 180f, 4f);   // looking back, behind the start of the track
+                    next();
+                }
+            }
+            case 3 -> {
+                if (after(80)) {
+                    shot(mc, "wheat_back");
+                    wheatView(mc, 0.5, 6.5, 0f, 2f);     // looking down the track to the house
+                    next();
+                }
+            }
+            case 4 -> {
+                if (after(80)) {
+                    shot(mc, "wheat_ahead");
+                    next();
+                }
+            }
+            case 5 -> {
+                if (after(20)) mc.stop();
+            }
+            default -> {}
+        }
+    }
+
     public static void tick(Minecraft mc) {
         if (enabled(mc) && mc.screen != null) {
             // unattended run: accept the vanilla "experimental settings" warning for the test world
@@ -620,6 +696,10 @@ public final class AutoTest {
             modelTick(mc);
             return;
         }
+        if (wheatMode(mc)) {
+            wheatTick(mc);
+            return;
+        }
         var p = mc.player;
         switch (step) {
             case 0 -> {
@@ -628,7 +708,7 @@ public final class AutoTest {
                     server(mc, s -> {
                         ServerPlayer sp = s.getPlayerList().getPlayers().get(0);
                         IntersticeServer.get().director.setPaused(true);
-                        IntersticeTeleport.enter(sp);
+                        IntersticeTeleport.enterCorridor(sp);
                     });
                     next();
                 }

@@ -33,6 +33,8 @@ import net.minecraft.resources.ResourceLocation;
 public final class VeilIntegration {
     public static final ResourceLocation ATMOSPHERE = Interstice.id("atmosphere");
     public static final ResourceLocation ATMOSPHERE_NO_BLOOM = Interstice.id("atmosphere_nobloom");
+    /** Level 02: volumetric clouds and god rays. */
+    public static final ResourceLocation WHEAT = Interstice.id("wheat_atmosphere");
     private static boolean failed;
     private static ResourceLocation activePipeline;
     public static int customStageDraws;
@@ -42,9 +44,41 @@ public final class VeilIntegration {
     public static void init() {
         FabricVeilPostProcessingEvent.PRE.register((name, pipeline, context) -> {
             if (name.equals(ATMOSPHERE) || name.equals(ATMOSPHERE_NO_BLOOM)) applyUniforms(pipeline);
+            if (name.equals(WHEAT)) {
+                pipeline.getUniformSafe("Time").setFloat((float) ((ClientState.time / 20.0) % 3600.0));
+                double e = com.interstice.client.render.wheat.WheatSky.SUN_ELEV;
+                pipeline.getUniformSafe("SunDir").setVector(0f, (float) Math.sin(e), (float) Math.cos(e));
+                pipeline.getUniformSafe("Horizon").setVector(com.interstice.client.render.wheat.WheatSky.HR,
+                        com.interstice.client.render.wheat.WheatSky.HG, com.interstice.client.render.wheat.WheatSky.HB);
+            }
         });
         FabricVeilRenderLevelStageEvent.EVENT.register((stage, levelRenderer, bufferSource, matrixStack, frustumMatrix, projectionMatrix, renderTick, deltaTracker, camera, frustum) -> {
-            if (stage != VeilRenderLevelStageEvent.Stage.AFTER_ENTITIES || !ClientState.inInterstice) return;
+            if (stage != VeilRenderLevelStageEvent.Stage.AFTER_ENTITIES) return;
+            if (ClientState.inWheatFarm) {
+                try {
+                    com.interstice.client.render.wheat.WheatRenderer.render(camera);
+                    com.interstice.client.render.wheat.WheatFarRenderer.render(camera, bufferSource);
+                    com.interstice.client.render.wheat.TurbineRenderer.render(camera, bufferSource);
+                    // the rift: a tear of light over the farmhouse's door that does not open
+                    int gy = com.interstice.world.wheat.WheatLayout.GROUND_Y;
+                    com.interstice.client.render.RiftTearRenderer.draw(bufferSource, camera.getPosition(), 0.5, gy + 1.0,
+                            com.interstice.world.wheat.WheatLayout.HOUSE_Z - 0.06, 1.05, 0.17, ClientState.time / 20.0);
+                } catch (Throwable t) {
+                    if (!failed) Interstice.LOG.error("Wheat Farm rendering failed", t);
+                    failed = true;
+                }
+                return;
+            }
+            if (ClientState.inThreshold) {
+                try {
+                    com.interstice.client.render.threshold.ThresholdRenderer.render(camera, bufferSource);
+                } catch (Throwable t) {
+                    if (!failed) Interstice.LOG.error("Threshold rendering failed", t);
+                    failed = true;
+                }
+                return;
+            }
+            if (!ClientState.inInterstice) return;
             Minecraft mc = Minecraft.getInstance();
             if (mc.level == null) return;
             try {
@@ -64,6 +98,8 @@ public final class VeilIntegration {
         ResourceLocation wanted = null;
         if (ClientState.inInterstice && cfg.postProcessing) {
             wanted = cfg.bloom && cfg.preset.bloomPasses ? ATMOSPHERE : ATMOSPHERE_NO_BLOOM;
+        } else if (ClientState.inWheatFarm && cfg.postProcessing) {
+            wanted = WHEAT;
         }
         if (wanted == activePipeline) return;
         try {

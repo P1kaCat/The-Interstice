@@ -27,6 +27,13 @@ public abstract class FogRendererMixin {
 
     @Inject(method = "setupColor", at = @At("TAIL"))
     private static void interstice$color(Camera camera, float partialTick, ClientLevel level, int renderDistance, float darken, CallbackInfo ci) {
+        if (ClientState.inWheatFarm && camera.getFluidInCamera() == FogType.NONE) {
+            fogRed = com.interstice.client.render.wheat.WheatSky.HR;
+            fogGreen = com.interstice.client.render.wheat.WheatSky.HG;
+            fogBlue = com.interstice.client.render.wheat.WheatSky.HB;
+            RenderSystem.clearColor(fogRed, fogGreen, fogBlue, 0f);
+            return;
+        }
         if (!ClientState.inInterstice || camera.getFluidInCamera() != FogType.NONE) return;
         fogRed = AtmosphereController.fogR;
         fogGreen = AtmosphereController.fogG;
@@ -36,6 +43,13 @@ public abstract class FogRendererMixin {
 
     @Inject(method = "setupFog", at = @At("TAIL"))
     private static void interstice$fog(Camera camera, FogRenderer.FogMode mode, float renderDistance, boolean thick, float partialTick, CallbackInfo ci) {
+        if (ClientState.inWheatFarm && camera.getFluidInCamera() == FogType.NONE) {
+            // Level 02: a light evening haze over the whole length of the farm (the far LODs reach the house at the end)
+            RenderSystem.setShaderFogStart(250f);
+            RenderSystem.setShaderFogEnd(4200f);   // light enough to see the house 1,600 blocks off
+            RenderSystem.setShaderFogShape(FogShape.SPHERE);
+            return;
+        }
         if (!ClientState.inInterstice || camera.getFluidInCamera() != FogType.NONE) return;
         if (mode == FogRenderer.FogMode.FOG_TERRAIN) {
             RenderSystem.setShaderFogStart(AtmosphereController.fogStart);

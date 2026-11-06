@@ -45,6 +45,12 @@ public final class IntersticeCommands {
                     if (!IntersticeTeleport.enter(p)) return fail(c, "The Interstice dimension is not loaded.");
                     return 1;
                 }))
+                .then(Commands.literal("level").then(Commands.argument("number", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 4)).executes(c -> {
+                    ServerPlayer p = c.getSource().getPlayerOrException();
+                    var lvl = com.interstice.world.levels.IntersticeLevel.values()[com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c, "number")];
+                    if (!IntersticeTeleport.toLevel(p, lvl)) return fail(c, lvl.label() + " is not built yet.");
+                    return ok(c, lvl.label() + ".");
+                })))
                 .then(Commands.literal("leave").executes(c -> {
                     IntersticeTeleport.leave(c.getSource().getPlayerOrException());
                     return 1;

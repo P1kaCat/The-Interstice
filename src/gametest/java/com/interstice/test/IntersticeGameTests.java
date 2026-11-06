@@ -1177,6 +1177,91 @@ public class IntersticeGameTests implements FabricGameTest {
         });
     }
 
+    // ------------------------------------------------- the five levels: Level 00, The Threshold
+
+    @GameTest(template = EMPTY_STRUCTURE, batch = "levels", timeoutTicks = 200)
+    public void thresholdLeadsIntoTheCorridor(GameTestHelper h) {
+        net.minecraft.server.MinecraftServer srv = h.getLevel().getServer();
+        ServerLevel thr = srv.getLevel(com.interstice.registry.ModWorld.THRESHOLD);
+        check(thr != null, "the Threshold dimension is not loaded");
+        int fy = com.interstice.world.threshold.ThresholdLayout.FLOOR_Y, rz = com.interstice.world.threshold.ThresholdLayout.RIFT_Z;
+        for (int cx = -1; cx <= 0; cx++) for (int cz = -1; cz <= 5; cz++) thr.getChunk(cx, cz);
+        var barrier = net.minecraft.world.level.block.Blocks.BARRIER;
+        int hw = com.interstice.world.threshold.ThresholdLayout.HALF_WIDTH, hh = com.interstice.world.threshold.ThresholdLayout.HEIGHT;
+        check(thr.getBlockState(new BlockPos(0, fy - 1, 5)).is(barrier), "no floor under the corridor");
+        check(thr.getBlockState(new BlockPos(-hw - 1, fy + 1, 5)).is(barrier) && thr.getBlockState(new BlockPos(hw + 1, fy + 1, 5)).is(barrier)
+                && thr.getBlockState(new BlockPos(0, fy + hh, 5)).is(barrier), "the corridor has no walls or ceiling");
+        for (int y = fy; y < fy + hh; y++) check(thr.getBlockState(new BlockPos(0, y, 5)).getCollisionShape(thr, new BlockPos(0, y, 5)).isEmpty(), "the corridor is not clear at y " + y);
+        for (int y = fy; y < fy + 4; y++)
+            check(thr.getBlockState(new BlockPos(0, y, rz)).is(ModBlocks.RIFT), "no tear in the end wall at y " + y);
+        check(thr.getBlockState(new BlockPos(-1, fy + 1, rz)).is(barrier) && thr.getBlockState(new BlockPos(1, fy + 1, rz)).is(barrier),
+                "the end wall is open beside the tear");
+        check(com.interstice.world.threshold.ThresholdLayout.TWIST_START - com.interstice.world.threshold.ThresholdLayout.START_Z >= 30,
+                "less than 30 blocks of flat corridor before the twist");
+        check(com.interstice.survival.SurvivalRules.isInterstice(thr), "the survival rules do not apply in the Threshold");
+        ServerPlayer p = survivalPlayer(h);
+        check(com.interstice.world.IntersticeTeleport.enter(p), "entering failed");
+        check(p.level() == thr, "entering THE INTERSTICE does not start at the Threshold: " + p.level().dimension().location());
+        BlockPos feet = p.blockPosition();
+        check(thr.getBlockState(feet.below()).isFaceSturdy(thr, feet.below(), net.minecraft.core.Direction.UP)
+                && thr.getBlockState(feet).getCollisionShape(thr, feet).isEmpty(), "the arrival is not standing on the catwalk: " + feet);
+        // walking into the light
+        BlockPos riftPos = new BlockPos(0, fy, rz);
+        p.teleportTo(thr, 0.5, fy, rz + 0.5, 0, 0);
+        thr.getBlockState(riftPos).entityInside(thr, riftPos, p);
+        check(com.interstice.registry.ModWorld.isInterstice(p.level()), "the rift did not lead into the Corridor: " + p.level().dimension().location());
+        check(p.isOnPortalCooldown(), "no cooldown after crossing the rift");
+        System.out.printf("[interstice-test] threshold: shell and rift in place; enter -> %s; rift -> %s at %.1f %.1f %.1f%n",
+                thr.dimension().location(), p.level().dimension().location(), p.getX(), p.getY(), p.getZ());
+        removePlayer(p);
+        h.succeed();
+    }
+
+    // ------------------------------------------------- Level 02, The Wheat Farm
+
+    @GameTest(template = EMPTY_STRUCTURE, batch = "levels", timeoutTicks = 200)
+    public void corridorExitLeadsToTheWheatFarm(GameTestHelper h) {
+        net.minecraft.server.MinecraftServer srv = h.getLevel().getServer();
+        ServerLevel wheat = srv.getLevel(com.interstice.registry.ModWorld.WHEAT_FARM);
+        check(wheat != null, "the Wheat Farm dimension is not loaded");
+        var W = com.interstice.world.wheat.WheatLayout.class;
+        for (int cz = -1; cz <= 1; cz++) for (int cx = -1; cx <= 0; cx++) wheat.getChunk(cx, cz);
+        int gy = com.interstice.world.wheat.WheatLayout.groundY(0, 4);
+        check(wheat.getBlockState(new BlockPos(0, gy - 1, 4)).is(ModBlocks.FARM_PATH), "no track at the start");
+        check(wheat.getBlockState(new BlockPos(8, com.interstice.world.wheat.WheatLayout.groundY(8, 4) - 1, 4)).is(ModBlocks.WHEAT_FIELD), "no field beside the track");
+        int fences = 0;
+        for (int z = 0; z < 16; z++) if (wheat.getBlockState(new BlockPos(3, com.interstice.world.wheat.WheatLayout.groundY(3, z), z)).is(ModBlocks.WORN_FENCE)) fences++;
+        check(fences >= 8, "the track is not fenced: " + fences + "/16");
+        // determinism: the ground is a pure function of position
+        check(com.interstice.world.wheat.WheatLayout.groundY(250, 777) == com.interstice.world.wheat.WheatLayout.groundY(250, 777), "ground height is not deterministic");
+        check(com.interstice.survival.SurvivalRules.isInterstice(wheat), "the survival rules do not apply in the Wheat Farm");
+        // the Corridor's exit leads here
+        IntersticeServer s = server(h);
+        ServerPlayer p = survivalPlayer(h);
+        p.teleportTo(s.level(), 0.5, IntersticeLayout.FLOOR_Y + 1, 0.5, 0, 0);
+        com.interstice.world.IntersticeTeleport.throughRift(p);
+        check(p.level() == wheat, "the Corridor's exit does not lead to the Wheat Farm: " + p.level().dimension().location());
+        BlockPos feet = p.blockPosition();
+        check(wheat.getBlockState(feet.below()).is(ModBlocks.FARM_PATH) && wheat.getBlockState(feet).getCollisionShape(wheat, feet).isEmpty(),
+                "the arrival is not standing on the track: " + feet + " on " + wheat.getBlockState(feet.below()));
+        // its own rift: Level 03 does not exist yet, so it leads out of THE INTERSTICE
+        int rz = com.interstice.world.wheat.WheatLayout.RIFT_Z;
+        wheat.getChunk(0, rz >> 4);
+        check(wheat.getBlockState(new BlockPos(0, com.interstice.world.wheat.WheatLayout.groundY(0, rz), rz)).is(ModBlocks.RIFT), "no rift at the end of the track");
+        // the farmhouse's door: there, closed, and it cannot be opened by hand
+        int hz = com.interstice.world.wheat.WheatLayout.HOUSE_Z;
+        wheat.getChunk(0, hz >> 4);
+        var door = wheat.getBlockState(new BlockPos(0, com.interstice.world.wheat.WheatLayout.GROUND_Y, hz));
+        check(door.is(ModBlocks.FAKE_DOOR) && !door.getValue(net.minecraft.world.level.block.DoorBlock.OPEN)
+                && !((net.minecraft.world.level.block.DoorBlock) door.getBlock()).type().canOpenByHand(), "the farmhouse door is missing or can be opened: " + door);
+        com.interstice.world.IntersticeTeleport.throughRift(p);
+        check(!com.interstice.registry.ModWorld.isAnyLevel(p.level()), "the Wheat Farm's rift did not lead out: " + p.level().dimension().location());
+        System.out.printf("[interstice-test] wheat farm: track, fences (%d/16) and field in place; Corridor exit -> %s; its rift -> %s%n",
+                fences, wheat.dimension().location(), p.level().dimension().location());
+        removePlayer(p);
+        h.succeed();
+    }
+
     // ------------------------------------------------- survival rules and devices (Corridor rework)
 
     @GameTest(template = EMPTY_STRUCTURE, batch = "survival", timeoutTicks = 400)

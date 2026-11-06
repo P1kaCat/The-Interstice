@@ -89,6 +89,7 @@ public final class IntersticeServer {
 
     /** Called every server tick (END). */
     public void tick() {
+        com.interstice.world.wheat.PathKeeper.tick(server);   // Level 02: stay on the path
         ServerLevel level = level();
         if (level == null) return;
         long now = level.getGameTime();

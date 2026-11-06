@@ -99,6 +99,8 @@ public class IntersticeClient implements ClientModInitializer {
 
         DimensionRenderingRegistry.registerDimensionEffects(Interstice.id("the_interstice"), new IntersticeDimensionEffects());
         DimensionRenderingRegistry.registerSkyRenderer(ModWorld.INTERSTICE, new IntersticeSkyRenderer());
+        DimensionRenderingRegistry.registerDimensionEffects(Interstice.id("wheat_farm"), new com.interstice.client.render.wheat.WheatSky.Effects());
+        DimensionRenderingRegistry.registerSkyRenderer(ModWorld.WHEAT_FARM, new com.interstice.client.render.wheat.WheatSky());
 
         LampHooks.setListener(LampLightManager::onLampSeen);
         ClientChunkEvents.CHUNK_LOAD.register(LampLightManager::onChunkLoad);
@@ -138,6 +140,7 @@ public class IntersticeClient implements ClientModInitializer {
             VeilIntegration.frame();
             Minecraft mc = Minecraft.getInstance();
             if (mc.level != null) LampLightManager.update(mc.level, ctx.camera().getPosition());
+            com.interstice.client.render.veil.ThresholdLights.update(ctx.camera().getPosition());
             com.interstice.client.render.veil.CreatureEyeLights.update(ctx.camera().getPosition());
             com.interstice.client.render.veil.DeviceLights.update(ctx.camera().getPosition(), ctx.tickCounter().getGameTimeDeltaPartialTick(false));
         });
@@ -154,12 +157,15 @@ public class IntersticeClient implements ClientModInitializer {
             AudioDirector.tick();
             if (ClientState.inInterstice && mc.player != null) com.interstice.client.render.chains.ChainRenderer.collide(mc.player);
             DustEffects.tick();
+            com.interstice.client.effects.RiftTransition.tick();
+            com.interstice.client.audio.WheatAudio.tick();
             QuakeShake.update();
             while (settingsKey.consumeClick()) mc.setScreen(new IntersticeConfigScreen(mc.screen));
             com.interstice.client.dev.AutoTest.tick(mc);
         });
 
         HudRenderCallback.EVENT.register(IntersticeHud::render);
+        HudRenderCallback.EVENT.register(com.interstice.client.effects.RiftTransition::renderHud);
         settingsKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.interstice.settings", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F7, "key.categories.interstice"));
 
         VeilIntegration.init();

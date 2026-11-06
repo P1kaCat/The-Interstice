@@ -859,5 +859,42 @@
         "name": "interstice:voice/find_a_way"
       }
     ]
+  },
+  "ambient.wheat_wind": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/wheat_wind",
+        "stream": true
+      }
+    ]
+  },
+  "ambient.wheat_rustle": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/wheat_rustle",
+        "stream": true
+      }
+    ]
+  },
+  "turbine.whoosh": {
+    "sounds": [
+      {
+        "name": "interstice:ambient/turbine_whoosh",
+        "stream": true
+      }
+    ]
+  },
+  "voice.do_not_leave": {
+    "sounds": [
+      "interstice:voice/do_not_leave"
+    ]
+  },
+  "ambient.wheat_gust": {
+    "sounds": [
+      "interstice:ambient/wheat_gust_1",
+      "interstice:ambient/wheat_gust_2",
+      "interstice:ambient/wheat_gust_3",
+      "interstice:ambient/wheat_gust_4"
+    ]
   }
 }

@@ -38,15 +38,82 @@ public final class IntersticeTeleport {
 
     public static void init() {}
 
+    /**
+     * Into THE INTERSTICE from outside: the journey starts at Level 00, The Threshold (falls back to the Corridor if
+     * that dimension is missing). The return point is remembered only when coming from outside the levels.
+     */
     public static boolean enter(ServerPlayer player) {
+        ServerLevel threshold = player.server.getLevel(com.interstice.registry.ModWorld.THRESHOLD);
+        if (threshold == null) return enterCorridor(player);
+        remember(player);
+        threshold.getChunk(0, 0);
+        threshold.getChunk(0, 1);
+        player.teleportTo(threshold, com.interstice.world.threshold.ThresholdLayout.SPAWN_X, com.interstice.world.threshold.ThresholdLayout.SPAWN_Y,
+                com.interstice.world.threshold.ThresholdLayout.SPAWN_Z, 0f, 0f);
+        return true;
+    }
+
+    private static void remember(ServerPlayer player) {
+        if (!com.interstice.registry.ModWorld.isAnyLevel(player.level())) {
+            player.setAttached(RETURN_POINT, new ReturnPoint(player.level().dimension().location(), player.getX(), player.getY(), player.getZ()));
+        }
+    }
+
+    /**
+     * Through a rift: to the next level. Level 00 leads to the Corridor's safe start; past the last level whose
+     * dimension exists, the rift leads out (like the Corridor's exit threshold).
+     */
+    public static void throughRift(ServerPlayer player) {
+        com.interstice.world.levels.IntersticeLevel here = com.interstice.world.levels.IntersticeLevel.of(player.level());
+        com.interstice.world.levels.IntersticeLevel next = here == null ? null : here.next();
+        if (next == com.interstice.world.levels.IntersticeLevel.CORRIDOR) {
+            enterCorridor(player);
+            return;
+        }
+        ServerLevel target = next == null ? null : player.server.getLevel(next.dimension);
+        if (target == null) {
+            leave(player);
+            return;
+        }
+        if (next == com.interstice.world.levels.IntersticeLevel.WHEAT_FARM) {
+            int gy = com.interstice.world.wheat.WheatLayout.groundY(0, 2);
+            target.getChunk(0, 0);
+            player.teleportTo(target, com.interstice.world.wheat.WheatLayout.SPAWN_X, gy, com.interstice.world.wheat.WheatLayout.SPAWN_Z, 0f, 0f);
+            return;
+        }
+        // levels 03-04 add their own arrival here as they are built
+        leave(player);
+    }
+
+    /**
+     * Straight to the start of a level (the {@code /interstice level} command): false if its dimension is not there.
+     * The return point is remembered as for {@link #enter}.
+     */
+    public static boolean toLevel(ServerPlayer player, com.interstice.world.levels.IntersticeLevel target) {
+        switch (target) {
+            case THRESHOLD -> { return enter(player); }
+            case CORRIDOR -> { return enterCorridor(player); }
+            case WHEAT_FARM -> {
+                ServerLevel wheat = player.server.getLevel(target.dimension);
+                if (wheat == null) return false;
+                remember(player);
+                int gy = com.interstice.world.wheat.WheatLayout.groundY(0, 2);
+                wheat.getChunk(0, 0);
+                player.teleportTo(wheat, com.interstice.world.wheat.WheatLayout.SPAWN_X, gy, com.interstice.world.wheat.WheatLayout.SPAWN_Z, 0f, 0f);
+                return true;
+            }
+            default -> { return false; }
+        }
+    }
+
+    /** Into Level 01, The Corridor, at its safe start. */
+    public static boolean enterCorridor(ServerPlayer player) {
         IntersticeServer s = IntersticeServer.get();
         if (s == null) return false;
         ServerLevel level = s.level();
         IntersticeLayout L = s.layout();
         if (level == null || L == null) return false;
-        if (player.level() != level) {
-            player.setAttached(RETURN_POINT, new ReturnPoint(player.level().dimension().location(), player.getX(), player.getY(), player.getZ()));
-        }
+        if (player.level() != level) remember(player);
         Vec3 spot = findSafeSpot(level, L, 0);
         player.teleportTo(level, spot.x, spot.y, spot.z, 0f, 0f);
         return true;
@@ -56,7 +123,7 @@ public final class IntersticeTeleport {
         ReturnPoint rp = player.getAttached(RETURN_POINT);
         ServerLevel target = null;
         if (rp != null) target = player.server.getLevel(ResourceKey.create(Registries.DIMENSION, rp.dimension()));
-        if (target == null || target.dimension() == ModWorld.INTERSTICE) {
+        if (target == null || com.interstice.registry.ModWorld.isAnyLevel(target)) {
             ServerLevel ow = player.server.getLevel(Level.OVERWORLD);
             BlockPos sp = ow.getSharedSpawnPos();
             player.teleportTo(ow, sp.getX() + 0.5, sp.getY(), sp.getZ() + 0.5, player.getYRot(), player.getXRot());

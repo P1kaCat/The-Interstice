@@ -75,6 +75,8 @@ public final class ConnectedTextures {
                 ModBlocks.WEATHERED_CONCRETE, ModBlocks.FLOORBOARDS);
         // the sound plaster creeps over the edges of a cracked patch, so the patch reads as a ragged hole, not a square
         spread(ModBlocks.PLASTER_WALL, "plaster", ModBlocks.PLASTER_CRACKED);
+        // Level 02: the packed track spills a ragged edge onto the tilled farmland beside it
+        spread(ModBlocks.FARM_PATH, "path", ModBlocks.WHEAT_FIELD);
         spread(ModBlocks.CONCRETE_RUBBLE, "rubble",
                 ModBlocks.CONCRETE_FLOOR, ModBlocks.SIDEWALK, ModBlocks.ASPHALT, ModBlocks.ASPHALT_LINE, ModBlocks.FLOORBOARDS,
                 ModBlocks.CLINIC_FLOOR, ModBlocks.TAR_ROOF, ModBlocks.WEATHERED_CONCRETE, ModBlocks.CRACKED_CONCRETE);

@@ -1,0 +1,10 @@
+# Level 02, 32x32 pass (2026-11-06): farmland (furrows along z), farm track, ripe wheat clumps without green
+farmland_0 53cafc3b-138c-476e-93fd-847c26114ec8 tile
+farmland_1 1860bc5f-faba-43e0-a6dd-8e74560066eb tile
+farmland_2 411f3d69-2887-4820-a2bb-6afc2bc0781b tile
+farm_path_0 06f84dbc-1693-43e9-b9a3-bd6933b0b459 tile
+farm_path_1 d1a55157-6a14-4d52-a1a4-7e6f97f1f8d8 tile
+wheat_ripe_0 ae10843e-51d8-493a-a556-6ea88ac02350 alpha
+wheat_ripe_1 59d5dd03-1ce8-4e49-8dbf-91293feeb511 alpha
+farm_path_2 a4dd46a7-02eb-4247-a5d5-0262eabb64de tile
+farm_path_3 4c5a0ea5-4e59-49d9-a167-9bdcc2c838e4 tile
